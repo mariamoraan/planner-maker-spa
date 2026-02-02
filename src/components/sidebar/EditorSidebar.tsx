@@ -1,11 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { 
   Layers, 
-  Download, 
-  Save, 
-  FolderOpen,
   Plus,
-  Settings,
   Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useTemplateStore } from '@/stores/template-store';
 
 interface EditorSidebarProps {
   template: Template | null;
@@ -76,6 +73,12 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
     name: string;
   } | null>(null);
   const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('monthly-calendar');
+
+  const {
+      templates,
+      setCurrentTemplate,
+      setCurrentImage
+    } = useTemplateStore();
   
   const handleCreateTemplate = useCallback(() => {
     if (newTemplateName.trim()) {
@@ -121,8 +124,31 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
       
       {/* Template Actions */}
       <div className="p-4 space-y-3">
-        {!template ? (
-          <Dialog open={newTemplateDialogOpen} onOpenChange={setNewTemplateDialogOpen}>
+        {
+          templates?.length && (
+            <Select
+              value={template?.id}
+              onValueChange={(v) => {
+                setCurrentTemplate(v)
+                setCurrentImage(templates.find(template => template.id === v).images[0].id ?? null)
+              }}
+            >
+              <SelectTrigger className="mt-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {templates?.map(template => (
+                  <SelectItem key={template?.id} value={template?.id}>
+                    <div>
+                      <div>{template?.name}</div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )
+        }
+        <Dialog open={newTemplateDialogOpen} onOpenChange={setNewTemplateDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground">
                 <Plus className="w-4 h-4 mr-2" />
@@ -156,7 +182,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        ) : (
+        {template &&  (
           <>
             <div className="flex items-center justify-between">
               <div>
@@ -167,7 +193,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
               </div>
             </div>
             
-            <ImageUploader onImageUpload={handleImageUpload} />
+            <ImageUploader  onImageUpload={handleImageUpload} />
             
             {/* Upload type dialog */}
             <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>

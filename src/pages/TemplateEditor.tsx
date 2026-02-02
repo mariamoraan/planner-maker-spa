@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { EditorSidebar } from '@/components/sidebar/EditorSidebar';
 import { TemplateCanvas } from '@/components/canvas/TemplateCanvas';
 import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
@@ -106,6 +106,13 @@ const TemplateEditor: React.FC = () => {
       });
     }
   }, [currentTemplateId, createTemplate, addImage]);
+
+  useEffect(() => {
+    if(!currentTemplateId && templates?.length) {
+      setCurrentTemplate(templates[0].id)
+      setCurrentImage(templates[0].images[0].id ?? null)
+    }
+  },[templates, currentTemplateId] )
   
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -139,7 +146,11 @@ const TemplateEditor: React.FC = () => {
           onRectangleDelete={handleRectangleDelete}
         />
       ) : (
-        <EmptyCanvasState onImageUpload={handleEmptyUpload} />
+        <EmptyCanvasState 
+          hasTemplates={templates?.length > 0} 
+          onCreateTemplate={createTemplate} 
+          onImageUpload={handleEmptyUpload} 
+        />
       )}
       
       {currentTemplate && (
