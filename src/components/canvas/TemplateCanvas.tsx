@@ -152,76 +152,123 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
   }, [scale, onRectangleUpdate]);
 
   // Snap tipo Canva
-  const handleDragMove = useCallback((rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
-    const node = e.target;
-    const movingRect = rectangles.find(r => r.id === rectId);
-    if (!movingRect) return;
-    let newX = node.x() / scale;
-    let newY = node.y() / scale;
-    const newGuides: GuideLine[] = [];
+  // --- handleDragMove con distribución equidistante ---
+const handleDragMove = useCallback((rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
+  const node = e.target;
+  const movingRect = rectangles.find(r => r.id === rectId);
+  if (!movingRect) return;
 
-    rectangles.forEach(r => {
-      if (r.id === rectId) return;
+  let newX = node.x() / scale;
+  let newY = node.y() / scale;
+  const newGuides: GuideLine[] = [];
 
-      // Snap horizontal
-      if (Math.abs(r.x - newX) < SNAP_THRESHOLD) { newX = r.x; newGuides.push({ x: r.x }); }
-      if (Math.abs(r.x + r.width - (newX + movingRect.width)) < SNAP_THRESHOLD) { newX = r.x + r.width - movingRect.width; newGuides.push({ x: r.x + r.width }); }
-      if (Math.abs(r.x + r.width / 2 - (newX + movingRect.width / 2)) < SNAP_THRESHOLD) { newX = r.x + r.width / 2 - movingRect.width / 2; newGuides.push({ x: r.x + r.width / 2 }); }
+  // SNAP a otros rectángulos
+  rectangles.forEach(r => {
+    if (r.id === rectId) return;
+    if (Math.abs(r.x - newX) < SNAP_THRESHOLD) { newX = r.x; newGuides.push({ x: r.x }); }
+    if (Math.abs(r.x + r.width - (newX + movingRect.width)) < SNAP_THRESHOLD) { newX = r.x + r.width - movingRect.width; newGuides.push({ x: r.x + r.width }); }
+    if (Math.abs(r.x + r.width / 2 - (newX + movingRect.width / 2)) < SNAP_THRESHOLD) { newX = r.x + r.width / 2 - movingRect.width / 2; newGuides.push({ x: r.x + r.width / 2 }); }
 
-      // Snap vertical
-      if (Math.abs(r.y - newY) < SNAP_THRESHOLD) { newY = r.y; newGuides.push({ y: r.y }); }
-      if (Math.abs(r.y + r.height - (newY + movingRect.height)) < SNAP_THRESHOLD) { newY = r.y + r.height - movingRect.height; newGuides.push({ y: r.y + r.height }); }
-      if (Math.abs(r.y + r.height / 2 - (newY + movingRect.height / 2)) < SNAP_THRESHOLD) { newY = r.y + r.height / 2 - movingRect.height / 2; newGuides.push({ y: r.y + r.height / 2 }); }
+    if (Math.abs(r.y - newY) < SNAP_THRESHOLD) { newY = r.y; newGuides.push({ y: r.y }); }
+    if (Math.abs(r.y + r.height - (newY + movingRect.height)) < SNAP_THRESHOLD) { newY = r.y + r.height - movingRect.height; newGuides.push({ y: r.y + r.height }); }
+    if (Math.abs(r.y + r.height / 2 - (newY + movingRect.height / 2)) < SNAP_THRESHOLD) { newY = r.y + r.height / 2 - movingRect.height / 2; newGuides.push({ y: r.y + r.height / 2 }); }
+  });
+
+  // Aplicar snap
+  node.x(newX * scale);
+  node.y(newY * scale);
+  setGuides(newGuides);
+
+  // --- DISTRIBUCIÓN EQUITATIVA ---
+  const stage = stageRef.current;
+  if (!stage) return;
+
+  // Horizontal
+  const alignedHoriz: Konva.Rect[] = rectangles
+    .filter(r => r.id !== rectId)
+    .map(r => stage.findOne<Konva.Rect>(`#rect-${r.id}`))
+    .filter((n): n is Konva.Rect => n !== null)
+    .filter(rn => Math.abs(rn.y() / scale - newY) < SNAP_THRESHOLD);
+
+  if (alignedHoriz.length > 1) {
+    const allRects = [node, ...alignedHoriz].sort((a, b) => a.x() - b.x());
+    const first = allRects[0];
+    const last = allRects[allRects.length - 1];
+    const totalWidth = last.x() - first.x();
+    const totalRectsWidth = allRects.reduce((acc, r) => acc + r.width(), 0);
+    const space = (totalWidth - totalRectsWidth) / (allRects.length - 1);
+    let currentX = first.x();
+    allRects.forEach((r, i) => {
+      if (i === 0) return;
+      currentX += allRects[i - 1].width() + space;
+      if (r !== node) onRectangleUpdate(r.id(), { x: currentX / scale });
     });
+  }
 
-    node.x(newX * scale);
-    node.y(newY * scale);
-    setGuides(newGuides);
-  }, [rectangles, scale]);
+  // Vertical
+  const alignedVert: Konva.Rect[] = rectangles
+    .filter(r => r.id !== rectId)
+    .map(r => stage.findOne<Konva.Rect>(`#rect-${r.id}`))
+    .filter((n): n is Konva.Rect => n !== null)
+    .filter(rn => Math.abs(rn.x() / scale - newX) < SNAP_THRESHOLD);
 
-  // Teclado: delete, copy, paste
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!stageRef.current) return;
-      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+  if (alignedVert.length > 1) {
+    const allRects = [node, ...alignedVert].sort((a, b) => a.y() - b.y());
+    const first = allRects[0];
+    const last = allRects[allRects.length - 1];
+    const totalHeight = last.y() - first.y();
+    const totalRectsHeight = allRects.reduce((acc, r) => acc + r.height(), 0);
+    const space = (totalHeight - totalRectsHeight) / (allRects.length - 1);
+    let currentY = first.y();
+    allRects.forEach((r, i) => {
+      if (i === 0) return;
+      currentY += allRects[i - 1].height() + space;
+      if (r !== node) onRectangleUpdate(r.id(), { y: currentY / scale });
+    });
+  }
+}, [rectangles, scale, onRectangleUpdate]);
 
-      // Delete
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
-        onRectangleDelete(selectedRectangleId);
 
-        // Recalcular orden de los restantes
-        const remaining = rectangles
-          .filter(r => r.id !== selectedRectangleId)
-          .map((r, index) => ({ ...r, order: index }));
-        remaining.forEach(r => onRectangleUpdate(r.id, { order: r.order }));
-      }
+  // --- Teclado: Delete, Ctrl+C, Ctrl+V ---
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!stageRef.current) return;
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
 
-      // Copy
-      if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
-        const rect = rectangles.find(r => r.id === selectedRectangleId);
-        if (rect) setCopiedRect({ ...rect });
-      }
+    // Delete
+    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
+      onRectangleDelete(selectedRectangleId);
+      const remaining = rectangles.filter(r => r.id !== selectedRectangleId).map((r, i) => ({ ...r, order: i }));
+      remaining.forEach(r => onRectangleUpdate(r.id, { order: r.order }));
+    }
 
-      // Paste
-      if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
-        const stage = stageRef.current;
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
-        const newRect = {
-          ...copiedRect,
-          id: crypto.randomUUID(),
-          x: pos.x / scale,
-          y: pos.y / scale,
-          order: rectangles.length
-        };
-        onRectangleAdd(newRect);
-        onRectangleSelect(newRect.id);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRectangleId, rectangles, copiedRect, onRectangleAdd, onRectangleDelete, onRectangleUpdate, onRectangleSelect, scale]);
+    // Copy
+    if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
+      const rect = rectangles.find(r => r.id === selectedRectangleId);
+      if (rect) setCopiedRect({ ...rect });
+    }
+
+    // Paste
+    if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
+      const stage = stageRef.current;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+      const newRect = {
+        ...copiedRect,
+        id: crypto.randomUUID(),
+        x: pos.x / scale,
+        y: pos.y / scale,
+        order: rectangles.length
+      };
+      onRectangleAdd(newRect);
+      onRectangleSelect(newRect.id);
+    }
+  };
+
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [selectedRectangleId, rectangles, copiedRect, onRectangleAdd, onRectangleDelete, onRectangleUpdate, onRectangleSelect, scale]);
 
   return (
     <div ref={containerRef} className="flex-1 flex items-center justify-center canvas-workspace overflow-hidden p-4">
