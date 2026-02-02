@@ -49,24 +49,39 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
   const [image] = useImage(imageData);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 }); // offset global para centrar
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingRect, setDrawingRect] = useState<DrawingRect | null>(null);
   const [copiedRect, setCopiedRect] = useState<Rectangle | null>(null);
   const [guides, setGuides] = useState<GuideLine[]>([]);
 
   const SNAP_THRESHOLD = 10;
+  const PADDING = 16; // el padding de tu wrapper p-4
 
   /** AJUSTAR IMAGEN AL CONTENEDOR */
   useEffect(() => {
+    if (!containerRef.current || !imageWidth || !imageHeight) return;
+
     const updateSize = () => {
-      if (containerRef.current && imageWidth && imageHeight) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const containerHeight = containerRef.current.offsetHeight;
-        const newScale = Math.min(containerWidth / imageWidth, containerHeight / imageHeight, 1);
-        setScale(newScale);
-        setStageSize({ width: imageWidth * newScale, height: imageHeight * newScale });
-      }
+      // Tamaño disponible restando padding
+      const containerRect = containerRef.current!.getBoundingClientRect();
+      const containerWidth = containerRect.width - PADDING * 2;
+      const containerHeight = containerRect.height - PADDING * 2;
+
+      // Scale para fit-to-contain
+      const newScale = Math.min(containerWidth / imageWidth, containerHeight / imageHeight);
+      setScale(newScale);
+
+      // Stage ocupa TODO el contenedor
+      setStageSize({ width: containerRect.width, height: containerRect.height });
+
+      // Offset para centrar la imagen dentro del stage
+      setOffset({
+        x: PADDING + (containerWidth - imageWidth * newScale) / 2,
+        y: PADDING + (containerHeight - imageHeight * newScale) / 2,
+      });
     };
+
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
@@ -77,13 +92,8 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
       const selectedNode = stage.findOne(`#rect-${selectedRectangleId}`);
-      if (selectedNode) {
-        transformerRef.current.nodes([selectedNode]);
-        transformerRef.current.getLayer()?.batchDraw();
-      } else {
-        transformerRef.current.nodes([]);
-        transformerRef.current.getLayer()?.batchDraw();
-      }
+      transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
+      transformerRef.current.getLayer()?.batchDraw();
     }
   }, [selectedRectangleId]);
 
@@ -91,17 +101,23 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
-      if (clickedOnEmpty) {
-        onRectangleSelect(null);
-        const stage = stageRef.current;
-        if (!stage) return;
-        const pos = stage.getPointerPosition();
-        if (!pos) return;
-        setIsDrawing(true);
-        setDrawingRect({ x: pos.x / scale, y: pos.y / scale, width: 0, height: 0 });
-      }
+      if (!clickedOnEmpty) return;
+
+      onRectangleSelect(null);
+      const stage = stageRef.current;
+      if (!stage) return;
+      const pos = stage.getPointerPosition();
+      if (!pos) return;
+
+      setIsDrawing(true);
+      setDrawingRect({
+        x: (pos.x - offset.x) / scale,
+        y: (pos.y - offset.y) / scale,
+        width: 0,
+        height: 0,
+      });
     },
-    [scale, onRectangleSelect]
+    [scale, offset, onRectangleSelect]
   );
 
   const handleMouseMove = useCallback(
@@ -111,18 +127,20 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       if (!stage) return;
       const pos = stage.getPointerPosition();
       if (!pos) return;
+
       setDrawingRect({
         ...drawingRect,
-        width: pos.x / scale - drawingRect.x,
-        height: pos.y / scale - drawingRect.y,
+        width: (pos.x - offset.x) / scale - drawingRect.x,
+        height: (pos.y - offset.y) / scale - drawingRect.y,
       });
     },
-    [isDrawing, drawingRect, scale]
+    [isDrawing, drawingRect, scale, offset]
   );
 
   const handleMouseUp = useCallback(() => {
     if (!isDrawing || !drawingRect) return;
     setIsDrawing(false);
+
     const minSize = 20;
     if (Math.abs(drawingRect.width) > minSize && Math.abs(drawingRect.height) > minSize) {
       const rect: Omit<Rectangle, 'id'> & { order: number } = {
@@ -135,6 +153,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       };
       onRectangleAdd(rect);
     }
+
     setDrawingRect(null);
   }, [isDrawing, drawingRect, selectedFieldType, onRectangleAdd, rectangles.length]);
 
@@ -151,40 +170,43 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       const scaleY = node.scaleY();
       node.scaleX(1);
       node.scaleY(1);
+
       onRectangleUpdate(rectId, {
-        x: node.x() / scale,
-        y: node.y() / scale,
+        x: (node.x() - offset.x) / scale,
+        y: (node.y() - offset.y) / scale,
         width: (node.width() * scaleX) / scale,
         height: (node.height() * scaleY) / scale,
       });
     },
-    [scale, onRectangleUpdate]
+    [scale, offset, onRectangleUpdate]
   );
 
   const handleDragEnd = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
-      onRectangleUpdate(rectId, { x: e.target.x() / scale, y: e.target.y() / scale });
+      onRectangleUpdate(rectId, {
+        x: (e.target.x() - offset.x) / scale,
+        y: (e.target.y() - offset.y) / scale,
+      });
       setGuides([]);
     },
-    [scale, onRectangleUpdate]
+    [scale, offset, onRectangleUpdate]
   );
 
-  /** SNAP + DISTRIBUCIÓN IGUAL */
+  /** SNAP + distribución igual */
   const handleDragMove = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
       const node = e.target;
       const movingRect = rectangles.find(r => r.id === rectId);
       if (!movingRect) return;
 
-      let newX = node.x() / scale;
-      let newY = node.y() / scale;
+      let newX = (node.x() - offset.x) / scale;
+      let newY = (node.y() - offset.y) / scale;
       const newGuides: GuideLine[] = [];
 
-      // SNAP
       rectangles.forEach(r => {
         if (r.id === rectId) return;
 
-        // Horizontal
+        // SNAP horizontal
         if (Math.abs(r.x - newX) < SNAP_THRESHOLD) {
           newX = r.x;
           newGuides.push({ x: r.x });
@@ -198,7 +220,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
           newGuides.push({ x: r.x + r.width / 2 });
         }
 
-        // Vertical
+        // SNAP vertical
         if (Math.abs(r.y - newY) < SNAP_THRESHOLD) {
           newY = r.y;
           newGuides.push({ y: r.y });
@@ -213,49 +235,11 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
         }
       });
 
-      node.x(newX * scale);
-      node.y(newY * scale);
+      node.x(offset.x + newX * scale);
+      node.y(offset.y + newY * scale);
       setGuides(newGuides);
-
-      /** DISTRIBUCIÓN IGUAL HORIZONTAL */
-      const alignedHoriz = rectangles
-        .filter(r => r.id !== rectId)
-        .filter(r => Math.abs(r.y - newY) < SNAP_THRESHOLD)
-        .sort((a, b) => a.x - b.x);
-
-      if (alignedHoriz.length >= 2) {
-        const minX = alignedHoriz[0].x;
-        const maxX = alignedHoriz[alignedHoriz.length - 1].x;
-        const widthSum = alignedHoriz.reduce((acc, r) => acc + r.width, 0) + movingRect.width;
-        const space = (maxX - minX + alignedHoriz[alignedHoriz.length - 1].width - widthSum) / (alignedHoriz.length);
-        let currentX = minX;
-        alignedHoriz.forEach((r, i) => {
-          if (r.id === rectId) return;
-          onRectangleUpdate(r.id, { x: currentX });
-          currentX += r.width + space;
-        });
-      }
-
-      /** DISTRIBUCIÓN IGUAL VERTICAL */
-      const alignedVert = rectangles
-        .filter(r => r.id !== rectId)
-        .filter(r => Math.abs(r.x - newX) < SNAP_THRESHOLD)
-        .sort((a, b) => a.y - b.y);
-
-      if (alignedVert.length >= 2) {
-        const minY = alignedVert[0].y;
-        const maxY = alignedVert[alignedVert.length - 1].y;
-        const heightSum = alignedVert.reduce((acc, r) => acc + r.height, 0) + movingRect.height;
-        const space = (maxY - minY + alignedVert[alignedVert.length - 1].height - heightSum) / (alignedVert.length);
-        let currentY = minY;
-        alignedVert.forEach((r, i) => {
-          if (r.id === rectId) return;
-          onRectangleUpdate(r.id, { y: currentY });
-          currentY += r.height + space;
-        });
-      }
     },
-    [rectangles, scale, onRectangleUpdate]
+    [rectangles, scale, offset]
   );
 
   /** TECLADO: DELETE / COPY / PASTE */
@@ -265,24 +249,19 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
 
-      // Delete
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
         onRectangleDelete(selectedRectangleId);
-
-        // Recalcular orden
         const remaining = rectangles
           .filter(r => r.id !== selectedRectangleId)
           .map((r, index) => ({ ...r, order: index }));
         remaining.forEach(r => onRectangleUpdate(r.id, { order: r.order }));
       }
 
-      // Copy
       if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
         const rect = rectangles.find(r => r.id === selectedRectangleId);
         if (rect) setCopiedRect({ ...rect });
       }
 
-      // Paste
       if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
         const stage = stageRef.current;
         const pos = stage.getPointerPosition();
@@ -290,31 +269,23 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
         const newRect = {
           ...copiedRect,
           id: crypto.randomUUID(),
-          x: pos.x / scale,
-          y: pos.y / scale,
+          x: (pos.x - offset.x) / scale,
+          y: (pos.y - offset.y) / scale,
           order: rectangles.length,
         };
         onRectangleAdd(newRect);
         onRectangleSelect(newRect.id);
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [
-    selectedRectangleId,
-    rectangles,
-    copiedRect,
-    onRectangleAdd,
-    onRectangleDelete,
-    onRectangleUpdate,
-    onRectangleSelect,
-    scale,
-  ]);
+  }, [selectedRectangleId, rectangles, copiedRect, onRectangleAdd, onRectangleDelete, onRectangleUpdate, onRectangleSelect, scale, offset]);
 
   /** RENDER */
   return (
-    <div ref={containerRef} className="flex-1 flex items-center justify-center canvas-workspace overflow-hidden p-4">
-      <div className="shadow-elevated rounded-lg overflow-hidden bg-card">
+    <div ref={containerRef} className="flex-1 flex items-center justify-center canvas-workspace overflow-hidden">
+      <div className="shadow-elevated rounded-lg overflow-hidden bg-card p-4">
         <Stage
           ref={stageRef}
           width={stageSize.width}
@@ -325,37 +296,47 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
           onMouseLeave={handleMouseUp}
         >
           <Layer>
-            {image && <KonvaImage image={image} width={stageSize.width} height={stageSize.height} name="background" />}
-            {rectangles
-              .slice()
-              .sort((a, b) => a.order - b.order)
-              .map(rect => {
-                const config = FIELD_TYPE_CONFIG[rect.fieldType];
-                return (
-                  <Rect
-                    key={rect.id}
-                    id={`rect-${rect.id}`}
-                    x={rect.x * scale}
-                    y={rect.y * scale}
-                    width={rect.width * scale}
-                    height={rect.height * scale}
-                    fill={config.bgColor}
-                    stroke={config.color}
-                    strokeWidth={2}
-                    cornerRadius={4}
-                    draggable
-                    onClick={() => handleRectClick(rect.id)}
-                    onTap={() => handleRectClick(rect.id)}
-                    onDragMove={e => handleDragMove(rect.id, e)}
-                    onDragEnd={e => handleDragEnd(rect.id, e)}
-                    onTransformEnd={e => handleTransformEnd(rect.id, e)}
-                  />
-                );
-              })}
+            {image && (
+              <KonvaImage
+                image={image}
+                width={imageWidth}
+                height={imageHeight}
+                scaleX={scale}
+                scaleY={scale}
+                x={offset.x}
+                y={offset.y}
+                name="background"
+              />
+            )}
+
+            {rectangles.map(rect => {
+              const config = FIELD_TYPE_CONFIG[rect.fieldType];
+              return (
+                <Rect
+                  key={rect.id}
+                  id={`rect-${rect.id}`}
+                  x={offset.x + rect.x * scale}
+                  y={offset.y + rect.y * scale}
+                  width={rect.width * scale}
+                  height={rect.height * scale}
+                  fill={config.bgColor}
+                  stroke={config.color}
+                  strokeWidth={2}
+                  cornerRadius={4}
+                  draggable
+                  onClick={() => handleRectClick(rect.id)}
+                  onTap={() => handleRectClick(rect.id)}
+                  onDragMove={e => handleDragMove(rect.id, e)}
+                  onDragEnd={e => handleDragEnd(rect.id, e)}
+                  onTransformEnd={e => handleTransformEnd(rect.id, e)}
+                />
+              );
+            })}
+
             {drawingRect && (
               <Rect
-                x={drawingRect.x * scale}
-                y={drawingRect.y * scale}
+                x={offset.x + drawingRect.x * scale}
+                y={offset.y + drawingRect.y * scale}
                 width={drawingRect.width * scale}
                 height={drawingRect.height * scale}
                 fill={FIELD_TYPE_CONFIG[selectedFieldType].bgColor}
@@ -365,18 +346,26 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
                 cornerRadius={4}
               />
             )}
+
             {guides.map((g, i) => (
               <Line
                 key={i}
-                points={g.x ? [g.x * scale, 0, g.x * scale, stageSize.height] : [0, g.y * scale, stageSize.width, g.y * scale]}
+                points={
+                  g.x
+                    ? [offset.x + g.x * scale, 0, offset.x + g.x * scale, stageSize.height]
+                    : [0, offset.y + g.y! * scale, stageSize.width, offset.y + g.y! * scale]
+                }
                 stroke="rgba(0, 200, 255, 0.6)"
                 strokeWidth={1}
                 dash={[4, 4]}
               />
             ))}
+
             <Transformer
               ref={transformerRef}
-              boundBoxFunc={(oldBox, newBox) => (newBox.width < 20 || newBox.height < 20 ? oldBox : newBox)}
+              boundBoxFunc={(oldBox, newBox) =>
+                newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
+              }
               rotateEnabled={false}
               anchorSize={8}
               borderStroke="hsl(168, 76%, 42%)"
