@@ -161,7 +161,7 @@ export function usePlannerGenerator() {
     ctx.drawImage(img, 0, 0);
     
     // Draw field values
-    const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.x - b.x || a.y - b.y );
+    const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
     
     for (const rect of templateImage.rectangles) {
       let value = '';

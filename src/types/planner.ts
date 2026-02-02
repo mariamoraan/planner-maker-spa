@@ -16,6 +16,7 @@ export interface Rectangle {
   width: number;
   height: number;
   fieldType: FieldType;
+  order: number;
 }
 
 export interface TemplateImage {

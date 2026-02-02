@@ -53,12 +53,11 @@ export const TemplateImageList: React.FC<TemplateImageListProps> = ({
               
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-sidebar-foreground truncate">
-                  {image.name}
+                  {typeConfig.label}
                 </div>
-                <div className="flex items-center gap-2 text-xs text-sidebar-foreground/60">
-                  <span>{typeConfig.label}</span>
-                  <span>•</span>
-                  <span>{image.rectangles.length} fields</span>
+                <div className="flex-col items-center text-xs text-sidebar-foreground/60">
+                  <div>{image.rectangles.length} fields</div>
+                  <div>{image.name} Colores colors colores colores</div>
                 </div>
               </div>
               

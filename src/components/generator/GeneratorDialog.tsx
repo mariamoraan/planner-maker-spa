@@ -1,8 +1,7 @@
-import React, { useState, useCallback } from 'react';
-import { format, addMonths } from 'date-fns';
-import { Calendar, Download, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
+import React, { useState, useCallback, useLayoutEffect } from 'react';
+import { addMonths } from 'date-fns';
+import { Calendar, Download, X, FileText, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -11,37 +10,39 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { Template } from '@/types/planner';
 import { usePlannerGenerator } from '@/hooks/usePlannerGenerator';
+import { useTemplateStore } from '@/stores/template-store';
 
 interface GeneratorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  template: Template;
 }
 
 export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
   open,
   onOpenChange,
-  template,
 }) => {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(addMonths(new Date(), 1));
-  const [startOpen, setStartOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
   
   const { generating, progress, generatedPages, generatePlanner, downloadPDF, downloadImages } = usePlannerGenerator();
+  const {
+      getCurrentTemplate,
+    } = useTemplateStore();
+
+  const template = getCurrentTemplate();
+    
   
   const handleGenerate = useCallback(async () => {
     await generatePlanner(template, startDate, endDate);
   }, [template, startDate, endDate, generatePlanner]);
+
+  useLayoutEffect(() => {
+    if(open && generatedPages?.length) {
+      handleGenerate()
+    }
+  }, [open])
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -61,65 +62,20 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Start Date</Label>
-              <Popover open={startOpen} onOpenChange={setStartOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !startDate && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {startDate ? format(startDate, "MMMM yyyy") : "Select start"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarPicker
-                    mode="single"
-                    selected={startDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setStartDate(date);
-                        setStartOpen(false);
-                      }
-                    }}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <input
+                type="date"
+                value={startDate.toISOString().split("T")[0]} // ✅ Formato YYYY-MM-DD
+                onChange={e => setStartDate(new Date(e.target.value))}
+              />
             </div>
             
             <div className="space-y-2">
               <Label>End Date</Label>
-              <Popover open={endOpen} onOpenChange={setEndOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !endDate && "text-muted-foreground"
-                    )}
-                  >
-                    <Calendar className="mr-2 h-4 w-4" />
-                    {endDate ? format(endDate, "MMMM yyyy") : "Select end"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <CalendarPicker
-                    mode="single"
-                    selected={endDate}
-                    onSelect={(date) => {
-                      if (date) {
-                        setEndDate(date);
-                        setEndOpen(false);
-                      }
-                    }}
-                    disabled={(date) => date < startDate}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <input
+                type="date"
+                value={endDate.toISOString().split("T")[0]} // ✅ Formato YYYY-MM-DD
+                onChange={e => setEndDate(new Date(e.target.value))}
+              />
             </div>
           </div>
           
@@ -190,12 +146,18 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
         <DialogFooter className="gap-2">
           {generatedPages.length > 0 && !generating ? (
             <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-              <Button variant="outline" onClick={downloadImages}>
-                <ImageIcon className="w-4 h-4 mr-2" />
-                Download Images
+              {
+                /**
+                 <Button variant="outline" onClick={downloadImages}>
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Download Images
+                  </Button>
+                 */
+              }
+
+              <Button variant='secondary' onClick={handleGenerate} disabled={generating}>
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Generate
               </Button>
               <Button onClick={downloadPDF}>
                 <FileText className="w-4 h-4 mr-2" />

@@ -146,7 +146,6 @@ const TemplateEditor: React.FC = () => {
         <GeneratorDialog
           open={generatorOpen}
           onOpenChange={setGeneratorOpen}
-          template={currentTemplate}
         />
       )}
     </div>
