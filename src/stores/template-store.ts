@@ -3,6 +3,26 @@ import { persist } from 'zustand/middleware';
 import type { Template, TemplateImage, Rectangle } from '@/types/planner';
 import { generateId } from '@/lib/planner-utils';
 
+const reviveDates = (templates: Template[]): Template[] => {
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setMonth(today.getMonth() + 1)
+  return templates.map(t => ({
+    ...t,
+    createdAt: new Date(t.createdAt),
+    updatedAt: new Date(t.updatedAt),
+    startDate: t.startDate ? new Date(t.startDate) : today,
+    endDate: t.endDate ? new Date(t.startDate) : tomorrow,
+    images: t.images.map(img => ({
+      ...img,
+      createdAt: new Date(img.createdAt),
+      updatedAt: new Date(img.updatedAt),
+    })),
+  }));
+}
+  
+
+
 interface TemplateState {
   templates: Template[];
   currentTemplateId: string | null;
@@ -213,6 +233,10 @@ export const useTemplateStore = create<TemplateState>()(
     {
       name: 'planner-templates',
       partialize: (state) => ({ templates: state.templates }),
+      onRehydrateStorage: () => (state) => {
+        if(!state) return;
+        state.templates = reviveDates(state.templates);
+      }
     }
   )
 );

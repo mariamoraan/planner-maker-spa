@@ -23,15 +23,16 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
   open,
   onOpenChange,
 }) => {
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(addMonths(new Date(), 1));
+   const {
+      getCurrentTemplate,
+      updateTemplate,
+    } = useTemplateStore();
+  const template = getCurrentTemplate();
+  const startDate: Date = template?.startDate ?? new Date();
+  const endDate: Date = template?.endDate ?? new Date();
   
   const { generating, progress, generatedPages, generatePlanner, downloadPDF, downloadImages } = usePlannerGenerator();
-  const {
-      getCurrentTemplate,
-    } = useTemplateStore();
-
-  const template = getCurrentTemplate();
+ 
     
   
   const handleGenerate = useCallback(async () => {
@@ -65,7 +66,11 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
               <input
                 type="date"
                 value={startDate.toISOString().split("T")[0]} // ✅ Formato YYYY-MM-DD
-                onChange={e => setStartDate(new Date(e.target.value))}
+                onChange={e => {
+                  updateTemplate(template.id, {startDate: new Date(e.target.value)})
+                }}
+
+
               />
             </div>
             
@@ -74,7 +79,9 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
               <input
                 type="date"
                 value={endDate.toISOString().split("T")[0]} // ✅ Formato YYYY-MM-DD
-                onChange={e => setEndDate(new Date(e.target.value))}
+                onChange={e => {
+                  updateTemplate(template.id, {endDate: new Date(e.target.value)})
+                }}
               />
             </div>
           </div>

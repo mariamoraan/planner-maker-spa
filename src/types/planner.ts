@@ -38,6 +38,8 @@ export interface Template {
   images: TemplateImage[];
   createdAt: Date;
   updatedAt: Date;
+  startDate?: Date;
+  endDate?: Date;
 }
 
 export interface PlannerConfig {

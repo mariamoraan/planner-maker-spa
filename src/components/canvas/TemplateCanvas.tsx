@@ -12,7 +12,7 @@ interface TemplateCanvasProps {
   rectangles: Rectangle[];
   selectedFieldType: FieldType;
   selectedRectangleId: string | null;
-  onRectangleAdd: (rect: Omit<Rectangle, 'id'>) => void;
+  onRectangleAdd: (rect: Omit<Rectangle, 'id'> & { order: number }) => void;
   onRectangleUpdate: (id: string, updates: Partial<Rectangle>) => void;
   onRectangleSelect: (id: string | null) => void;
   onRectangleDelete: (id: string) => void;
@@ -56,7 +56,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
 
   const SNAP_THRESHOLD = 10;
 
-  // Ajustar imagen al contenedor
+  /** AJUSTAR IMAGEN AL CONTENEDOR */
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current && imageWidth && imageHeight) {
@@ -72,7 +72,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
     return () => window.removeEventListener('resize', updateSize);
   }, [imageWidth, imageHeight]);
 
-  // Actualizar transformer
+  /** TRANSFORMER */
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
@@ -87,189 +87,231 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
     }
   }, [selectedRectangleId]);
 
-  // Dibujar rectángulo nuevo
-  const handleMouseDown = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
-    if (clickedOnEmpty) {
-      onRectangleSelect(null);
+  /** MOUSE DRAW */
+  const handleMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
+      if (clickedOnEmpty) {
+        onRectangleSelect(null);
+        const stage = stageRef.current;
+        if (!stage) return;
+        const pos = stage.getPointerPosition();
+        if (!pos) return;
+        setIsDrawing(true);
+        setDrawingRect({ x: pos.x / scale, y: pos.y / scale, width: 0, height: 0 });
+      }
+    },
+    [scale, onRectangleSelect]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!isDrawing || !drawingRect) return;
       const stage = stageRef.current;
       if (!stage) return;
       const pos = stage.getPointerPosition();
       if (!pos) return;
-      setIsDrawing(true);
-      setDrawingRect({ x: pos.x / scale, y: pos.y / scale, width: 0, height: 0 });
-    }
-  }, [scale, onRectangleSelect]);
-
-  const handleMouseMove = useCallback((e: Konva.KonvaEventObject<MouseEvent>) => {
-    if (!isDrawing || !drawingRect) return;
-    const stage = stageRef.current;
-    if (!stage) return;
-    const pos = stage.getPointerPosition();
-    if (!pos) return;
-    setDrawingRect({ ...drawingRect, width: pos.x / scale - drawingRect.x, height: pos.y / scale - drawingRect.y });
-  }, [isDrawing, drawingRect, scale]);
+      setDrawingRect({
+        ...drawingRect,
+        width: pos.x / scale - drawingRect.x,
+        height: pos.y / scale - drawingRect.y,
+      });
+    },
+    [isDrawing, drawingRect, scale]
+  );
 
   const handleMouseUp = useCallback(() => {
     if (!isDrawing || !drawingRect) return;
     setIsDrawing(false);
     const minSize = 20;
     if (Math.abs(drawingRect.width) > minSize && Math.abs(drawingRect.height) > minSize) {
-      const rect = {
+      const rect: Omit<Rectangle, 'id'> & { order: number } = {
         x: drawingRect.width < 0 ? drawingRect.x + drawingRect.width : drawingRect.x,
         y: drawingRect.height < 0 ? drawingRect.y + drawingRect.height : drawingRect.y,
         width: Math.abs(drawingRect.width),
         height: Math.abs(drawingRect.height),
         fieldType: selectedFieldType,
-        order: rectangles.length // <- asignamos orden
+        order: rectangles.length,
       };
       onRectangleAdd(rect);
     }
     setDrawingRect(null);
   }, [isDrawing, drawingRect, selectedFieldType, onRectangleAdd, rectangles.length]);
 
+  /** RECT CLICK */
   const handleRectClick = useCallback((rectId: string) => {
     onRectangleSelect(rectId);
   }, [onRectangleSelect]);
 
-  const handleTransformEnd = useCallback((rectId: string, e: Konva.KonvaEventObject<Event>) => {
-    const node = e.target;
-    const scaleX = node.scaleX();
-    const scaleY = node.scaleY();
-    node.scaleX(1);
-    node.scaleY(1);
-    onRectangleUpdate(rectId, {
-      x: node.x() / scale,
-      y: node.y() / scale,
-      width: (node.width() * scaleX) / scale,
-      height: (node.height() * scaleY) / scale,
-    });
-  }, [scale, onRectangleUpdate]);
+  /** TRANSFORM & DRAG */
+  const handleTransformEnd = useCallback(
+    (rectId: string, e: Konva.KonvaEventObject<Event>) => {
+      const node = e.target;
+      const scaleX = node.scaleX();
+      const scaleY = node.scaleY();
+      node.scaleX(1);
+      node.scaleY(1);
+      onRectangleUpdate(rectId, {
+        x: node.x() / scale,
+        y: node.y() / scale,
+        width: (node.width() * scaleX) / scale,
+        height: (node.height() * scaleY) / scale,
+      });
+    },
+    [scale, onRectangleUpdate]
+  );
 
-  const handleDragEnd = useCallback((rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
-    onRectangleUpdate(rectId, { x: e.target.x() / scale, y: e.target.y() / scale });
-    setGuides([]);
-  }, [scale, onRectangleUpdate]);
+  const handleDragEnd = useCallback(
+    (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
+      onRectangleUpdate(rectId, { x: e.target.x() / scale, y: e.target.y() / scale });
+      setGuides([]);
+    },
+    [scale, onRectangleUpdate]
+  );
 
-  // Snap tipo Canva
-  // --- handleDragMove con distribución equidistante ---
-const handleDragMove = useCallback((rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
-  const node = e.target;
-  const movingRect = rectangles.find(r => r.id === rectId);
-  if (!movingRect) return;
+  /** SNAP + DISTRIBUCIÓN IGUAL */
+  const handleDragMove = useCallback(
+    (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
+      const node = e.target;
+      const movingRect = rectangles.find(r => r.id === rectId);
+      if (!movingRect) return;
 
-  let newX = node.x() / scale;
-  let newY = node.y() / scale;
-  const newGuides: GuideLine[] = [];
+      let newX = node.x() / scale;
+      let newY = node.y() / scale;
+      const newGuides: GuideLine[] = [];
 
-  // SNAP a otros rectángulos
-  rectangles.forEach(r => {
-    if (r.id === rectId) return;
-    if (Math.abs(r.x - newX) < SNAP_THRESHOLD) { newX = r.x; newGuides.push({ x: r.x }); }
-    if (Math.abs(r.x + r.width - (newX + movingRect.width)) < SNAP_THRESHOLD) { newX = r.x + r.width - movingRect.width; newGuides.push({ x: r.x + r.width }); }
-    if (Math.abs(r.x + r.width / 2 - (newX + movingRect.width / 2)) < SNAP_THRESHOLD) { newX = r.x + r.width / 2 - movingRect.width / 2; newGuides.push({ x: r.x + r.width / 2 }); }
+      // SNAP
+      rectangles.forEach(r => {
+        if (r.id === rectId) return;
 
-    if (Math.abs(r.y - newY) < SNAP_THRESHOLD) { newY = r.y; newGuides.push({ y: r.y }); }
-    if (Math.abs(r.y + r.height - (newY + movingRect.height)) < SNAP_THRESHOLD) { newY = r.y + r.height - movingRect.height; newGuides.push({ y: r.y + r.height }); }
-    if (Math.abs(r.y + r.height / 2 - (newY + movingRect.height / 2)) < SNAP_THRESHOLD) { newY = r.y + r.height / 2 - movingRect.height / 2; newGuides.push({ y: r.y + r.height / 2 }); }
-  });
+        // Horizontal
+        if (Math.abs(r.x - newX) < SNAP_THRESHOLD) {
+          newX = r.x;
+          newGuides.push({ x: r.x });
+        }
+        if (Math.abs(r.x + r.width - (newX + movingRect.width)) < SNAP_THRESHOLD) {
+          newX = r.x + r.width - movingRect.width;
+          newGuides.push({ x: r.x + r.width });
+        }
+        if (Math.abs(r.x + r.width / 2 - (newX + movingRect.width / 2)) < SNAP_THRESHOLD) {
+          newX = r.x + r.width / 2 - movingRect.width / 2;
+          newGuides.push({ x: r.x + r.width / 2 });
+        }
 
-  // Aplicar snap
-  node.x(newX * scale);
-  node.y(newY * scale);
-  setGuides(newGuides);
+        // Vertical
+        if (Math.abs(r.y - newY) < SNAP_THRESHOLD) {
+          newY = r.y;
+          newGuides.push({ y: r.y });
+        }
+        if (Math.abs(r.y + r.height - (newY + movingRect.height)) < SNAP_THRESHOLD) {
+          newY = r.y + r.height - movingRect.height;
+          newGuides.push({ y: r.y + r.height });
+        }
+        if (Math.abs(r.y + r.height / 2 - (newY + movingRect.height / 2)) < SNAP_THRESHOLD) {
+          newY = r.y + r.height / 2 - movingRect.height / 2;
+          newGuides.push({ y: r.y + r.height / 2 });
+        }
+      });
 
-  // --- DISTRIBUCIÓN EQUITATIVA ---
-  const stage = stageRef.current;
-  if (!stage) return;
+      node.x(newX * scale);
+      node.y(newY * scale);
+      setGuides(newGuides);
 
-  // Horizontal
-  const alignedHoriz: Konva.Rect[] = rectangles
-    .filter(r => r.id !== rectId)
-    .map(r => stage.findOne<Konva.Rect>(`#rect-${r.id}`))
-    .filter((n): n is Konva.Rect => n !== null)
-    .filter(rn => Math.abs(rn.y() / scale - newY) < SNAP_THRESHOLD);
+      /** DISTRIBUCIÓN IGUAL HORIZONTAL */
+      const alignedHoriz = rectangles
+        .filter(r => r.id !== rectId)
+        .filter(r => Math.abs(r.y - newY) < SNAP_THRESHOLD)
+        .sort((a, b) => a.x - b.x);
 
-  if (alignedHoriz.length > 1) {
-    const allRects = [node, ...alignedHoriz].sort((a, b) => a.x() - b.x());
-    const first = allRects[0];
-    const last = allRects[allRects.length - 1];
-    const totalWidth = last.x() - first.x();
-    const totalRectsWidth = allRects.reduce((acc, r) => acc + r.width(), 0);
-    const space = (totalWidth - totalRectsWidth) / (allRects.length - 1);
-    let currentX = first.x();
-    allRects.forEach((r, i) => {
-      if (i === 0) return;
-      currentX += allRects[i - 1].width() + space;
-      if (r !== node) onRectangleUpdate(r.id(), { x: currentX / scale });
-    });
-  }
+      if (alignedHoriz.length >= 2) {
+        const minX = alignedHoriz[0].x;
+        const maxX = alignedHoriz[alignedHoriz.length - 1].x;
+        const widthSum = alignedHoriz.reduce((acc, r) => acc + r.width, 0) + movingRect.width;
+        const space = (maxX - minX + alignedHoriz[alignedHoriz.length - 1].width - widthSum) / (alignedHoriz.length);
+        let currentX = minX;
+        alignedHoriz.forEach((r, i) => {
+          if (r.id === rectId) return;
+          onRectangleUpdate(r.id, { x: currentX });
+          currentX += r.width + space;
+        });
+      }
 
-  // Vertical
-  const alignedVert: Konva.Rect[] = rectangles
-    .filter(r => r.id !== rectId)
-    .map(r => stage.findOne<Konva.Rect>(`#rect-${r.id}`))
-    .filter((n): n is Konva.Rect => n !== null)
-    .filter(rn => Math.abs(rn.x() / scale - newX) < SNAP_THRESHOLD);
+      /** DISTRIBUCIÓN IGUAL VERTICAL */
+      const alignedVert = rectangles
+        .filter(r => r.id !== rectId)
+        .filter(r => Math.abs(r.x - newX) < SNAP_THRESHOLD)
+        .sort((a, b) => a.y - b.y);
 
-  if (alignedVert.length > 1) {
-    const allRects = [node, ...alignedVert].sort((a, b) => a.y() - b.y());
-    const first = allRects[0];
-    const last = allRects[allRects.length - 1];
-    const totalHeight = last.y() - first.y();
-    const totalRectsHeight = allRects.reduce((acc, r) => acc + r.height(), 0);
-    const space = (totalHeight - totalRectsHeight) / (allRects.length - 1);
-    let currentY = first.y();
-    allRects.forEach((r, i) => {
-      if (i === 0) return;
-      currentY += allRects[i - 1].height() + space;
-      if (r !== node) onRectangleUpdate(r.id(), { y: currentY / scale });
-    });
-  }
-}, [rectangles, scale, onRectangleUpdate]);
+      if (alignedVert.length >= 2) {
+        const minY = alignedVert[0].y;
+        const maxY = alignedVert[alignedVert.length - 1].y;
+        const heightSum = alignedVert.reduce((acc, r) => acc + r.height, 0) + movingRect.height;
+        const space = (maxY - minY + alignedVert[alignedVert.length - 1].height - heightSum) / (alignedVert.length);
+        let currentY = minY;
+        alignedVert.forEach((r, i) => {
+          if (r.id === rectId) return;
+          onRectangleUpdate(r.id, { y: currentY });
+          currentY += r.height + space;
+        });
+      }
+    },
+    [rectangles, scale, onRectangleUpdate]
+  );
 
+  /** TECLADO: DELETE / COPY / PASTE */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!stageRef.current) return;
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
 
-  // --- Teclado: Delete, Ctrl+C, Ctrl+V ---
-useEffect(() => {
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (!stageRef.current) return;
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-    const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+      // Delete
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
+        onRectangleDelete(selectedRectangleId);
 
-    // Delete
-    if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
-      onRectangleDelete(selectedRectangleId);
-      const remaining = rectangles.filter(r => r.id !== selectedRectangleId).map((r, i) => ({ ...r, order: i }));
-      remaining.forEach(r => onRectangleUpdate(r.id, { order: r.order }));
-    }
+        // Recalcular orden
+        const remaining = rectangles
+          .filter(r => r.id !== selectedRectangleId)
+          .map((r, index) => ({ ...r, order: index }));
+        remaining.forEach(r => onRectangleUpdate(r.id, { order: r.order }));
+      }
 
-    // Copy
-    if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
-      const rect = rectangles.find(r => r.id === selectedRectangleId);
-      if (rect) setCopiedRect({ ...rect });
-    }
+      // Copy
+      if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
+        const rect = rectangles.find(r => r.id === selectedRectangleId);
+        if (rect) setCopiedRect({ ...rect });
+      }
 
-    // Paste
-    if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
-      const stage = stageRef.current;
-      const pos = stage.getPointerPosition();
-      if (!pos) return;
-      const newRect = {
-        ...copiedRect,
-        id: crypto.randomUUID(),
-        x: pos.x / scale,
-        y: pos.y / scale,
-        order: rectangles.length
-      };
-      onRectangleAdd(newRect);
-      onRectangleSelect(newRect.id);
-    }
-  };
+      // Paste
+      if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
+        const stage = stageRef.current;
+        const pos = stage.getPointerPosition();
+        if (!pos) return;
+        const newRect = {
+          ...copiedRect,
+          id: crypto.randomUUID(),
+          x: pos.x / scale,
+          y: pos.y / scale,
+          order: rectangles.length,
+        };
+        onRectangleAdd(newRect);
+        onRectangleSelect(newRect.id);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    selectedRectangleId,
+    rectangles,
+    copiedRect,
+    onRectangleAdd,
+    onRectangleDelete,
+    onRectangleUpdate,
+    onRectangleSelect,
+    scale,
+  ]);
 
-  window.addEventListener('keydown', handleKeyDown);
-  return () => window.removeEventListener('keydown', handleKeyDown);
-}, [selectedRectangleId, rectangles, copiedRect, onRectangleAdd, onRectangleDelete, onRectangleUpdate, onRectangleSelect, scale]);
-
+  /** RENDER */
   return (
     <div ref={containerRef} className="flex-1 flex items-center justify-center canvas-workspace overflow-hidden p-4">
       <div className="shadow-elevated rounded-lg overflow-hidden bg-card">
@@ -304,9 +346,9 @@ useEffect(() => {
                     draggable
                     onClick={() => handleRectClick(rect.id)}
                     onTap={() => handleRectClick(rect.id)}
-                    onDragMove={(e) => handleDragMove(rect.id, e)}
-                    onDragEnd={(e) => handleDragEnd(rect.id, e)}
-                    onTransformEnd={(e) => handleTransformEnd(rect.id, e)}
+                    onDragMove={e => handleDragMove(rect.id, e)}
+                    onDragEnd={e => handleDragEnd(rect.id, e)}
+                    onTransformEnd={e => handleTransformEnd(rect.id, e)}
                   />
                 );
               })}
