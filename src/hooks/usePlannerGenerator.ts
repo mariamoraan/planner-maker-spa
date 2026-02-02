@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
+import { format } from 'date-fns';
 import type { Template, GeneratedPage } from '@/types/planner';
-import { getMonthsInRange, getFieldValue, loadImage } from '@/lib/planner-utils';
+import { getFieldValue, loadImage, WeekData, getMonthsBetween } from '@/lib/planner-utils';
 
 export function usePlannerGenerator() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedPages, setGeneratedPages] = useState<GeneratedPage[]>([]);
+
   
   const generatePlanner = useCallback(async (
     template: Template,
@@ -18,7 +20,7 @@ export function usePlannerGenerator() {
     setGeneratedPages([]);
     
     const pages: GeneratedPage[] = [];
-    const months = getMonthsInRange(startDate, endDate);
+    const months = getMonthsBetween({startDate, endDate});
     
     // Calculate total steps for progress
     let totalSteps = 0;
@@ -95,7 +97,9 @@ export function usePlannerGenerator() {
         
         // Weekly calendars
         const weeklyCalendar = template.images.find(img => img.type === 'weekly-calendar');
+        console.log('Weekly calendars',month.weeks.length )
         if (weeklyCalendar) {
+          let i = 0;
           for (const week of month.weeks) {
             const page = await generatePage(weeklyCalendar, {
               year: month.year,
@@ -108,8 +112,9 @@ export function usePlannerGenerator() {
               type: 'weekly-calendar',
               month: month.month,
               year: month.year,
-              weekNumber: week.weekNumber,
+              weekNumber: i,
             });
+            i++;
             updateProgress();
           }
         }
@@ -141,7 +146,7 @@ export function usePlannerGenerator() {
     context: {
       year?: number;
       month?: number;
-      week?: any;
+      week?: WeekData;
       day?: Date;
     }
   ): Promise<{ imageData: string }> => {
@@ -156,8 +161,23 @@ export function usePlannerGenerator() {
     ctx.drawImage(img, 0, 0);
     
     // Draw field values
+    const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.x - b.x || a.y - b.y );
+    
     for (const rect of templateImage.rectangles) {
-      const value = getFieldValue(rect.fieldType, context);
+      let value = '';
+      
+      if (rect.fieldType === 'day' && context.week) {
+        // For weekly calendar, assign day numbers to sorted rectangles
+        const index = dayRectangles.indexOf(rect);
+        if (index >= 0 && index < context.week.days.length) {
+          const day = context.week.days[index];
+          if (day.getMonth() === context.month) { // Only show if in current month
+            value = format(day, 'd');
+          }
+        }
+      } else {
+        value = getFieldValue(rect.fieldType, context);
+      }
       
       if (value) {
         // Calculate font size based on rectangle height

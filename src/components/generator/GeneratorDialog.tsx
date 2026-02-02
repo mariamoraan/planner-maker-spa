@@ -33,7 +33,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
   template,
 }) => {
   const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(addMonths(new Date(), 11));
+  const [endDate, setEndDate] = useState<Date>(addMonths(new Date(), 1));
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
   

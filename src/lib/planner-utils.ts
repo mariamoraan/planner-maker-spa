@@ -1,15 +1,7 @@
 import { 
-  eachMonthOfInterval, 
-  eachWeekOfInterval, 
   format, 
-  getWeek, 
-  startOfMonth, 
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval
 } from 'date-fns';
-import type { PlannerConfig, Template, GeneratedPage, Rectangle, FieldType } from '@/types/planner';
+import type {  Rectangle, FieldType } from '@/types/planner';
 
 export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -35,40 +27,105 @@ export interface WeekData {
   days: Date[];
 }
 
-/**
- * Generate all months in the date range
- */
-export function getMonthsInRange(start: Date, end: Date): MonthData[] {
-  const months = eachMonthOfInterval({ start, end });
-  
-  return months.map(monthDate => {
-    const monthStart = startOfMonth(monthDate);
-    const monthEnd = endOfMonth(monthDate);
-    
-    const weeksInMonth = eachWeekOfInterval(
-      { start: monthStart, end: monthEnd },
-      { weekStartsOn: 0 }
-    );
-    
-    const weeks: WeekData[] = weeksInMonth.map(weekStart => {
-      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
-      const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
-      
-      return {
-        weekNumber: getWeek(weekStart),
-        startDate: weekStart,
-        endDate: weekEnd,
-        days,
-      };
+function logWeeks(weeks: WeekData[]) {
+  console.log("📅 CALENDAR WEEKS");
+  console.log("────────────────────────────");
+
+  weeks.forEach((week, weekIndex) => {
+    const weekLabel = `Week ${weekIndex + 1}`;
+
+    const days = week.days.map(date => {
+      const day = date.getDate().toString().padStart(2, "0");
+      const month = (date.getMonth() + 1).toString().padStart(2, "0");
+      const year = date.getFullYear();
+      const weekday = date.toLocaleDateString("en-GB", { weekday: "short" });
+
+      return `${weekday} ${day}/${month}/${year}`;
     });
-    
-    return {
-      month: monthDate.getMonth(),
-      year: monthDate.getFullYear(),
-      name: MONTH_NAMES[monthDate.getMonth()],
-      weeks,
-    };
+
+    console.log(`\n🗓️  ${weekLabel}`);
+    console.log(days.join(" | "));
   });
+
+  console.log("\n────────────────────────────");
+}
+
+
+export function getMonthDatesStartingOnMonday({
+  year, 
+  month
+}: {
+  year: number,
+  month: number
+}): Date[] {
+  const dates:Date[] = [];
+
+  // Día 1 del mes actual
+  const firstDayOfMonth = new Date(year, month, 1);
+
+  // Convertimos getDay() para que lunes = 0, domingo = 6
+  const weekday = (firstDayOfMonth.getDay() + 6) % 7;
+
+  // Calculamos la fecha del lunes inicial (puede ser del mes anterior)
+  const startDate = new Date(year, month, 1 - weekday);
+
+  // Número de días del mes actual
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Total de días a generar (días previos del mes anterior + días del mes actual)
+  const totalDays = weekday + daysInMonth;
+
+  for (let i = 0; i < totalDays; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    dates.push(date);
+  }
+
+  return dates;
+}
+
+function groupDatesIntoWeeks(dates: Date[]): WeekData[] {
+  const weeks: WeekData[] = [];
+  let weekNumber = 1;
+
+  for (let i = 0; i < dates.length; i += 7) {
+    const weekDays = dates.slice(i, i + 7);
+    weeks.push({
+      weekNumber: weekNumber++,
+      startDate: weekDays[0],
+      endDate: weekDays[weekDays.length - 1],
+      days: weekDays,
+    });
+  }
+
+  return weeks;
+}
+
+export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate: Date}): MonthData[] {
+  const months: MonthData[] = [];
+  let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+
+  while (current <= end) {
+    const year = current.getFullYear();
+    const month = current.getMonth();
+
+    const monthDates = getMonthDatesStartingOnMonday({year, month});
+    const weeks = groupDatesIntoWeeks(monthDates);
+
+    months.push({
+      year,
+      month,
+      name: current.toLocaleString("default", { month: "long" }),
+      weeks,
+    });
+
+    // Avanzamos un mes
+    current.setMonth(current.getMonth() + 1);
+  }
+
+  return months;
 }
 
 /**
