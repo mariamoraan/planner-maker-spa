@@ -44,6 +44,7 @@ export const RectangleList: React.FC<RectangleListProps> = ({
         {rectangles.map((rect, index) => {
           const config = FIELD_TYPE_CONFIG[rect.fieldType];
           const isSelected = selectedId === rect.id;
+          const order = rectangles.filter(({fieldType}) => fieldType === rect.fieldType).findIndex(({id}) => id === rect.id)
           
           return (
             <div
@@ -61,7 +62,7 @@ export const RectangleList: React.FC<RectangleListProps> = ({
                     style={{ backgroundColor: config.color }}
                   />
                   <span className="text-sm font-medium text-sidebar-foreground">
-                    Field {index + 1}
+                    {config.label} {order + 1}
                   </span>
                 </div>
                 <Button
