@@ -1,7 +1,7 @@
 import { 
   format, 
 } from 'date-fns';
-import type {  Rectangle, FieldType } from '@/types/planner';
+import type {  Rectangle, FieldType, TemplateImage } from '@/types/planner';
 
 export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -18,6 +18,7 @@ export interface MonthData {
   year: number;
   name: string;
   weeks: WeekData[];
+  days: Date[];
 }
 
 export interface WeekData {
@@ -119,6 +120,7 @@ export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate
       month,
       name: current.toLocaleString("default", { month: "long" }),
       weeks,
+      days: monthDates
     });
 
     // Avanzamos un mes
@@ -131,15 +133,22 @@ export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate
 /**
  * Get field value based on type and context
  */
-export function getFieldValue(
+export function getFieldValue({
+  fieldType,
+  context,
+  templateImage,
+  rectangle
+}: {
   fieldType: FieldType,
   context: {
     year?: number;
     month?: number;
     week?: WeekData;
-    day?: Date;
-  }
-): string {
+    days?: Date[];
+  },
+  templateImage: TemplateImage,
+  rectangle: Rectangle
+}): string {
   switch (fieldType) {
     case 'year':
       return context.year?.toString() ?? '';
@@ -147,12 +156,26 @@ export function getFieldValue(
       return context.month !== undefined ? MONTH_NAMES[context.month] : '';
     case 'day':
       if (context.week) {
-        const startDay = format(context.week.startDate, 'd');
-        const endDay = format(context.week.endDate, 'd');
-        return `${startDay} - ${endDay}`;
+        const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
+
+        const index = dayRectangles.indexOf(rectangle);
+        if (index >= 0 && index < context.week.days.length) {
+          const day = context.week.days[index];
+          if (day.getMonth() === context.month) { // Only show if in current month
+            return format(day, 'd')
+          }
+        }
       }
-      if (context.day) {
-        return format(context.day, 'd');
+      if (context.days) {
+        const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
+
+        const index = dayRectangles.indexOf(rectangle);
+        if (index >= 0 && index < context.days.length) {
+          const day = context.days[index];
+          if (day.getMonth() === context.month) { // Only show if in current month
+            return format(day, 'd')
+          }
+        }
       }
       return '';
     default:

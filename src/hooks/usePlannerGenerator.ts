@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
-import { format } from 'date-fns';
 import type { Template, GeneratedPage } from '@/types/planner';
 import { getFieldValue, loadImage, WeekData, getMonthsBetween } from '@/lib/planner-utils';
 
@@ -67,13 +66,12 @@ export function usePlannerGenerator() {
           const page = await generatePage(monthCover, {
             year: month.year,
             month: month.month,
+            days: month.days
           });
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
             type: 'month-cover',
-            month: month.month,
-            year: month.year,
           });
           updateProgress();
         }
@@ -84,20 +82,19 @@ export function usePlannerGenerator() {
           const page = await generatePage(monthlyCalendar, {
             year: month.year,
             month: month.month,
+            days: month.days
           });
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
             type: 'monthly-calendar',
-            month: month.month,
-            year: month.year,
           });
           updateProgress();
         }
         
         // Weekly calendars
         const weeklyCalendar = template.images.find(img => img.type === 'weekly-calendar');
-        console.log('Weekly calendars',month.weeks.length )
+
         if (weeklyCalendar) {
           let i = 0;
           for (const week of month.weeks) {
@@ -147,7 +144,7 @@ export function usePlannerGenerator() {
       year?: number;
       month?: number;
       week?: WeekData;
-      day?: Date;
+      days?: Date[];
     }
   ): Promise<{ imageData: string }> => {
     const img = await loadImage(templateImage.imageData);
@@ -160,26 +157,12 @@ export function usePlannerGenerator() {
     // Draw the template image
     ctx.drawImage(img, 0, 0);
     
-    // Draw field values
-    const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
-    
+    // Draw field values    
     for (const rect of templateImage.rectangles) {
-      let value = '';
+      const fieldValue = getFieldValue({fieldType: rect.fieldType, context, templateImage, rectangle: rect});
       
-      if (rect.fieldType === 'day' && context.week) {
-        // For weekly calendar, assign day numbers to sorted rectangles
-        const index = dayRectangles.indexOf(rect);
-        if (index >= 0 && index < context.week.days.length) {
-          const day = context.week.days[index];
-          if (day.getMonth() === context.month) { // Only show if in current month
-            value = format(day, 'd');
-          }
-        }
-      } else {
-        value = getFieldValue(rect.fieldType, context);
-      }
       
-      if (value) {
+      if (fieldValue) {
         // Calculate font size based on rectangle height
         const fontSize = Math.min(rect.height * 0.6, rect.width * 0.15);
         
@@ -191,7 +174,7 @@ export function usePlannerGenerator() {
         
         // Draw the text centered in the rectangle
         ctx.fillText(
-          value, 
+          fieldValue, 
           rect.x + rect.width / 2, 
           rect.y + rect.height / 2, 
           rect.width * 0.9
