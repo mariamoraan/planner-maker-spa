@@ -2,7 +2,7 @@ import React from 'react';
 import { Plus, FileImage, Trash2, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { TemplateImage } from '@/types/planner';
+import type { TemplateImage, TemplateType } from '@/types/planner';
 import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
 
 interface TemplateImageListProps {
@@ -10,6 +10,21 @@ interface TemplateImageListProps {
   selectedId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+}
+
+const getTypeOrder = (type: TemplateType):number => {
+  switch(type) {
+    case 'cover': 
+      return 0;
+    case 'month-cover':
+      return 1;
+    case 'monthly-calendar':
+      return 2;
+    case 'weekly-calendar':
+      return 3;
+    case 'extra':
+      return 4;
+  }
 }
 
 export const TemplateImageList: React.FC<TemplateImageListProps> = ({
@@ -28,7 +43,9 @@ export const TemplateImageList: React.FC<TemplateImageListProps> = ({
         Template Pages ({images.length})
       </label>
       <div className="space-y-1">
-        {images.map((image) => {
+        {images
+        .sort((a,b) => getTypeOrder(a.type) - getTypeOrder(b.type))
+        .map((image) => {
           const isSelected = selectedId === image.id;
           const typeConfig = TEMPLATE_TYPE_CONFIG[image.type];
           

@@ -28,30 +28,6 @@ export interface WeekData {
   days: Date[];
 }
 
-function logWeeks(weeks: WeekData[]) {
-  console.log("📅 CALENDAR WEEKS");
-  console.log("────────────────────────────");
-
-  weeks.forEach((week, weekIndex) => {
-    const weekLabel = `Week ${weekIndex + 1}`;
-
-    const days = week.days.map(date => {
-      const day = date.getDate().toString().padStart(2, "0");
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const year = date.getFullYear();
-      const weekday = date.toLocaleDateString("en-GB", { weekday: "short" });
-
-      return `${weekday} ${day}/${month}/${year}`;
-    });
-
-    console.log(`\n🗓️  ${weekLabel}`);
-    console.log(days.join(" | "));
-  });
-
-  console.log("\n────────────────────────────");
-}
-
-
 export function getMonthDatesStartingOnMonday({
   year, 
   month
@@ -201,7 +177,7 @@ export async function renderFieldOnCanvas(
   // Calculate font size based on rectangle height
   const paddingY = rectangle.height * 0.15; // respiración vertical
   const fontSize = rectangle.height - paddingY * 2;
-  const fontName = `"Indie Flower"`
+  const fontName = `"Reenie Beanie"`
   
   ctx.save();
   await document.fonts.load(`normal ${fontSize}px ${fontName}`);

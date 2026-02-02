@@ -113,8 +113,6 @@ const TemplateEditor: React.FC = () => {
       setCurrentImage(templates[0].images[0].id ?? null)
     }
   },[templates, currentTemplateId] )
-
-  console.log('templates',templates)
   
   return (
     <div className="flex h-screen bg-background overflow-hidden">

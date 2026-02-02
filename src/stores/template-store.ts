@@ -12,7 +12,7 @@ const reviveDates = (templates: Template[]): Template[] => {
     createdAt: new Date(t.createdAt),
     updatedAt: new Date(t.updatedAt),
     startDate: t.startDate ? new Date(t.startDate) : today,
-    endDate: t.endDate ? new Date(t.startDate) : tomorrow,
+    endDate: t.endDate ? new Date(t.endDate) : tomorrow,
     images: t.images.map(img => ({
       ...img,
       createdAt: new Date(img.createdAt),
