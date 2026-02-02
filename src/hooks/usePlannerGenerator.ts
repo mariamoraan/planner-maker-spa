@@ -62,24 +62,25 @@ export function usePlannerGenerator() {
       // Generate pages for each month
       for (const month of months) {
         // Month cover
-        const monthCover = template.images.find(img => img.type === 'month-cover');
-        if (monthCover) {
+        const monthCovers = template.images.filter(img => img.type === 'month-cover');
+        for (const monthCover of monthCovers) {
           const page = await generatePage(monthCover, {
-            year: month.year,
-            month: month.month,
-            days: month.days
-          });
-          pages.push({
-            ...page,
-            pageNumber: pages.length + 1,
-            type: 'month-cover',
-          });
-          updateProgress();
+              year: month.year,
+              month: month.month,
+              days: month.days
+            });
+            pages.push({
+              ...page,
+              pageNumber: pages.length + 1,
+              type: 'month-cover',
+            });
         }
+        updateProgress();
+
         
         // Monthly calendar
-        const monthlyCalendar = template.images.find(img => img.type === 'monthly-calendar');
-        if (monthlyCalendar) {
+        const monthlyCalendars = template.images.filter(img => img.type === 'monthly-calendar');
+        for (const monthlyCalendar of monthlyCalendars) {
           const page = await generatePage(monthlyCalendar, {
             year: month.year,
             month: month.month,
@@ -90,13 +91,14 @@ export function usePlannerGenerator() {
             pageNumber: pages.length + 1,
             type: 'monthly-calendar',
           });
-          updateProgress();
         }
+       updateProgress();
+
         
         // Weekly calendars
-        const weeklyCalendar = template.images.find(img => img.type === 'weekly-calendar');
+        const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
 
-        if (weeklyCalendar) {
+        for (const weeklyCalendar of weeklyCalendars) {
           let i = 0;
           for (const week of month.weeks) {
             const page = await generatePage(weeklyCalendar, {
@@ -113,9 +115,9 @@ export function usePlannerGenerator() {
               weekNumber: i,
             });
             i++;
-            updateProgress();
           }
         }
+       updateProgress();
       }
       
       // Extra pages
