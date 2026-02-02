@@ -7,6 +7,7 @@ export function usePlannerGenerator() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedPages, setGeneratedPages] = useState<GeneratedPage[]>([]);
+  
 
   
   const generatePlanner = useCallback(async (
@@ -164,10 +165,13 @@ export function usePlannerGenerator() {
       
       if (fieldValue) {
         // Calculate font size based on rectangle height
-        const fontSize = Math.min(rect.height * 0.6, rect.width * 0.15);
-        
+        const paddingY = rect.height * 0.15; // respiración vertical
+        const fontSize = rect.height - paddingY * 2;
+        const fontName = `"Comic Relief"`
+
         ctx.save();
-        ctx.font = `bold ${fontSize}px system-ui, -apple-system, sans-serif`;
+        await document.fonts.load(`normal ${fontSize}px ${fontName}`);
+        ctx.font = `normal ${fontSize}px ${fontName}, system-ui, -apple-system, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#1e293b';
