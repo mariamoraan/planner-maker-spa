@@ -169,7 +169,7 @@ export function usePlannerGenerator() {
         // Calculate font size based on rectangle height
         const paddingY = rect.height * 0.15; // respiración vertical
         const fontSize = rect.height - paddingY * 2;
-        const fontName = `"Comic Relief"`
+        const fontName = `"Indie Flower"`
 
         ctx.save();
         await document.fonts.load(`normal ${fontSize}px ${fontName}`);

@@ -186,23 +186,26 @@ export function getFieldValue({
 /**
  * Render text onto a canvas at the specified rectangle position
  */
-export function renderFieldOnCanvas(
+export async function renderFieldOnCanvas(
   ctx: CanvasRenderingContext2D,
   rectangle: Rectangle,
   value: string,
   scaleX: number = 1,
   scaleY: number = 1
-): void {
+): Promise<void> {
   const x = rectangle.x * scaleX;
   const y = rectangle.y * scaleY;
   const width = rectangle.width * scaleX;
   const height = rectangle.height * scaleY;
   
   // Calculate font size based on rectangle height
-  const fontSize = Math.min(height * 0.6, width * 0.15);
+  const paddingY = rectangle.height * 0.15; // respiración vertical
+  const fontSize = rectangle.height - paddingY * 2;
+  const fontName = `"Indie Flower"`
   
   ctx.save();
-  ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+  await document.fonts.load(`normal ${fontSize}px ${fontName}`);
+  ctx.font = `normal ${fontSize}px ${fontName}, system-ui, -apple-system, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#1e293b';
