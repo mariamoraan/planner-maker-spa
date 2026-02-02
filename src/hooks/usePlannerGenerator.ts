@@ -7,6 +7,7 @@ export function usePlannerGenerator() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedPages, setGeneratedPages] = useState<GeneratedPage[]>([]);
+  const [isGeneratingPDF, serIsGeneratingPDF] = useState(false)
   
 
   
@@ -196,6 +197,7 @@ export function usePlannerGenerator() {
   
   const downloadPDF = useCallback(async () => {
     if (generatedPages.length === 0) return;
+    serIsGeneratingPDF(true);
     
     // Get first page dimensions to set PDF size
     const firstImg = await loadImage(generatedPages[0].imageData);
@@ -218,6 +220,7 @@ export function usePlannerGenerator() {
     }
     
     pdf.save('planner.pdf');
+    serIsGeneratingPDF(false);
   }, [generatedPages]);
   
   const downloadImages = useCallback(() => {
@@ -236,5 +239,6 @@ export function usePlannerGenerator() {
     generatePlanner,
     downloadPDF,
     downloadImages,
+    isGeneratingPDF,
   };
 }

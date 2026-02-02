@@ -31,7 +31,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
   const startDate: Date = template?.startDate ?? new Date();
   const endDate: Date = template?.endDate ?? new Date();
   
-  const { generating, progress, generatedPages, generatePlanner, downloadPDF, downloadImages } = usePlannerGenerator();
+  const { generating, progress, generatedPages, generatePlanner, downloadPDF, isGeneratingPDF } = usePlannerGenerator();
  
     
   
@@ -167,7 +167,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
                 Generate
               </Button>
               <Button onClick={downloadPDF}>
-                <FileText className="w-4 h-4 mr-2" />
+                {isGeneratingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> :  <FileText className="w-4 h-4 mr-2" />}
                 Download PDF
               </Button>
             </>
