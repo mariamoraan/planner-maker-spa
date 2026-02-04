@@ -177,7 +177,7 @@ export async function renderFieldOnCanvas(
   // Calculate font size based on rectangle height
   const paddingY = rectangle.height * 0.15; // respiración vertical
   const fontSize = rectangle.height - paddingY * 2;
-  const fontName = `"Reenie Beanie"`
+  const fontName = `"Gloria Hallelujah"`
   
   ctx.save();
   await document.fonts.load(`normal ${fontSize}px ${fontName}`);
