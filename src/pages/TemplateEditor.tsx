@@ -5,6 +5,12 @@ import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
 import { GeneratorDialog } from '@/components/generator/GeneratorDialog';
 import { useTemplateStore } from '@/stores/template-store';
 import type { FieldType, TemplateType } from '@/types/planner';
+import { motion } from 'framer-motion';
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0 },
+};
 
 const TemplateEditor: React.FC = () => {
   const [selectedFieldType, setSelectedFieldType] = useState<FieldType>('month');
@@ -117,7 +123,14 @@ const TemplateEditor: React.FC = () => {
   },[templates, currentTemplateId] )
   
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <motion.div 
+    initial="hidden"
+    whileInView="visible"
+    viewport={{ once: true }}
+    variants={fadeUp}
+    transition={{ duration: 0.6 }}
+    className="flex h-screen bg-background overflow-hidden"
+    >
       <EditorSidebar
         template={currentTemplate}
         currentImage={currentImage}
@@ -161,7 +174,7 @@ const TemplateEditor: React.FC = () => {
           onOpenChange={setGeneratorOpen}
         />
       )}
-    </div>
+    </motion.div>
   );
 };
 
