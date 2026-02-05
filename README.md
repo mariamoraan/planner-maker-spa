@@ -2,7 +2,7 @@
 
 ## Project Info
 
-**URL**: 
+**URL**: [https://planner-maker-spa.vercel.app/](https://planner-maker-spa.vercel.app/)
 
 ## About the Project
 
@@ -61,7 +61,7 @@ npm install
 ```bash
 npm run dev
 ```
-The application will be available at http://localhost:8080.
+The application will be available at [http://localhost:8080](http://localhost:8080).
 
 ---
 
