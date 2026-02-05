@@ -6,7 +6,11 @@
 
 ## About the Project
 
-This is a Single Page Application (SPA) for creating and customizing planner templates. Users can upload images, add various fields, and generate personalized planners.
+Planner Maker is a local-first tool that gives creators full control over their planners. 
+Upload your own designs for: covers, monthly calendars, and weekly layouts, then define dynamic areas like dates, months, or weekdays. 
+When you generate your planner, all pages are automatically filled and exported to high-quality PDFs. 
+
+Optional premium assets and features will allow you to extend your planners piece by piece — pay only for what you need. Flexible, simple, and powerful: build planners your way.
 
 ## Features
 
