@@ -1,8 +1,9 @@
 import React from 'react';
-import { Check, Calendar, Hash, Type } from 'lucide-react';
+import { Check, Calendar, Type, Calendar1, CalendarClock, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FieldType } from '@/types/planner';
-import { FIELD_TYPE_CONFIG } from '@/types/planner';
+import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/types/planner';
+import { useTemplateStore } from '@/stores/template-store';
 
 interface FieldTypeSelectorProps {
   selectedType: FieldType;
@@ -12,20 +13,27 @@ interface FieldTypeSelectorProps {
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   year: <Calendar className="w-4 h-4" />,
   month: <Type className="w-4 h-4" />,
-  day: <Hash className="w-4 h-4" />,
+  day: <CalendarDays className="w-4 h-4" />,
+  startDay: <Calendar1 className="w-4 h-4" />,
+  endDay: <CalendarClock className="w-4 h-4" />,
 };
 
 export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
   selectedType,
   onTypeChange,
 }) => {
+  const {getCurrentImage} = useTemplateStore()
+  const currentImage = getCurrentImage()
+  
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-sidebar-foreground/70">
         Field Type
       </label>
       <div className="space-y-1">
-        {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).map(type => {
+        {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[])
+        .filter(type => TEMPLATE_FIELD_TYPES[currentImage.type].includes(type))
+        .map(type => {
           const config = FIELD_TYPE_CONFIG[type];
           const isSelected = selectedType === type;
           

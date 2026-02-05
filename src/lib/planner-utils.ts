@@ -106,6 +106,20 @@ export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate
   return months;
 }
 
+function getWeekRange(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const normalizedDay = day === 0 ? 7 : day;
+
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - (normalizedDay - 1));
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  return { monday, sunday };
+}
+
 /**
  * Get field value based on type and context
  */
@@ -152,6 +166,20 @@ export function getFieldValue({
             return format(day, 'd')
           }
         }
+      }
+      return '';
+    case 'startDay':
+      if(context.week) {
+        const filteredDays = context.week.days;
+        const {monday} = getWeekRange(filteredDays[0])
+        return format(monday, 'd')
+      }
+      return '';
+    case 'endDay':
+      if(context.week) {
+        const filteredDays = context.week.days;
+       const {sunday} = getWeekRange(filteredDays[0])
+        return format(sunday, 'd')
       }
       return '';
     default:

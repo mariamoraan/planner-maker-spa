@@ -1,6 +1,6 @@
 // Core types for the Visual Planner Template Generator
 
-export type FieldType = 'year' | 'month' | 'day';
+export type FieldType = 'year' | 'month' | 'day' | 'startDay' | 'endDay';
 
 export type TemplateType = 
   | 'cover' 
@@ -83,7 +83,27 @@ export const FIELD_TYPE_CONFIG: Record<FieldType, {
     bgColor: 'hsla(25, 95%, 53%, 0.3)',
     description: 'Displays day numbers or date ranges',
   },
+  startDay: {
+    label: 'Start Day',
+    color: 'hsl(53, 95%, 53%)',
+    bgColor: 'hsla(53, 95%, 53%, 0.3)',
+    description: 'Displays start day number',
+  },
+  endDay: {
+    label: 'End Day',
+    color: 'hsl(13, 95%, 53%)',
+    bgColor: 'hsla(13, 95%, 53%, 0.30)',
+    description: 'Displays end day number',
+  }
 };
+
+export const TEMPLATE_FIELD_TYPES: Record<TemplateType, FieldType[]> = {
+  'cover': [],
+  'month-cover': ['year', 'month'],
+  'monthly-calendar': ['year', 'month', 'day'],
+  'weekly-calendar': ['year', 'month', 'day', 'startDay', 'endDay'],
+  'extra': [],
+}
 
 export const TEMPLATE_TYPE_CONFIG: Record<TemplateType, {
   label: string;

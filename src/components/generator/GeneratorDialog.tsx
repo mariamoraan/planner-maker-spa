@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { addMonths } from 'date-fns';
-import { Calendar, Download, X, FileText, Loader2, RotateCcw } from 'lucide-react';
+import React, { useCallback, useLayoutEffect } from 'react';
+import { Calendar as CalendarIcon, Download, FileText, Loader2, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,6 +12,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { usePlannerGenerator } from '@/hooks/usePlannerGenerator';
 import { useTemplateStore } from '@/stores/template-store';
+import { DatePicker } from '@mui/x-date-pickers';
+import dayjs from 'dayjs';
 
 interface GeneratorDialogProps {
   open: boolean;
@@ -36,10 +37,12 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
     
   
   const handleGenerate = useCallback(async () => {
+     console.log('handleGenerate')
     await generatePlanner(template, startDate, endDate);
   }, [template, startDate, endDate, generatePlanner]);
 
   useLayoutEffect(() => {
+    console.log('useLayoutEffect')
     if(open && generatedPages?.length) {
       handleGenerate()
     }
@@ -50,7 +53,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-accent" />
+            <CalendarIcon className="w-5 h-5 text-accent" />
             Generate Planner
           </DialogTitle>
           <DialogDescription>
@@ -63,25 +66,35 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Start Date</Label>
-              <input
-                type="date"
-                value={startDate.toISOString().split("T")[0]} // ✅ Formato YYYY-MM-DD
-                onChange={e => {
-                  updateTemplate(template.id, {startDate: new Date(e.target.value)})
-                }}
-
-
+              <DatePicker 
+              views={['month', 'year']} 
+              value={dayjs(startDate)} 
+              onChange={(newValue) => {
+                const startDate = new Date(newValue.toISOString())
+                updateTemplate(template.id, {startDate})
+              }} 
+              slotProps={{
+                popper: {
+                  disablePortal: true,
+                },
+              }}
               />
             </div>
             
             <div className="space-y-2">
               <Label>End Date</Label>
-              <input
-                type="date"
-                value={endDate.toISOString().split("T")[0]} // ✅ Formato YYYY-MM-DD
-                onChange={e => {
-                  updateTemplate(template.id, {endDate: new Date(e.target.value)})
-                }}
+              <DatePicker 
+              views={['month', 'year']} 
+              value={dayjs(endDate)} 
+              onChange={(newValue) => {
+                const endDate = new Date(newValue.toISOString())
+                updateTemplate(template.id, {endDate})
+              }} 
+              slotProps={{
+                popper: {
+                  disablePortal: true,
+                },
+              }}
               />
             </div>
           </div>
@@ -162,7 +175,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
                  */
               }
 
-              <Button variant='secondary' onClick={handleGenerate} disabled={generating}>
+              <Button type='button' variant='secondary' onClick={handleGenerate} disabled={generating}>
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Generate
               </Button>
@@ -176,7 +189,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleGenerate} disabled={generating}>
+              <Button type='button' onClick={handleGenerate} disabled={generating}>
                 {generating ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

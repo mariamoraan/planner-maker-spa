@@ -2,12 +2,14 @@ import { useState, useCallback } from 'react';
 import { jsPDF } from 'jspdf';
 import type { Template, GeneratedPage } from '@/types/planner';
 import { getFieldValue, loadImage, WeekData, getMonthsBetween } from '@/lib/planner-utils';
+import { useTemplateStore } from '@/stores/template-store';
 
 export function usePlannerGenerator() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedPages, setGeneratedPages] = useState<GeneratedPage[]>([]);
   const [isGeneratingPDF, serIsGeneratingPDF] = useState(false)
+  const { getCurrentTemplate } = useTemplateStore();
   
 
   
@@ -25,8 +27,8 @@ export function usePlannerGenerator() {
     
     // Calculate total steps for progress
     let totalSteps = 0;
-    const coverImage = template.images.find(img => img.type === 'cover');
-    if (coverImage) totalSteps++;
+    const coverImages = template.images.filter(img => img.type === 'cover');
+    if (coverImages) coverImages.forEach(() => totalSteps++);
     
     for (const month of months) {
       const monthCover = template.images.find(img => img.type === 'month-cover');
@@ -46,19 +48,19 @@ export function usePlannerGenerator() {
     };
     
     try {
-      // Generate cover page
-      if (coverImage) {
-        const page = await generatePage(coverImage, {
-          year: months[0]?.year,
-          month: months[0]?.month,
-        });
-        pages.push({
-          ...page,
-          pageNumber: pages.length + 1,
-          type: 'cover',
-        });
-        updateProgress();
+      // Generate cover pages
+      for(const coverImage of coverImages) {
+        if (coverImage) {
+          const page = await generatePage(coverImage, {});
+          pages.push({
+            ...page,
+            pageNumber: pages.length + 1,
+            type: 'cover',
+          });
+          updateProgress();
+        }
       }
+      
       
       // Generate pages for each month
       for (const month of months) {
@@ -93,7 +95,7 @@ export function usePlannerGenerator() {
             type: 'monthly-calendar',
           });
         }
-       updateProgress();
+        updateProgress();
 
         
         // Weekly calendars
@@ -124,9 +126,7 @@ export function usePlannerGenerator() {
       // Extra pages
       const extraPages = template.images.filter(img => img.type === 'extra');
       for (const extra of extraPages) {
-        const page = await generatePage(extra, {
-          year: months[0]?.year,
-        });
+        const page = await generatePage(extra, {});
         pages.push({
           ...page,
           pageNumber: pages.length + 1,
@@ -197,6 +197,7 @@ export function usePlannerGenerator() {
   
   const downloadPDF = useCallback(async () => {
     if (generatedPages.length === 0) return;
+    const currentTemplate = getCurrentTemplate();
     serIsGeneratingPDF(true);
     
     // Get first page dimensions to set PDF size
@@ -219,7 +220,7 @@ export function usePlannerGenerator() {
       pdf.addImage(pageImg, 'PNG', 0, 0, pdfWidth, pdfHeight);
     }
     
-    pdf.save('planner.pdf');
+    pdf.save(`${currentTemplate.name ?? 'planner'}.pdf`);
     serIsGeneratingPDF(false);
   }, [generatedPages]);
   
