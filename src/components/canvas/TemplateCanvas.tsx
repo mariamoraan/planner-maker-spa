@@ -10,7 +10,7 @@ interface TemplateCanvasProps {
   imageWidth: number;
   imageHeight: number;
   rectangles: Rectangle[];
-  selectedFieldType: FieldType;
+  selectedFieldType?: FieldType;
   selectedRectangleId: string | null;
   onRectangleAdd: (rect: Omit<Rectangle, 'id'> & { order: number }) => void;
   onRectangleUpdate: (id: string, updates: Partial<Rectangle>) => void;
@@ -100,6 +100,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
   /** MOUSE DRAW */
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if(!selectedFieldType) return;
       const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
       if (!clickedOnEmpty) return;
 
@@ -117,7 +118,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
         height: 0,
       });
     },
-    [scale, offset, onRectangleSelect]
+    [scale, offset, onRectangleSelect, selectedFieldType]
   );
 
   const handleMouseMove = useCallback(

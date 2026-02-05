@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Check, Calendar, Type, Calendar1, CalendarClock, CalendarDays } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FieldType } from '@/types/planner';
@@ -7,7 +7,7 @@ import { useTemplateStore } from '@/stores/template-store';
 
 interface FieldTypeSelectorProps {
   selectedType: FieldType;
-  onTypeChange: (type: FieldType) => void;
+  onTypeChange: (type?: FieldType) => void;
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
@@ -24,6 +24,18 @@ export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
 }) => {
   const {getCurrentImage} = useTemplateStore()
   const currentImage = getCurrentImage()
+
+  useEffect(() => {
+    const availableFieldTypes = (Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).filter(type => TEMPLATE_FIELD_TYPES[currentImage.type].includes(type))
+    if(!selectedType) {
+       onTypeChange(availableFieldTypes[0]);
+       return
+    }
+    const includesCurrentFieldType = availableFieldTypes.includes(selectedType);
+    if(!includesCurrentFieldType) {
+      onTypeChange(availableFieldTypes?.length ? availableFieldTypes[0] : undefined)
+    }
+  }, [currentImage.type, selectedType])
   
   return (
     <div className="space-y-2">

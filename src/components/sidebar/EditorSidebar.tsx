@@ -37,7 +37,7 @@ interface EditorSidebarProps {
   currentImage: TemplateImage | null;
   selectedFieldType: FieldType;
   selectedRectangleId: string | null;
-  onFieldTypeChange: (type: FieldType) => void;
+  onFieldTypeChange: (type?: FieldType) => void;
   onRectangleSelect: (id: string | null) => void;
   onRectangleDelete: (id: string) => void;
   onRectangleUpdateType: (id: string, type: FieldType) => void;

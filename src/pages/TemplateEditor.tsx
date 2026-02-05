@@ -13,7 +13,7 @@ const fadeUp = {
 };
 
 const TemplateEditor: React.FC = () => {
-  const [selectedFieldType, setSelectedFieldType] = useState<FieldType>('month');
+  const [selectedFieldType, setSelectedFieldType] = useState<FieldType | undefined>();
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
   const [generatorOpen, setGeneratorOpen] = useState(false);
   

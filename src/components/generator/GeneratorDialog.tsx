@@ -37,12 +37,10 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
     
   
   const handleGenerate = useCallback(async () => {
-     console.log('handleGenerate')
     await generatePlanner(template, startDate, endDate);
   }, [template, startDate, endDate, generatePlanner]);
 
   useLayoutEffect(() => {
-    console.log('useLayoutEffect')
     if(open && generatedPages?.length) {
       handleGenerate()
     }
