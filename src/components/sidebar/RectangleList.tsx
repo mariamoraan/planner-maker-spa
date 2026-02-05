@@ -83,7 +83,7 @@ export const RectangleList: React.FC<RectangleListProps> = ({
                 onValueChange={(value) => onUpdateType(rect.id, value as FieldType)}
               >
                 <SelectTrigger 
-                  className="h-8 text-xs bg-sidebar-background border-sidebar-border"
+                  className="h-8 text-xs text-white bg-sidebar-background"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <SelectValue />
