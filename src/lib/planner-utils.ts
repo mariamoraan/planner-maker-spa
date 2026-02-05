@@ -61,22 +61,62 @@ export function getMonthDatesStartingOnMonday({
   return dates;
 }
 
-function groupDatesIntoWeeks(dates: Date[]): WeekData[] {
-  const weeks: WeekData[] = [];
-  let weekNumber = 1;
+function getISOWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  ));
 
-  for (let i = 0; i < dates.length; i += 7) {
-    const weekDays = dates.slice(i, i + 7);
+  // Jueves de esta semana decide el año
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNumber = Math.ceil(
+    (((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7
+  );
+
+  return weekNumber;
+}
+
+
+function getCalendarWeeks({year, month}: {year: number, month: number}): WeekData[] {
+  const weeks: WeekData[] = [];
+
+  const firstDayOfMonth = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
+
+  // Ajustar al lunes anterior (o el mismo)
+  const start = new Date(firstDayOfMonth);
+  const startDay = start.getDay() === 0 ? 7 : start.getDay();
+  start.setDate(start.getDate() - (startDay - 1));
+
+  // Ajustar al domingo posterior (o el mismo)
+  const end = new Date(lastDayOfMonth);
+  const endDay = end.getDay() === 0 ? 7 : end.getDay();
+  end.setDate(end.getDate() + (7 - endDay));
+
+  let current = new Date(start);
+
+  while (current <= end) {
+    const days: Date[] = [];
+
+    for (let i = 0; i < 7; i++) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+
     weeks.push({
-      weekNumber: weekNumber++,
-      startDate: weekDays[0],
-      endDate: weekDays[weekDays.length - 1],
-      days: weekDays,
+      weekNumber: getISOWeekNumber(days[0]),
+      startDate: days[0],
+      endDate: days[6],
+      days,
     });
   }
 
   return weeks;
 }
+
 
 export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate: Date}): MonthData[] {
   const months: MonthData[] = [];
@@ -89,7 +129,7 @@ export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate
     const month = current.getMonth();
 
     const monthDates = getMonthDatesStartingOnMonday({year, month});
-    const weeks = groupDatesIntoWeeks(monthDates);
+    const weeks = getCalendarWeeks({year, month});
 
     months.push({
       year,
@@ -123,11 +163,17 @@ function getWeekRange(date) {
 /**
  * Get field value based on type and context
  */
+
+const MAIN_COLOR = '#1f2a3d'
+const SECONDARY_COLOR = '#929599'
+
 export function getFieldValue({
   fieldType,
   context,
   templateImage,
-  rectangle
+  rectangle,
+  fillIncompleteWeeks,
+  fillIncompleteMonths
 }: {
   fieldType: FieldType,
   context: {
@@ -137,13 +183,15 @@ export function getFieldValue({
     days?: Date[];
   },
   templateImage: TemplateImage,
-  rectangle: Rectangle
-}): string {
+  rectangle: Rectangle,
+  fillIncompleteWeeks?: boolean;
+  fillIncompleteMonths?: boolean;
+}): {fieldValue: string, fieldColor: string} {
   switch (fieldType) {
     case 'year':
-      return context.year?.toString() ?? '';
+      return {fieldValue: context.year?.toString() ?? '', fieldColor: MAIN_COLOR};
     case 'month':
-      return context.month !== undefined ? MONTH_NAMES[context.month] : '';
+      return {fieldValue: context.month !== undefined ? MONTH_NAMES[context.month] : '', fieldColor: MAIN_COLOR};
     case 'day':
       if (context.week) {
         const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
@@ -151,8 +199,12 @@ export function getFieldValue({
         const index = dayRectangles.indexOf(rectangle);
         if (index >= 0 && index < context.week.days.length) {
           const day = context.week.days[index];
-          if (day.getMonth() === context.month) { // Only show if in current month
-            return format(day, 'd')
+          const isDayInCurrentMonth = day.getMonth() === context.month;
+          if(fillIncompleteWeeks) {
+            return {fieldValue: format(day, 'd'), fieldColor: isDayInCurrentMonth ? MAIN_COLOR : SECONDARY_COLOR }
+          }
+          else if (isDayInCurrentMonth) { // Only show if in current month
+            return {fieldValue: format(day, 'd'), fieldColor: MAIN_COLOR}
           }
         }
       }
@@ -162,28 +214,32 @@ export function getFieldValue({
         const index = dayRectangles.indexOf(rectangle);
         if (index >= 0 && index < context.days.length) {
           const day = context.days[index];
-          if (day.getMonth() === context.month) { // Only show if in current month
-            return format(day, 'd')
+          const isDayInCurrentMonth = day.getMonth() === context.month;
+          if(fillIncompleteMonths) {
+             return {fieldValue: format(day, 'd'), fieldColor: isDayInCurrentMonth ? MAIN_COLOR : SECONDARY_COLOR}
+          }
+          else if (isDayInCurrentMonth) { // Only show if in current month
+            return {fieldValue: format(day, 'd'), fieldColor: MAIN_COLOR}
           }
         }
       }
-      return '';
+      return {fieldValue: '', fieldColor: MAIN_COLOR};
     case 'startDay':
       if(context.week) {
         const filteredDays = context.week.days;
-        const {monday} = getWeekRange(filteredDays[0])
-        return format(monday, 'd')
+        const startDate = filteredDays[0];
+        return {fieldValue: format(startDate, 'd'), fieldColor: MAIN_COLOR}
       }
-      return '';
+      return {fieldValue: '', fieldColor: MAIN_COLOR};
     case 'endDay':
       if(context.week) {
         const filteredDays = context.week.days;
-       const {sunday} = getWeekRange(filteredDays[0])
-        return format(sunday, 'd')
+        const endDate = filteredDays.at(-1);
+        return {fieldValue: format(endDate, 'd'), fieldColor: MAIN_COLOR}
       }
-      return '';
+      return {fieldValue: '', fieldColor: MAIN_COLOR};
     default:
-      return '';
+      return {fieldValue: '', fieldColor: MAIN_COLOR};
   }
 }
 

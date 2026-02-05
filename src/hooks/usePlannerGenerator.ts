@@ -163,7 +163,14 @@ export function usePlannerGenerator() {
     
     // Draw field values    
     for (const rect of templateImage.rectangles) {
-      const fieldValue = getFieldValue({fieldType: rect.fieldType, context, templateImage, rectangle: rect});
+      const {fieldValue, fieldColor } = getFieldValue({
+        fieldType: rect.fieldType,
+        context, 
+        templateImage, 
+        rectangle: rect,
+        fillIncompleteWeeks: true,
+        fillIncompleteMonths: true,
+      });
       
       
       if (fieldValue) {
@@ -177,7 +184,7 @@ export function usePlannerGenerator() {
         ctx.font = `normal ${fontSize}px ${fontName}, system-ui, -apple-system, sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#1e293b';
+        ctx.fillStyle = fieldColor;
         
         // Draw the text centered in the rectangle
         ctx.fillText(
@@ -196,33 +203,51 @@ export function usePlannerGenerator() {
   };
   
   const downloadPDF = useCallback(async () => {
-    if (generatedPages.length === 0) return;
-    const currentTemplate = getCurrentTemplate();
-    serIsGeneratingPDF(true);
-    
-    // Get first page dimensions to set PDF size
-    const firstImg = await loadImage(generatedPages[0].imageData);
-    const pdfWidth = firstImg.width;
-    const pdfHeight = firstImg.height;
-    
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'px',
-      format: [pdfWidth, pdfHeight],
-    });
-    
-    for (let i = 0; i < generatedPages.length; i++) {
-      if (i > 0) {
-        pdf.addPage([pdfWidth, pdfHeight]);
-      }
-      
-      const pageImg = await loadImage(generatedPages[i].imageData);
-      pdf.addImage(pageImg, 'PNG', 0, 0, pdfWidth, pdfHeight);
+  if (generatedPages.length === 0) return;
+  const currentTemplate = getCurrentTemplate();
+  serIsGeneratingPDF(true);
+
+  const MAX_WIDTH = 2000;
+  const MAX_HEIGHT = 2500;
+  const JPEG_QUALITY = 0.85;
+
+  const firstImg = await loadImage(generatedPages[0].imageData);
+
+  const scale = Math.min(MAX_WIDTH / firstImg.width, MAX_HEIGHT / firstImg.height, 1);
+
+  const pdfWidth = firstImg.width * scale;
+  const pdfHeight = firstImg.height * scale;
+
+  const pdf = new jsPDF({
+    orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+    unit: 'px',
+    format: [pdfWidth, pdfHeight],
+  });
+
+  for (let i = 0; i < generatedPages.length; i++) {
+    if (i > 0) {
+      pdf.addPage([pdfWidth, pdfHeight]);
     }
-    
-    pdf.save(`${currentTemplate.name ?? 'planner'}.pdf`);
-    serIsGeneratingPDF(false);
-  }, [generatedPages]);
+
+    const pageImg = await loadImage(generatedPages[i].imageData);
+
+    const canvasScale = 1.5; 
+    const canvas = document.createElement('canvas');
+    canvas.width = pageImg.width * scale * canvasScale;
+    canvas.height = pageImg.height * scale * canvasScale;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(pageImg, 0, 0, canvas.width, canvas.height);
+
+    const jpegData = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+
+    pdf.addImage(jpegData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+  }
+
+  pdf.save(`${currentTemplate.name ?? 'planner'}.pdf`);
+  serIsGeneratingPDF(false);
+}, [generatedPages]);
+
+
   
   const downloadImages = useCallback(() => {
     generatedPages.forEach((page, index) => {
