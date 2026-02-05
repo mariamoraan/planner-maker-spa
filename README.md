@@ -41,7 +41,7 @@ Flexible, simple, and powerful: build planners your way.
 The roadmap outlines the planned evolution of Planner Maker:
 
 | Phase | Description | Status |
-|-------|-------------|--------|
+|-------------|-------------|--------|
 | **Phase 1** | Local-first planner creation with image uploads, dynamic date areas, and PDF export. | ✅ Completed |
 | **Phase 2** | Paid building blocks: extra calendars, advanced selectors, layout helpers. | ⏳ Coming soon |
 | **Phase 3** | Premium assets: typography packs, ready-made templates, design tools. | ⏳ Coming soon |
