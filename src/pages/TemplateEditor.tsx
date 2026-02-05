@@ -42,7 +42,7 @@ const TemplateEditor: React.FC = () => {
     type: TemplateType
   ) => {
     if (currentTemplateId) {
-      addImage(currentTemplateId, { imageData, width, height, name, type });
+      addImage({ templateId: currentTemplateId, imageData, width, height, name, type });
     }
   }, [currentTemplateId, addImage]);
   
@@ -89,7 +89,8 @@ const TemplateEditor: React.FC = () => {
     if (!currentTemplateId) {
       // Create template first
       const templateId = createTemplate('My Planner');
-      addImage(templateId, { 
+      addImage({ 
+        templateId,
         imageData, 
         width, 
         height, 
@@ -97,7 +98,8 @@ const TemplateEditor: React.FC = () => {
         type: 'monthly-calendar' 
       });
     } else {
-      addImage(currentTemplateId, { 
+      addImage({ 
+        templateId: currentTemplateId,
         imageData, 
         width, 
         height, 
@@ -134,7 +136,7 @@ const TemplateEditor: React.FC = () => {
       
       {currentImage ? (
         <TemplateCanvas
-          imageData={currentImage.imageData}
+          imageData={currentImage.src}
           imageWidth={currentImage.width}
           imageHeight={currentImage.height}
           rectangles={currentImage.rectangles}

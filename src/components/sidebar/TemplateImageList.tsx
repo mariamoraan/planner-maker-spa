@@ -62,7 +62,7 @@ export const TemplateImageList: React.FC<TemplateImageListProps> = ({
               {/* Thumbnail */}
               <div className="w-12 h-12 rounded-md overflow-hidden bg-sidebar-accent flex-shrink-0">
                 <img
-                  src={image.imageData}
+                  src={image.src}
                   alt={image.name}
                   className="w-full h-full object-cover"
                 />

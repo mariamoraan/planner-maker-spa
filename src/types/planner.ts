@@ -23,12 +23,12 @@ export interface TemplateImage {
   id: string;
   name: string;
   type: TemplateType;
-  imageData: string; // Base64 encoded image
   width: number;
   height: number;
   rectangles: Rectangle[];
   createdAt: Date;
   updatedAt: Date;
+  src: string;
 }
 
 export interface Template {

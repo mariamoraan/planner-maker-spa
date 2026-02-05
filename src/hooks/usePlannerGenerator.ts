@@ -151,7 +151,7 @@ export function usePlannerGenerator() {
       days?: Date[];
     }
   ): Promise<{ imageData: string }> => {
-    const img = await loadImage(templateImage.imageData);
+    const img = await loadImage(templateImage.src);
     
     const canvas = document.createElement('canvas');
     canvas.width = templateImage.width;

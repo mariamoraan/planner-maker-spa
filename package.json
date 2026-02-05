@@ -52,6 +52,7 @@
     "date-fns": "^3.6.0",
     "dayjs": "^1.11.19",
     "embla-carousel-react": "^8.6.0",
+    "idb-keyval": "^6.2.2",
     "input-otp": "^1.4.2",
     "jspdf": "^4.0.0",
     "konva": "^10.2.0",
