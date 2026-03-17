@@ -10,20 +10,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { usePlannerGenerator } from '@/hooks/usePlannerGenerator';
+import { usePlannerGenerator } from '@/hooks/use-planner-generator';
 import { useTemplateStore } from '@/stores/template-store';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 
-interface GeneratorDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
 
-export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
-  open,
-  onOpenChange,
-}) => {
+export const GeneratorDialog: React.FC = () => {
    const {
       getCurrentTemplate,
       updateTemplate,
@@ -31,6 +24,10 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
   const template = getCurrentTemplate();
   const startDate: Date = template?.startDate ?? new Date();
   const endDate: Date = template?.endDate ?? new Date();
+
+  const isGeneratorOpen = useTemplateStore(state => state.isGeneratorOpen)
+  const setIsGeneratorOpen = useTemplateStore(state => state.setIsGeneratorOpen)
+  const closeGenerator = useTemplateStore(state => state.closeGenerator)
   
   const { generating, progress, generatedPages, generatePlanner, downloadPDF, isGeneratingPDF } = usePlannerGenerator();
  
@@ -41,13 +38,13 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
   }, [template, startDate, endDate, generatePlanner]);
 
   useLayoutEffect(() => {
-    if(open && generatedPages?.length) {
+    if(isGeneratorOpen && generatedPages?.length) {
       handleGenerate()
     }
-  }, [open])
+  }, [isGeneratorOpen])
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -184,7 +181,7 @@ export const GeneratorDialog: React.FC<GeneratorDialogProps> = ({
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+              <Button variant="outline" onClick={closeGenerator}>
                 Cancel
               </Button>
               <Button type='button' onClick={handleGenerate} disabled={generating}>

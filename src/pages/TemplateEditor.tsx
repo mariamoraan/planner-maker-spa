@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { EditorSidebar } from '@/components/sidebar/EditorSidebar';
 import { TemplateCanvas } from '@/components/canvas/TemplateCanvas';
 import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
@@ -13,28 +13,23 @@ const fadeUp = {
 };
 
 const TemplateEditor: React.FC = () => {
-  const [selectedFieldType, setSelectedFieldType] = useState<FieldType | undefined>();
-  const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(null);
-  const [generatorOpen, setGeneratorOpen] = useState(false);
   
   const {
     templates,
     currentTemplateId,
-    currentImageId,
     createTemplate,
     setCurrentTemplate,
     addImage,
     deleteImage,
     setCurrentImage,
-    addRectangle,
-    updateRectangle,
-    deleteRectangle,
     getCurrentTemplate,
     getCurrentImage,
   } = useTemplateStore();
   
   const currentTemplate = getCurrentTemplate();
   const currentImage = getCurrentImage();
+
+ 
   
   const handleCreateTemplate = useCallback((name: string) => {
     createTemplate(name);
@@ -52,33 +47,10 @@ const TemplateEditor: React.FC = () => {
     }
   }, [currentTemplateId, addImage]);
   
-  const handleRectangleAdd = useCallback((rect: Omit<import('@/types/planner').Rectangle, 'id'>) => {
-    if (currentTemplateId && currentImageId) {
-      const id = addRectangle(currentTemplateId, currentImageId, rect);
-      setSelectedRectangleId(id);
-    }
-  }, [currentTemplateId, currentImageId, addRectangle]);
   
-  const handleRectangleUpdate = useCallback((id: string, updates: Partial<import('@/types/planner').Rectangle>) => {
-    if (currentTemplateId && currentImageId) {
-      updateRectangle(currentTemplateId, currentImageId, id, updates);
-    }
-  }, [currentTemplateId, currentImageId, updateRectangle]);
   
-  const handleRectangleDelete = useCallback((id: string) => {
-    if (currentTemplateId && currentImageId) {
-      deleteRectangle(currentTemplateId, currentImageId, id);
-      if (selectedRectangleId === id) {
-        setSelectedRectangleId(null);
-      }
-    }
-  }, [currentTemplateId, currentImageId, deleteRectangle, selectedRectangleId]);
   
-  const handleRectangleUpdateType = useCallback((id: string, type: FieldType) => {
-    if (currentTemplateId && currentImageId) {
-      updateRectangle(currentTemplateId, currentImageId, id, { fieldType: type });
-    }
-  }, [currentTemplateId, currentImageId, updateRectangle]);
+  
   
   const handleImageDelete = useCallback((id: string) => {
     if (currentTemplateId) {
@@ -132,34 +104,13 @@ const TemplateEditor: React.FC = () => {
     className="flex h-screen bg-background overflow-hidden"
     >
       <EditorSidebar
-        template={currentTemplate}
-        currentImage={currentImage}
-        selectedFieldType={selectedFieldType}
-        selectedRectangleId={selectedRectangleId}
-        onFieldTypeChange={setSelectedFieldType}
-        onRectangleSelect={setSelectedRectangleId}
-        onRectangleDelete={handleRectangleDelete}
-        onRectangleUpdateType={handleRectangleUpdateType}
-        onImageSelect={setCurrentImage}
         onImageDelete={handleImageDelete}
         onImageAdd={handleImageAdd}
         onCreateTemplate={handleCreateTemplate}
-        onGeneratePlanner={() => setGeneratorOpen(true)}
       />
       
       {currentImage ? (
-        <TemplateCanvas
-          imageData={currentImage.src}
-          imageWidth={currentImage.width}
-          imageHeight={currentImage.height}
-          rectangles={currentImage.rectangles}
-          selectedFieldType={selectedFieldType}
-          selectedRectangleId={selectedRectangleId}
-          onRectangleAdd={handleRectangleAdd}
-          onRectangleUpdate={handleRectangleUpdate}
-          onRectangleSelect={setSelectedRectangleId}
-          onRectangleDelete={handleRectangleDelete}
-        />
+        <TemplateCanvas />
       ) : (
         <EmptyCanvasState 
           hasTemplates={templates?.length > 0} 
@@ -169,10 +120,7 @@ const TemplateEditor: React.FC = () => {
       )}
       
       {currentTemplate && (
-        <GeneratorDialog
-          open={generatorOpen}
-          onOpenChange={setGeneratorOpen}
-        />
+        <GeneratorDialog />
       )}
     </motion.div>
   );

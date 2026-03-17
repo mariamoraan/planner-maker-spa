@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { 
-  Layers, 
+import {  
   Plus,
   Sparkles
 } from 'lucide-react';
@@ -31,37 +30,18 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTemplateStore } from '@/stores/template-store';
+import { useManageAreas } from '@/hooks/use-manage-areas';
 
 interface EditorSidebarProps {
-  template: Template | null;
-  currentImage: TemplateImage | null;
-  selectedFieldType: FieldType;
-  selectedRectangleId: string | null;
-  onFieldTypeChange: (type?: FieldType) => void;
-  onRectangleSelect: (id: string | null) => void;
-  onRectangleDelete: (id: string) => void;
-  onRectangleUpdateType: (id: string, type: FieldType) => void;
-  onImageSelect: (id: string) => void;
   onImageDelete: (id: string) => void;
   onImageAdd: (imageData: string, width: number, height: number, name: string, type: TemplateType) => void;
   onCreateTemplate: (name: string) => void;
-  onGeneratePlanner: () => void;
 }
 
 export const EditorSidebar: React.FC<EditorSidebarProps> = ({
-  template,
-  currentImage,
-  selectedFieldType,
-  selectedRectangleId,
-  onFieldTypeChange,
-  onRectangleSelect,
-  onRectangleDelete,
-  onRectangleUpdateType,
-  onImageSelect,
   onImageDelete,
   onImageAdd,
   onCreateTemplate,
-  onGeneratePlanner,
 }) => {
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
@@ -73,12 +53,25 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
     name: string;
   } | null>(null);
   const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('monthly-calendar');
+  
+
+  const openGenerator = useTemplateStore(state => state.openGenerator)
+  const {deleteArea, updateAreaType} = useManageAreas()
 
   const {
       templates,
       setCurrentTemplate,
-      setCurrentImage
+      setCurrentImage,
+      selectedFieldType,
+      setSelectedFieldType,
+      selectedRectangleId,
+      setSelectedRectangleId,
+      getCurrentTemplate,
+      getCurrentImage
     } = useTemplateStore();
+
+    const template = getCurrentTemplate();
+    const currentImage = getCurrentImage();
   
   const handleCreateTemplate = useCallback(() => {
     if (newTemplateName.trim()) {
@@ -261,7 +254,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
             <TemplateImageList
               images={template.images}
               selectedId={currentImage?.id ?? null}
-              onSelect={onImageSelect}
+              onSelect={setCurrentImage}
               onDelete={onImageDelete}
             />
             
@@ -271,7 +264,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 
                 <FieldTypeSelector
                   selectedType={selectedFieldType}
-                  onTypeChange={onFieldTypeChange}
+                  onTypeChange={setSelectedFieldType}
                 />
                 
                 <Separator className="bg-sidebar-border" />
@@ -279,9 +272,9 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
                 <RectangleList
                   rectangles={currentImage.rectangles}
                   selectedId={selectedRectangleId}
-                  onSelect={onRectangleSelect}
-                  onDelete={onRectangleDelete}
-                  onUpdateType={onRectangleUpdateType}
+                  onSelect={setSelectedRectangleId}
+                  onDelete={deleteArea}
+                  onUpdateType={updateAreaType}
                 />
               </>
             )}
@@ -294,7 +287,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
         <div className="p-4 border-t border-sidebar-border">
           <Button 
             className="w-full bg-gradient-to-r from-sidebar-primary to-accent hover:opacity-90 text-white"
-            onClick={onGeneratePlanner}
+            onClick={openGenerator}
           >
             <Sparkles className="w-4 h-4 mr-2" />
             Generate Planner

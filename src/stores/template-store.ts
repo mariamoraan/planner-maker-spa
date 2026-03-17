@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Template, TemplateImage, Rectangle, TemplateType } from '@/types/planner';
+import type { Template, TemplateImage, Rectangle, TemplateType, FieldType } from '@/types/planner';
 import { generateId } from '@/lib/planner-utils';
 import { set as idbSet, get as idbGet, del as idbDel } from 'idb-keyval';
 
@@ -24,31 +24,41 @@ const reviveDates = (templates: Template[]): Template[] => {
 };
 
 interface TemplateState {
-  templates: Template[];
-  currentTemplateId: string | null;
-  currentImageId: string | null;
 
   // Template actions
+  templates: Template[];
+  currentTemplateId: string | null;
   createTemplate: (name: string, description?: string) => string;
   updateTemplate: (id: string, updates: Partial<Template>) => void;
   deleteTemplate: (id: string) => Promise<void>;
   setCurrentTemplate: (id: string | null) => Promise<void>;
+  getCurrentTemplate: () => Template | null;
+
 
   // Image actions
+  currentImageId: string | null;
   addImage: (data: {templateId: string, imageData: string, type: TemplateType, width: number, height: number, name?: string}) => Promise<string>;
   getImageData: (imageId: string) => Promise<string | undefined>;
   updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage>) => void;
   deleteImage: (templateId: string, imageId: string) => Promise<void>;
   setCurrentImage: (id: string | null) => Promise<void>;
+  getCurrentImage: () => TemplateImage | null;
+
 
   // Rectangle actions
+  selectedRectangleId: string | null;
+  selectedFieldType?: FieldType;
   addRectangle: (templateId: string, imageId: string, rectangle: Omit<Rectangle, 'id'>) => string;
   updateRectangle: (templateId: string, imageId: string, rectangleId: string, updates: Partial<Rectangle>) => void;
   deleteRectangle: (templateId: string, imageId: string, rectangleId: string) => void;
+  setSelectedFieldType: (selectedFieldType?: FieldType) => void;
+  setSelectedRectangleId: (selectedRectangleId: string | null) => void;
 
-  // Getters
-  getCurrentTemplate: () => Template | null;
-  getCurrentImage: () => TemplateImage | null;
+  // Generator Actions
+  isGeneratorOpen: boolean;
+  closeGenerator: () => void;
+  openGenerator: () => void;
+  setIsGeneratorOpen: (isGeneratorOpen: boolean) => void;
 }
 
 export const useTemplateStore = create<TemplateState>()(
@@ -56,7 +66,8 @@ export const useTemplateStore = create<TemplateState>()(
     (set, get) => ({
       templates: [],
       currentTemplateId: null,
-      currentImageId: null,
+
+      // Template actions
 
       createTemplate: (name, description) => {
         const id = generateId();
@@ -117,6 +128,14 @@ export const useTemplateStore = create<TemplateState>()(
           }
         }
       },
+
+      getCurrentTemplate: () => {
+        const state = get();
+        return state.templates.find(t => t.id === state.currentTemplateId) ?? null;
+      },
+
+      // Image actions
+      currentImageId: null,
 
       addImage: async ({
         templateId, 
@@ -215,6 +234,16 @@ export const useTemplateStore = create<TemplateState>()(
         }
       },
 
+       getCurrentImage: () => {
+        const state = get();
+        const template = state.getCurrentTemplate();
+        return template?.images.find(img => img.id === state.currentImageId) ?? null;
+      },
+
+      // Rectangle actions
+      selectedRectangleId: null,
+      selectedFieldType: undefined,
+      
       addRectangle: (templateId, imageId, rectangleData) => {
         const id = generateId();
         const rectangle: Rectangle = { ...rectangleData, id };
@@ -281,17 +310,29 @@ export const useTemplateStore = create<TemplateState>()(
           ),
         }));
       },
+      
+      setSelectedFieldType: (selectedFieldType?: FieldType) => set({selectedFieldType}),
+      setSelectedRectangleId: (selectedRectangleId: string | null) =>  set({selectedRectangleId}),
 
-      getCurrentTemplate: () => {
-        const state = get();
-        return state.templates.find(t => t.id === state.currentTemplateId) ?? null;
-      },
 
-      getCurrentImage: () => {
-        const state = get();
-        const template = state.getCurrentTemplate();
-        return template?.images.find(img => img.id === state.currentImageId) ?? null;
+      // Generator Actions
+
+      isGeneratorOpen: false,
+      closeGenerator: () => {
+        set(({
+          isGeneratorOpen: false,
+        }))
       },
+      openGenerator: () => {
+        set({
+          isGeneratorOpen: true
+        })
+      },
+      setIsGeneratorOpen: (isGeneratorOpen: boolean) => {
+        set({
+          isGeneratorOpen
+        })
+      }
     }),
     {
       name: 'planner-templates',

@@ -1,22 +1,12 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line } from 'react-konva';
 import useImage from 'use-image';
-import type { Rectangle, FieldType } from '@/types/planner';
+import type { Rectangle } from '@/types/planner';
 import { FIELD_TYPE_CONFIG } from '@/types/planner';
 import type Konva from 'konva';
+import { useTemplateStore } from '@/stores/template-store';
+import { useManageAreas } from '@/hooks/use-manage-areas';
 
-interface TemplateCanvasProps {
-  imageData: string;
-  imageWidth: number;
-  imageHeight: number;
-  rectangles: Rectangle[];
-  selectedFieldType?: FieldType;
-  selectedRectangleId: string | null;
-  onRectangleAdd: (rect: Omit<Rectangle, 'id'> & { order: number }) => void;
-  onRectangleUpdate: (id: string, updates: Partial<Rectangle>) => void;
-  onRectangleSelect: (id: string | null) => void;
-  onRectangleDelete: (id: string) => void;
-}
 
 interface DrawingRect {
   x: number;
@@ -30,23 +20,16 @@ interface GuideLine {
   y?: number;
 }
 
-export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
-  imageData,
-  imageWidth,
-  imageHeight,
-  rectangles,
-  selectedFieldType,
-  selectedRectangleId,
-  onRectangleAdd,
-  onRectangleUpdate,
-  onRectangleSelect,
-  onRectangleDelete,
-}) => {
+export const TemplateCanvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
 
-  const [image] = useImage(imageData);
+  const getCurrentImage = useTemplateStore(state => state.getCurrentImage)
+  const currentImage = getCurrentImage();
+  const {addArea, updateArea, deleteArea} = useManageAreas();
+
+  const [image] = useImage(currentImage.src);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 }); // offset global para centrar
@@ -55,12 +38,16 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
   const [copiedRect, setCopiedRect] = useState<Rectangle | null>(null);
   const [guides, setGuides] = useState<GuideLine[]>([]);
 
+  const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
+  const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
+  const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
+
   const SNAP_THRESHOLD = 10;
   const PADDING = 16; // el padding de tu wrapper p-4
 
   /** AJUSTAR IMAGEN AL CONTENEDOR */
   useEffect(() => {
-    if (!containerRef.current || !imageWidth || !imageHeight) return;
+    if (!containerRef.current || !currentImage.width || !currentImage.height) return;
 
     const updateSize = () => {
       // Tamaño disponible restando padding
@@ -69,7 +56,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       const containerHeight = containerRect.height - PADDING * 2;
 
       // Scale para fit-to-contain
-      const newScale = Math.min(containerWidth / imageWidth, containerHeight / imageHeight);
+      const newScale = Math.min(containerWidth / currentImage.width, containerHeight / currentImage.height);
       setScale(newScale);
 
       // Stage ocupa TODO el contenedor
@@ -77,15 +64,15 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
 
       // Offset para centrar la imagen dentro del stage
       setOffset({
-        x: PADDING + (containerWidth - imageWidth * newScale) / 2,
-        y: PADDING + (containerHeight - imageHeight * newScale) / 2,
+        x: PADDING + (containerWidth - currentImage.width * newScale) / 2,
+        y: PADDING + (containerHeight - currentImage.height * newScale) / 2,
       });
     };
 
     updateSize();
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
-  }, [imageWidth, imageHeight]);
+  }, [currentImage.width, currentImage.height]);
 
   /** TRANSFORMER */
   useEffect(() => {
@@ -104,7 +91,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
       if (!clickedOnEmpty) return;
 
-      onRectangleSelect(null);
+      setSelectedRectangleId(null);
       const stage = stageRef.current;
       if (!stage) return;
       const pos = stage.getPointerPosition();
@@ -118,7 +105,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
         height: 0,
       });
     },
-    [scale, offset, onRectangleSelect, selectedFieldType]
+    [scale, offset, setSelectedRectangleId, selectedFieldType]
   );
 
   const handleMouseMove = useCallback(
@@ -150,18 +137,18 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
         width: Math.abs(drawingRect.width),
         height: Math.abs(drawingRect.height),
         fieldType: selectedFieldType,
-        order: rectangles.length,
+        order: currentImage.rectangles.length,
       };
-      onRectangleAdd(rect);
+      addArea(rect);
     }
 
     setDrawingRect(null);
-  }, [isDrawing, drawingRect, selectedFieldType, onRectangleAdd, rectangles.length]);
+  }, [isDrawing, drawingRect, selectedFieldType, addArea, currentImage.rectangles.length]);
 
   /** RECT CLICK */
   const handleRectClick = useCallback((rectId: string) => {
-    onRectangleSelect(rectId);
-  }, [onRectangleSelect]);
+    setSelectedRectangleId(rectId);
+  }, [setSelectedRectangleId]);
 
   /** TRANSFORM & DRAG */
   const handleTransformEnd = useCallback(
@@ -172,39 +159,39 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       node.scaleX(1);
       node.scaleY(1);
 
-      onRectangleUpdate(rectId, {
+      updateArea(rectId, {
         x: (node.x() - offset.x) / scale,
         y: (node.y() - offset.y) / scale,
         width: (node.width() * scaleX) / scale,
         height: (node.height() * scaleY) / scale,
       });
     },
-    [scale, offset, onRectangleUpdate]
+    [scale, offset, updateArea]
   );
 
   const handleDragEnd = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
-      onRectangleUpdate(rectId, {
+      updateArea(rectId, {
         x: (e.target.x() - offset.x) / scale,
         y: (e.target.y() - offset.y) / scale,
       });
       setGuides([]);
     },
-    [scale, offset, onRectangleUpdate]
+    [scale, offset, updateArea]
   );
 
   /** SNAP + distribución igual */
   const handleDragMove = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
       const node = e.target;
-      const movingRect = rectangles.find(r => r.id === rectId);
+      const movingRect = currentImage.rectangles.find(r => r.id === rectId);
       if (!movingRect) return;
 
       let newX = (node.x() - offset.x) / scale;
       let newY = (node.y() - offset.y) / scale;
       const newGuides: GuideLine[] = [];
 
-      rectangles.forEach(r => {
+      currentImage.rectangles.forEach(r => {
         if (r.id === rectId) return;
 
         // SNAP horizontal
@@ -240,7 +227,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       node.y(offset.y + newY * scale);
       setGuides(newGuides);
     },
-    [rectangles, scale, offset]
+    [currentImage.rectangles, scale, offset]
   );
 
   /** TECLADO: DELETE / COPY / PASTE */
@@ -251,15 +238,15 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
-        onRectangleDelete(selectedRectangleId);
-        const remaining = rectangles
+        deleteArea(selectedRectangleId);
+        const remaining = currentImage.rectangles
           .filter(r => r.id !== selectedRectangleId)
           .map((r, index) => ({ ...r, order: index }));
-        remaining.forEach(r => onRectangleUpdate(r.id, { order: r.order }));
+        remaining.forEach(r => updateArea(r.id, { order: r.order }));
       }
 
       if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
-        const rect = rectangles.find(r => r.id === selectedRectangleId);
+        const rect = currentImage.rectangles.find(r => r.id === selectedRectangleId);
         if (rect) setCopiedRect({ ...rect });
       }
 
@@ -272,16 +259,16 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
           id: crypto.randomUUID(),
           x: (pos.x - offset.x) / scale,
           y: (pos.y - offset.y) / scale,
-          order: rectangles.length,
+          order: currentImage.rectangles.length,
         };
-        onRectangleAdd(newRect);
-        onRectangleSelect(newRect.id);
+        addArea(newRect);
+        setSelectedRectangleId(newRect.id);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRectangleId, rectangles, copiedRect, onRectangleAdd, onRectangleDelete, onRectangleUpdate, onRectangleSelect, scale, offset]);
+  }, [selectedRectangleId, currentImage.rectangles, copiedRect, addArea, deleteArea, updateArea, setSelectedRectangleId, scale, offset]);
 
   /** RENDER */
   return (
@@ -300,8 +287,8 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
             {image && (
               <KonvaImage
                 image={image}
-                width={imageWidth}
-                height={imageHeight}
+                width={currentImage.width}
+                height={currentImage.height}
                 scaleX={scale}
                 scaleY={scale}
                 x={offset.x}
@@ -310,7 +297,7 @@ export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
               />
             )}
 
-            {rectangles.map(rect => {
+            {currentImage.rectangles.map(rect => {
               const config = FIELD_TYPE_CONFIG[rect.fieldType];
               return (
                 <Rect
