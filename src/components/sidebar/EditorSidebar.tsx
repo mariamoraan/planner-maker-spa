@@ -9,7 +9,7 @@ import { FieldTypeSelector } from './FieldTypeSelector';
 import { RectangleList } from './RectangleList';
 import { TemplateImageList } from './TemplateImageList';
 import { ImageUploader } from '@/components/canvas/ImageUploader';
-import type { FieldType, Template, TemplateImage, TemplateType } from '@/types/planner';
+import type { TemplateType } from '@/types/planner';
 import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
 import {
   Select,
@@ -31,18 +31,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
+import { useManageImages } from '@/hooks/use-manage-images';
 
-interface EditorSidebarProps {
-  onImageDelete: (id: string) => void;
-  onImageAdd: (imageData: string, width: number, height: number, name: string, type: TemplateType) => void;
-  onCreateTemplate: (name: string) => void;
-}
-
-export const EditorSidebar: React.FC<EditorSidebarProps> = ({
-  onImageDelete,
-  onImageAdd,
-  onCreateTemplate,
-}) => {
+export const EditorSidebar: React.FC = () => {
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -56,6 +47,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   
 
   const openGenerator = useTemplateStore(state => state.openGenerator)
+  const {addImage, deleteImage} = useManageImages();
   const {deleteArea, updateAreaType} = useManageAreas()
 
   const {
@@ -67,7 +59,8 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
       selectedRectangleId,
       setSelectedRectangleId,
       getCurrentTemplate,
-      getCurrentImage
+      getCurrentImage,
+      createTemplate
     } = useTemplateStore();
 
     const template = getCurrentTemplate();
@@ -75,11 +68,11 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   
   const handleCreateTemplate = useCallback(() => {
     if (newTemplateName.trim()) {
-      onCreateTemplate(newTemplateName.trim());
+      createTemplate(newTemplateName.trim());
       setNewTemplateName('');
       setNewTemplateDialogOpen(false);
     }
-  }, [newTemplateName, onCreateTemplate]);
+  }, [newTemplateName, createTemplate]);
   
   const handleImageUpload = useCallback((data: string, width: number, height: number, name: string) => {
     setPendingImage({ data, width, height, name });
@@ -88,7 +81,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
   
   const handleConfirmUpload = useCallback(() => {
     if (pendingImage) {
-      onImageAdd(
+      addImage(
         pendingImage.data,
         pendingImage.width,
         pendingImage.height,
@@ -98,7 +91,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
       setPendingImage(null);
       setUploadDialogOpen(false);
     }
-  }, [pendingImage, selectedTemplateType, onImageAdd]);
+  }, [pendingImage, selectedTemplateType, addImage]);
   
   return (
     <aside className="w-80 bg-sidebar flex flex-col border-r border-sidebar-border">
@@ -186,7 +179,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
               </div>
             </div>
             
-            <ImageUploader  onImageUpload={handleImageUpload} />
+            <ImageUploader handleImageUpload={handleImageUpload} />
             
             {/* Upload type dialog */}
             <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
@@ -255,7 +248,7 @@ export const EditorSidebar: React.FC<EditorSidebarProps> = ({
               images={template.images}
               selectedId={currentImage?.id ?? null}
               onSelect={setCurrentImage}
-              onDelete={onImageDelete}
+              onDelete={deleteImage}
             />
             
             {currentImage && (

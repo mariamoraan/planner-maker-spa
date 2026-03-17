@@ -14,14 +14,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useManageImages } from '@/hooks/use-manage-images';
+import { useTemplateStore } from '@/stores/template-store';
 
 interface ImageUploaderProps {
-  onImageUpload: (imageData: string, width: number, height: number, fileName: string) => void;
   className?: string;
+  handleImageUpload: (data: string, width: number, height: number, name: string) => void;
 }
 
-export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, className }) => {
-  
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ className, handleImageUpload }) => {
+  const {uploadImageToEmptyCanvas} = useManageImages();
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -39,13 +41,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, cla
       // Get image dimensions
       const img = new Image();
       img.onload = () => {
-        onImageUpload(imageData, img.width, img.height, file.name);
+        handleImageUpload(imageData, img.width, img.height, file.name);
       };
       img.src = imageData;
     } catch (error) {
       console.error('Error loading image:', error);
     }
-  }, [onImageUpload]);
+  }, [handleImageUpload]);
   
   return (
     <div className={cn("relative", className)}>
@@ -65,23 +67,19 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, cla
 
 
 
-interface EmptyCanvasStateProps {
-  onImageUpload: (imageData: string, width: number, height: number, fileName: string) => void;
-  onCreateTemplate: (name: string) => void;
-  hasTemplates: boolean;
-}
 
-const EmptyCanvasStateCreateTemplate: React.FC<EmptyCanvasStateProps> = ({ onCreateTemplate}) => {
+const EmptyCanvasStateCreateTemplate: React.FC = () => {
+ const {createTemplate} = useTemplateStore();
 const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
 
   const handleCreateTemplate = useCallback(() => {
     if (newTemplateName.trim()) {
-      onCreateTemplate(newTemplateName.trim());
+      createTemplate(newTemplateName.trim());
       setNewTemplateName('');
       setNewTemplateDialogOpen(false);
     }
-  }, [newTemplateName, onCreateTemplate]);
+  }, [newTemplateName, createTemplate]);
     
   
   return (
@@ -134,8 +132,8 @@ const [newTemplateName, setNewTemplateName] = useState('');
     </div>
   );
 }
-const EmptyCanvasStateUploadPhoto: React.FC<EmptyCanvasStateProps> = ({onImageUpload}) => {
-
+const EmptyCanvasStateUploadPhoto: React.FC = () => {
+  const {uploadImageToEmptyCanvas} = useManageImages();
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -152,13 +150,13 @@ const EmptyCanvasStateUploadPhoto: React.FC<EmptyCanvasStateProps> = ({onImageUp
       // Get image dimensions
       const img = new Image();
       img.onload = () => {
-        onImageUpload(imageData, img.width, img.height, file.name);
+        uploadImageToEmptyCanvas(imageData, img.width, img.height, file.name);
       };
       img.src = imageData;
     } catch (error) {
       console.error('Error loading image:', error);
     }
-  }, [onImageUpload]);
+  }, [uploadImageToEmptyCanvas]);
     
   
   return (
@@ -190,12 +188,13 @@ const EmptyCanvasStateUploadPhoto: React.FC<EmptyCanvasStateProps> = ({onImageUp
   );
 }
 
-export const EmptyCanvasState: React.FC<EmptyCanvasStateProps> = (props) => {
-  const hasTemplates = props.hasTemplates;
+export const EmptyCanvasState: React.FC = () => {
+  const {templates} = useTemplateStore();
+  const hasTemplates = templates?.length > 0;
   if(hasTemplates) {
-    return <EmptyCanvasStateUploadPhoto {...props} />
+    return <EmptyCanvasStateUploadPhoto />
   } else {
-    return <EmptyCanvasStateCreateTemplate {...props} />
+    return <EmptyCanvasStateCreateTemplate/>
   }
   
 };
