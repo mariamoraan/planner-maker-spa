@@ -55,27 +55,11 @@ export const EditorSidebar: React.FC = () => {
       
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {template && (
-          <>
-            {currentImage && (
-              <>
-                <FieldTypeSelector
-                  selectedType={selectedFieldType}
-                  onTypeChange={setSelectedFieldType}
-                />
-                
-                {/** 
-                  <RectangleList
-                  rectangles={currentImage.rectangles}
-                  selectedId={selectedRectangleId}
-                  onSelect={setSelectedRectangleId}
-                  onDelete={deleteArea}
-                  onUpdateType={updateAreaType}
-                />
-                **/}
-              </>
-            )}
-          </>
+        {template && currentImage &&  (
+            <FieldTypeSelector
+            selectedType={selectedFieldType}
+            onTypeChange={setSelectedFieldType}
+            />
         )}
       </div>
       

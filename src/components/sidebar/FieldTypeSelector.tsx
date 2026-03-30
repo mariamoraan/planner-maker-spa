@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
-import { Check, Calendar, Type, Calendar1, CalendarClock, CalendarDays } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Type, Calendar1, CalendarClock, CalendarDays } from 'lucide-react';
 import type { FieldType } from '@/types/planner';
 import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/types/planner';
 import { useTemplateStore } from '@/stores/template-store';
@@ -13,11 +12,11 @@ interface FieldTypeSelectorProps {
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
-  year: <Calendar className="field-type-selector__button__icon" />,
-  month: <Type className="field-type-selector__button__icon" />,
-  day: <CalendarDays className="field-type-selector__button__icon" />,
-  startDay: <Calendar1 className="field-type-selector__button__icon" />,
-  endDay: <CalendarClock className="field-type-selector__button__icon" />,
+  year: <div className="field-type-selector__button__icon">Y</div>,
+  month:  <div className="field-type-selector__button__icon">M</div>,
+  day:  <div className="field-type-selector__button__icon">D</div>,
+  startDay: <div className="field-type-selector__button__icon">S</div>,
+  endDay: <div className="field-type-selector__button__icon">E</div>,
 };
 
 export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({

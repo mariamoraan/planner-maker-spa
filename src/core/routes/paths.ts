@@ -1,4 +1,5 @@
 export const PATHS = {
     landing: '/',
-    editor: '/editor'
+    editor: '/editor',
+    home: 'home'
 }

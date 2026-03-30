@@ -1,8 +1,59 @@
+.void-toolbar {
+    height: 58px;
+}
+
 .toolbar {
-    height: 50px;
+    padding: 12px 24px;
     width: 60%;
-    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     background: white;
     border-radius: 24px;
     box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+    &__divider {
+        height: 60%;
+        width: 2px;
+        background: grey;
+        border-radius: 4px;
+    }
+    &__name {
+        padding-right: 8px;
+        font-weight: 700;
+    }
+    &__edit-button {
+        position: relative;
+    }
+    &__delete-button {
+        padding: 8px;
+        margin-left: auto;
+        border-radius: 8px;
+        &__icon {
+            width: 18px;
+            height: 18px;
+        }
+    }
+    &__change-area-type-menu {
+        position: absolute;
+        top: calc(100% + 24px);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1;
+        padding: 24px;
+        width: 400px;
+        display: none;
+        flex-direction: column;
+        gap: 12px;
+        transition: 200ms ease;
+        transition-behavior: allow discrete;
+        opacity: 0;
+        background: white;
+        text-align: start;
+        border-radius: 24px;
+        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+        &--visible {
+            display: flex;
+            opacity: 1;
+        }
+    }
 }

@@ -283,6 +283,7 @@ export const TemplateCanvas: React.FC = () => {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          className='template-canva__stage'
         >
           <Layer>
             {image && (
@@ -294,7 +295,11 @@ export const TemplateCanvas: React.FC = () => {
                 scaleY={scale}
                 x={offset.x}
                 y={offset.y}
-                name="background"
+                shadowColor='rgba(0, 0, 0, 0.1)'
+                shadowOffsetX={0}
+                shadowOffsetY={4}
+                shadowBlur={12}
+                name='background'
               />
             )}
 

@@ -1,12 +1,16 @@
-import Button from '@mui/material/Button'
-import { Sparkles } from 'lucide-react'
+import { Home, Sparkles } from 'lucide-react'
 import { useTemplateStore } from '@/stores/template-store'
 import './header.scss'
+import { Link } from 'react-router-dom'
+import { PATHS } from '@/core/routes/paths'
 
 export const Header = () => {
     const openGenerator = useTemplateStore(state => state.openGenerator)
     return (
         <div className='header'>
+            <Link className='header__home-link' to={PATHS.home}>
+              <Home />
+            </Link>
             <button 
             className="header__generate-planner-button"
             onClick={openGenerator}

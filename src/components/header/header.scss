@@ -3,14 +3,18 @@
     width: 100%;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    background: hsla(225, 20%, 96%,1);
+    gap: 24px;
+    background: hsla(205, 43%, 64%,1);
+    &__home-link {
+        color: white;
+    }
     &__generate-planner-button {
+        margin-left: auto;
         padding: 8px 16px;
         display: flex;
         align-items: center;
         gap: 12px;
-        background: hsla(225, 20%, 100%,0.7);
+        background: hsla(225, 20%, 100%,0.9);
         border-radius: 8px;
         transition: 200ms ease;
         cursor: pointer;
