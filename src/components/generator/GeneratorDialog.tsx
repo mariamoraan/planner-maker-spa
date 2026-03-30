@@ -137,12 +137,12 @@ export const GeneratorDialog: React.FC = () => {
                 {generatedPages.slice(0, 12).map((page, i) => (
                   <div 
                     key={i}
-                    className="aspect-[3/4] rounded border bg-muted overflow-hidden"
+                    className="rounded border bg-muted overflow-hidden"
                   >
                     <img 
                       src={page.imageData} 
                       alt={`Page ${page.pageNumber}`}
-                      className="w-full h-full object-cover"
+                      className="w-full object-cover"
                     />
                   </div>
                 ))}
