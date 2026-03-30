@@ -1,0 +1,21 @@
+.header {
+    padding: 12px 24px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    background: hsla(24, 20%, 95%, 1);
+    &__generate-planner-button {
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: hsla(24, 20%, 100%, 0.9);
+        border-radius: 8px;
+        transition: 200ms ease;
+        &:hover {
+            background: hsla(24, 20%, 100%, 1);
+            cursor: pointer;
+        }
+    }
+}

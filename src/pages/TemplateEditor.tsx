@@ -42,8 +42,6 @@ const TemplateEditor: React.FC = () => {
     transition={{ duration: 0.6 }}
     className="flex h-screen bg-background overflow-hidden"
     >
-      <EditorSidebar />
-      
       {currentImage ? (
         <EditorBoard />
       ) : (

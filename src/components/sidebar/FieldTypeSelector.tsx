@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import type { FieldType } from '@/types/planner';
 import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/types/planner';
 import { useTemplateStore } from '@/stores/template-store';
+import './field-type-selector.scss'
+import clsx from 'clsx';
 
 interface FieldTypeSelectorProps {
   selectedType: FieldType;
@@ -11,11 +13,11 @@ interface FieldTypeSelectorProps {
 }
 
 const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
-  year: <Calendar className="w-4 h-4" />,
-  month: <Type className="w-4 h-4" />,
-  day: <CalendarDays className="w-4 h-4" />,
-  startDay: <Calendar1 className="w-4 h-4" />,
-  endDay: <CalendarClock className="w-4 h-4" />,
+  year: <Calendar className="field-type-selector__button__icon" />,
+  month: <Type className="field-type-selector__button__icon" />,
+  day: <CalendarDays className="field-type-selector__button__icon" />,
+  startDay: <Calendar1 className="field-type-selector__button__icon" />,
+  endDay: <CalendarClock className="field-type-selector__button__icon" />,
 };
 
 export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
@@ -38,11 +40,7 @@ export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
   }, [currentImage.type, selectedType])
   
   return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-sidebar-foreground/70">
-        Field Type
-      </label>
-      <div className="space-y-1">
+    <div className="field-type-selector">
         {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[])
         .filter(type => TEMPLATE_FIELD_TYPES[currentImage.type].includes(type))
         .map(type => {
@@ -53,38 +51,22 @@ export const FieldTypeSelector: React.FC<FieldTypeSelectorProps> = ({
             <button
               key={type}
               onClick={() => onTypeChange(type)}
-              className={cn(
-                "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-all",
-                "hover:bg-sidebar-accent",
-                isSelected && "bg-sidebar-accent"
-              )}
+              className='field-type-selector__button'
             >
-              <div
-                className="w-8 h-8 rounded-md flex items-center justify-center"
+              <div 
+                 className='field-type-selector__button__icon-wrapper'
                 style={{ 
                   backgroundColor: config.bgColor,
                   border: `2px solid ${config.color}`,
+                  color: config.color
                 }}
               >
-                <span style={{ color: config.color }}>
-                  {FIELD_ICONS[type]}
-                </span>
+                {FIELD_ICONS[type]}
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-sidebar-foreground">
-                  {config.label}
-                </div>
-                <div className="text-xs text-sidebar-foreground/60">
-                  {config.description}
-                </div>
-              </div>
-              {isSelected && (
-                <Check className="w-4 h-4 text-sidebar-primary" />
-              )}
+              <div style={{background: config.color}} className={clsx('field-type-selector__button__indicator', {'field-type-selector__button__indicator--visible': isSelected})} />
             </button>
           );
         })}
       </div>
-    </div>
   );
 };
