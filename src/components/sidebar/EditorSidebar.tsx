@@ -1,6 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import {  
-  Plus,
   Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,8 +8,6 @@ import { FieldTypeSelector } from './FieldTypeSelector';
 import { RectangleList } from './RectangleList';
 import { TemplateImageList } from './TemplateImageList';
 import { ImageUploader } from '@/components/canvas/ImageUploader';
-import type { TemplateType } from '@/types/planner';
-import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
 import {
   Select,
   SelectContent,
@@ -18,36 +15,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useManageImages } from '@/hooks/use-manage-images';
+import { AddTemplateButton } from '../add-template-button/add-template-button';
 
 export const EditorSidebar: React.FC = () => {
-  const [newTemplateName, setNewTemplateName] = useState('');
-  const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [pendingImage, setPendingImage] = useState<{
-    data: string;
-    width: number;
-    height: number;
-    name: string;
-  } | null>(null);
-  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('monthly-calendar');
+ 
+  
   
 
   const openGenerator = useTemplateStore(state => state.openGenerator)
-  const {addImage, deleteImage} = useManageImages();
+  const {deleteImage} = useManageImages();
   const {deleteArea, updateAreaType} = useManageAreas()
 
   const {
@@ -65,33 +45,9 @@ export const EditorSidebar: React.FC = () => {
 
     const template = getCurrentTemplate();
     const currentImage = getCurrentImage();
+
   
-  const handleCreateTemplate = useCallback(() => {
-    if (newTemplateName.trim()) {
-      createTemplate(newTemplateName.trim());
-      setNewTemplateName('');
-      setNewTemplateDialogOpen(false);
-    }
-  }, [newTemplateName, createTemplate]);
   
-  const handleImageUpload = useCallback((data: string, width: number, height: number, name: string) => {
-    setPendingImage({ data, width, height, name });
-    setUploadDialogOpen(true);
-  }, []);
-  
-  const handleConfirmUpload = useCallback(() => {
-    if (pendingImage) {
-      addImage(
-        pendingImage.data,
-        pendingImage.width,
-        pendingImage.height,
-        pendingImage.name,
-        selectedTemplateType
-      );
-      setPendingImage(null);
-      setUploadDialogOpen(false);
-    }
-  }, [pendingImage, selectedTemplateType, addImage]);
   
   return (
     <aside className="w-80 bg-sidebar flex flex-col border-r border-sidebar-border">
@@ -134,40 +90,7 @@ export const EditorSidebar: React.FC = () => {
             </Select>
           )
         }
-        <Dialog open={newTemplateDialogOpen} onOpenChange={setNewTemplateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground">
-                <Plus className="w-4 h-4 mr-2" />
-                New Template
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New Template</DialogTitle>
-                <DialogDescription>
-                  Give your planner template a name to get started.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <Label htmlFor="name">Template Name</Label>
-                <Input
-                  id="name"
-                  value={newTemplateName}
-                  onChange={(e) => setNewTemplateName(e.target.value)}
-                  placeholder="My Planner 2024"
-                  className="mt-2"
-                />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setNewTemplateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleCreateTemplate} disabled={!newTemplateName.trim()}>
-                  Create Template
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+        <AddTemplateButton />
         {template &&  (
           <>
             <div className="flex items-center justify-between">
@@ -179,61 +102,7 @@ export const EditorSidebar: React.FC = () => {
               </div>
             </div>
             
-            <ImageUploader handleImageUpload={handleImageUpload} />
-            
-            {/* Upload type dialog */}
-            <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add Template Page</DialogTitle>
-                  <DialogDescription>
-                    Select the type of page this image represents.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                  {pendingImage && (
-                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
-                      <img
-                        src={pendingImage.data}
-                        alt="Preview"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <Label>Page Type</Label>
-                    <Select
-                      value={selectedTemplateType}
-                      onValueChange={(v) => setSelectedTemplateType(v as TemplateType)}
-                    >
-                      <SelectTrigger className="mt-2">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(Object.keys(TEMPLATE_TYPE_CONFIG) as TemplateType[]).map(type => (
-                          <SelectItem key={type} value={type}>
-                            <div>
-                              <div>{TEMPLATE_TYPE_CONFIG[type].label}</div>
-                              <div className="text-xs text-muted-foreground">
-                                {TEMPLATE_TYPE_CONFIG[type].description}
-                              </div>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleConfirmUpload}>
-                    Add Page
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <ImageUploader />
           </>
         )}
       </div>

@@ -5,6 +5,7 @@ import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
 import { GeneratorDialog } from '@/components/generator/GeneratorDialog';
 import { useTemplateStore } from '@/stores/template-store';
 import { motion } from 'framer-motion';
+import { EditorBoard } from '@/components/editor-board/editor-board';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -44,7 +45,7 @@ const TemplateEditor: React.FC = () => {
       <EditorSidebar />
       
       {currentImage ? (
-        <TemplateCanvas />
+        <EditorBoard />
       ) : (
         <EmptyCanvasState />
       )}

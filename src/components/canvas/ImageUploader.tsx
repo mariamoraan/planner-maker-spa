@@ -12,19 +12,55 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useManageImages } from '@/hooks/use-manage-images';
 import { useTemplateStore } from '@/stores/template-store';
+import { TEMPLATE_TYPE_CONFIG, TemplateType } from '@/types/planner';
 
 interface ImageUploaderProps {
   className?: string;
-  handleImageUpload: (data: string, width: number, height: number, name: string) => void;
+  customButton?: React.ReactElement;
 }
 
-export const ImageUploader: React.FC<ImageUploaderProps> = ({ className, handleImageUpload }) => {
-  const {uploadImageToEmptyCanvas} = useManageImages();
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , customButton}) => {
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{
+    data: string;
+    width: number;
+    height: number;
+    name: string;
+  } | null>(null);
+  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('monthly-calendar');
 
+  const {addImage} = useManageImages();
+
+  const handleImageUpload = useCallback((data: string, width: number, height: number, name: string) => {
+    setPendingImage({ data, width, height, name });
+    setUploadDialogOpen(true);
+  }, []);
+  
+  const handleConfirmUpload = useCallback(() => {
+    if (pendingImage) {
+      addImage(
+        pendingImage.data,
+        pendingImage.width,
+        pendingImage.height,
+        pendingImage.name,
+        selectedTemplateType
+      );
+      setPendingImage(null);
+      setUploadDialogOpen(false);
+    }
+  }, [pendingImage, selectedTemplateType, addImage]);
+  
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -57,10 +93,69 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className, handleI
         onChange={handleFileChange}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
-      <Button variant="outline" className="w-full pointer-events-none">
-        <Upload className="w-4 h-4 mr-2" />
-        Upload Image
-      </Button>
+      {
+        customButton
+        ? customButton
+        : (
+          <Button variant="outline" className="w-full pointer-events-none">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Image
+          </Button>
+        )
+      }
+      {/* Upload type dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Template Page</DialogTitle>
+            <DialogDescription>
+              Select the type of page this image represents.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            {pendingImage && (
+              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                <img
+                  src={pendingImage.data}
+                  alt="Preview"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            )}
+            <div>
+              <Label>Page Type</Label>
+              <Select
+                value={selectedTemplateType}
+                onValueChange={(v) => setSelectedTemplateType(v as TemplateType)}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(TEMPLATE_TYPE_CONFIG) as TemplateType[]).map(type => (
+                    <SelectItem key={type} value={type}>
+                      <div>
+                        <div>{TEMPLATE_TYPE_CONFIG[type].label}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {TEMPLATE_TYPE_CONFIG[type].description}
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmUpload}>
+              Add Page
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

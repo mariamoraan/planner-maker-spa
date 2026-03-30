@@ -6,6 +6,7 @@ import { FIELD_TYPE_CONFIG } from '@/types/planner';
 import type Konva from 'konva';
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
+import './template-canva.scss'
 
 
 interface DrawingRect {
@@ -54,6 +55,7 @@ export const TemplateCanvas: React.FC = () => {
       const containerRect = containerRef.current!.getBoundingClientRect();
       const containerWidth = containerRect.width - PADDING * 2;
       const containerHeight = containerRect.height - PADDING * 2;
+      console.log({containerHeight, containerWidth})
 
       // Scale para fit-to-contain
       const newScale = Math.min(containerWidth / currentImage.width, containerHeight / currentImage.height);
@@ -272,8 +274,7 @@ export const TemplateCanvas: React.FC = () => {
 
   /** RENDER */
   return (
-    <div ref={containerRef} className="flex-1 flex items-center justify-center canvas-workspace overflow-hidden">
-      <div className="shadow-elevated rounded-lg overflow-hidden bg-card p-4">
+    <div ref={containerRef} className="template-canva">
         <Stage
           ref={stageRef}
           width={stageSize.width}
@@ -362,7 +363,6 @@ export const TemplateCanvas: React.FC = () => {
             />
           </Layer>
         </Stage>
-      </div>
     </div>
   );
 };
