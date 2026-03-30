@@ -6,7 +6,7 @@ import { AddTemplateButton } from '../add-template-button/add-template-button';
 import { ImageUploader } from '../canvas/ImageUploader';
 
 export const PagesMap = () => {
-    const { getCurrentTemplate, setCurrentImage, deleteImage } = useTemplateStore();
+    const { getCurrentTemplate } = useTemplateStore();
     const template = getCurrentTemplate();
     const images = template?.images;
 

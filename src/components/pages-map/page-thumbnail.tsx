@@ -15,16 +15,21 @@ export const PageThumbnail = ({image}: Props) => {
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
     const contextMenuRef = useRef();
     const { setCurrentImage } = useTemplateStore();
+    const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
     const {deleteImage} = useManageImages();
     useOnClickOutside(contextMenuRef, () => {
         if(!isContextMenuOpen) return;
         setIsContextMenuOpen(false)
     })
+    const selectPage = () => {
+        setSelectedRectangleId(null)
+        setCurrentImage(image.id)
+    }
     return (
         <div className="page-thumbnail">
             <button 
             className='page-thumbnail__button'
-            onClick={() => setCurrentImage(image.id)} 
+            onClick={selectPage} 
             onContextMenu={(e) => {
                 e.preventDefault();
                 setIsContextMenuOpen(true)
