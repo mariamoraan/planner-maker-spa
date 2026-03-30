@@ -1,6 +1,7 @@
 import { Check, Sparkles, Calendar, Image as ImageIcon, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PATHS } from '@/core/routes/paths';
+import { useNavigate } from 'react-router-dom';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -20,6 +21,10 @@ const tiers = [
       'Local storage on your device',
     ],
     cta: 'Start for free',
+    onClick: (navigate: (path: string) => void) => {
+      navigate(PATHS.editor)
+    },
+    highlight: true,
   },
   {
     name: 'Pro Add-ons',
@@ -32,7 +37,6 @@ const tiers = [
       'Specialized selectors & generators',
     ],
     cta: 'Coming soon',
-    highlight: true,
   },
   {
     name: 'Cloud',
@@ -49,6 +53,7 @@ const tiers = [
 ];
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   return (
     <main className="min-h-screen bg-neutral-50 text-neutral-900">
       {/* Header */}
@@ -62,7 +67,7 @@ export default function LandingPage() {
             <a href="#pricing" className="hover:text-neutral-900">Pricing</a>
           </nav>
           <a href={PATHS.editor} className="px-6 py-3 rounded-2xl bg-black text-white font-medium shadow">
-            Start creating
+            Start creating for free
           </a>
         </div>
       </header>
@@ -87,7 +92,7 @@ export default function LandingPage() {
         </p>
         <div className="flex justify-center gap-4">
           <a href={PATHS.editor} className="px-6 py-3 rounded-2xl bg-black text-white font-medium shadow">
-            Start creating
+            Start creating for free
           </a>
           <a className="px-6 py-3 rounded-2xl border border-neutral-300 font-medium">
             See an example
@@ -310,7 +315,7 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <button className="w-full py-3 rounded-xl font-medium border bg-neutral-50">
+                <button onClick={() => tier?.onClick(navigate)} disabled={!tier?.onClick} className="w-full py-3 rounded-xl font-medium border bg-neutral-50">
                   {tier.cta}
                 </button>
               </div>
