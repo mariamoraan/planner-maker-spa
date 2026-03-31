@@ -1,0 +1,61 @@
+.home-page {
+    padding: 24px;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    &__title {
+        align-self: center;
+        font-size: 40px;
+        text-align: center;
+    }
+    &__description {
+        align-self: center;
+        text-align: center;
+        max-width: 60%;
+    }
+    &__templates {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        &__title {
+            font-size: 30px;
+        }
+        &__list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            &__li {
+                width: 300px;
+                height: auto;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                &__img {
+                    width: 100%;
+                }
+                &__void-img {
+                    width: 300px;
+                    height: 210px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    color: grey;
+                    background: #EEEFF1;
+                }
+                &__info {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                    &__title {
+                        font-size: 16px;
+                    }
+                    &__updated {
+                        font-size: 14px;
+                        color: grey;
+                    }
+                }
+            }
+        }
+    }
+}

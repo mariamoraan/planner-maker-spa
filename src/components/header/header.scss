@@ -3,7 +3,7 @@
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 12px;
     background: hsla(205, 43%, 64%,1);
     &__home-link {
         width: 50px;
@@ -11,6 +11,10 @@
         justify-content: center;
         align-items: center;
         color: white;
+    }
+    &__template-name {
+        color: white;
+        font-weight: 700;
     }
     &__generate-planner-button {
         margin-left: auto;
