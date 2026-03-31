@@ -1,11 +1,4 @@
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-  } from '@/components/ui/select';
-  import { Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 
 import { useTemplateStore } from '@/stores/template-store'
 import { FIELD_TYPE_CONFIG, FieldType } from '@/types/planner'
@@ -13,6 +6,7 @@ import { useManageAreas } from '@/hooks/use-manage-areas'
 import './toolbar.scss'
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
+import { FIELD_ICONS } from '../sidebar/FieldTypeSelector';
 
 export const Toolbar = () => {
     const getCurrentImage = useTemplateStore(state => state.getCurrentImage)
@@ -50,24 +44,11 @@ export const Toolbar = () => {
                 Editar Tipo
                 <div ref={editAreaTypeMenuRef} className={clsx('toolbar__change-area-type-menu', {'toolbar__change-area-type-menu--visible': isEditAreaTypeMenuOpen})}>
                     <p>Edit area type by selecting a new one</p>
-                    <Select
-                        value={currentSelectedBox.fieldType}
-                        onValueChange={(value) => updateAreaType(currentSelectedBox.id, value as FieldType)}
-                    >
-                        <SelectTrigger 
-                        className="h-8 text-md"
-                        onClick={(e) => e.stopPropagation()}
-                        >
-                        <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                        {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).map(type => (
-                            <SelectItem value={type}>
-                            {FIELD_TYPE_CONFIG[type].label}
-                            </SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+                    <div className='toolbar__change-area-type-menu__options'>
+                    {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).map(type => (
+                        <div onClick={() => updateAreaType(currentSelectedBox.id, type)}>{FIELD_ICONS[type]}</div>
+                    ))}
+                    </div>
                 </div>
             </button>
              <button

@@ -40,7 +40,6 @@
         transform: translateX(-50%);
         z-index: 1;
         padding: 24px;
-        width: 400px;
         display: none;
         flex-direction: column;
         gap: 12px;
@@ -54,6 +53,12 @@
         &--visible {
             display: flex;
             opacity: 1;
+        }
+        &__options {
+            width: 300px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
         }
     }
 }

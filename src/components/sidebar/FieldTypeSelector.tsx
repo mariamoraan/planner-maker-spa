@@ -12,7 +12,7 @@ import { EndWeekDayIcon } from './end-week-day-icon';
 const ICON_HEIGHT = 50;
 const ICON_WIDTH = 50;
 
-const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
+export const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   year: <YearIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
   month:  <MonthIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
   day:  <DayIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
