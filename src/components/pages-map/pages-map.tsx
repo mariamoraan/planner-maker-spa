@@ -2,7 +2,6 @@ import { useTemplateStore } from '@/stores/template-store';
 import './pages-map.scss'
 import { PageThumbnail } from './page-thumbnail';
 import { Plus } from 'lucide-react';
-import { AddTemplateButton } from '../add-template-button/add-template-button';
 import { ImageUploader } from '../canvas/ImageUploader';
 
 export const PagesMap = () => {
