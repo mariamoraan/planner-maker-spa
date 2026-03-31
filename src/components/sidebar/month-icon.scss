@@ -1,0 +1,22 @@
+.month-icon {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 12px;
+    aspect-ratio: 1/1;
+    font-weight: 800;
+    font-size: 12px;
+    border: 2px solid;
+    transition: 200ms ease;
+    &__grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        &__item {
+            width: 2px;
+            height: 2px;
+        }
+    }
+}

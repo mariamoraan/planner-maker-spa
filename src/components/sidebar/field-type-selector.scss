@@ -1,12 +1,11 @@
 .field-type-selector {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
+  z-index: 1;
   &__button {
-    max-width: max-content;
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    gap: 12px;
     align-items: center;
     justify-content: center;
     text-align: center;
@@ -16,29 +15,18 @@
     }
 
     &__icon-wrapper {
-        padding: 4px;
-        height: 40px;
-        width: 40px;
+        padding: 4px 8px;
+        width: 100%;
         display: flex;
         justify-content: center;
         align-items: center;
         border-radius: 8px;
+        white-space: nowrap;
     }
 
     &__icon {
         font-weight: 700;
         font-size: 16px;
     }
-
-    &__indicator {
-        width: 4px;
-        height: 4px;
-        border-radius: 100%;
-        opacity: 0;
-        transition: 200ms ease;
-        &--visible {
-            opacity: 1;
-        }
-    }
-  }
+}
 }

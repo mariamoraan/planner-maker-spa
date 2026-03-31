@@ -1,0 +1,17 @@
+.day-icon {
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    border-radius: 12px;
+    aspect-ratio: 1/1;
+    font-weight: 800;
+    border: 2px solid;
+    transition: 200ms ease;
+    &__day {
+        padding: 4px 8px;
+        border: 1px solid;
+        border-radius: 8px;
+    }
+}

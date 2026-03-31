@@ -40,7 +40,7 @@ const TemplateEditor: React.FC = () => {
     viewport={{ once: true }}
     variants={fadeUp}
     transition={{ duration: 0.6 }}
-    className="flex h-screen bg-background overflow-hidden"
+    className="flex h-screen bg-background"
     >
       {currentImage ? (
         <EditorBoard />

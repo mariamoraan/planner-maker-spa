@@ -68,31 +68,31 @@ export const FIELD_TYPE_CONFIG: Record<FieldType, {
   year: {
     label: 'Year',
     color: 'hsl(258, 90%, 66%)',
-    bgColor: 'hsla(258, 90%, 66%, 0.3)',
+    bgColor: 'hsla(258, 90%, 66%, 0.2)',
     description: 'Displays the year (e.g., 2024)',
   },
   month: {
     label: 'Month',
     color: 'hsl(168, 76%, 42%)',
-    bgColor: 'hsla(168, 76%, 42%, 0.3)',
+    bgColor: 'hsla(168, 76%, 42%, 0.2)',
     description: 'Displays the month name (e.g., January)',
   },
   day: {
     label: 'Day',
     color: 'hsl(25, 95%, 53%)',
-    bgColor: 'hsla(25, 95%, 53%, 0.3)',
+    bgColor: 'hsla(25, 95%, 53%, 0.2)',
     description: 'Displays day numbers or date ranges',
   },
   startDay: {
     label: 'Start Day',
-    color: 'hsl(53, 95%, 53%)',
-    bgColor: 'hsla(53, 95%, 53%, 0.3)',
+    color: 'hsl(53, 95%, 45%)',
+    bgColor: 'hsla(53, 95%, 53%, 0.2)',
     description: 'Displays start day number',
   },
   endDay: {
     label: 'End Day',
     color: 'hsl(13, 95%, 53%)',
-    bgColor: 'hsla(13, 95%, 53%, 0.30)',
+    bgColor: 'hsla(13, 95%, 53%, 0.2)',
     description: 'Displays end day number',
   }
 };

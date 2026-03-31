@@ -1,0 +1,22 @@
+.start-week-day-icon {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    border-radius: 12px;
+    aspect-ratio: 1/1;
+    font-weight: 800;
+    font-size: 12px;
+    border: 2px solid;
+    transition: 200ms ease;
+    &__boxes {
+        display: flex;
+        gap: 1px;
+        &__box {
+            width: 4px;
+            height: 4px;
+        }
+    }
+}

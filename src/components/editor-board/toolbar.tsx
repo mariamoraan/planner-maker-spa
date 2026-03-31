@@ -47,7 +47,7 @@ export const Toolbar = () => {
                 }}
                 className='toolbar__edit-button'
             >
-                Editar
+                Editar Tipo
                 <div ref={editAreaTypeMenuRef} className={clsx('toolbar__change-area-type-menu', {'toolbar__change-area-type-menu--visible': isEditAreaTypeMenuOpen})}>
                     <p>Edit area type by selecting a new one</p>
                     <Select
