@@ -7,8 +7,6 @@ import './editor-sidebar.scss'
 export const EditorSidebar: React.FC = () => {
 
   const {
-      selectedFieldType,
-      setSelectedFieldType,
       getCurrentTemplate,
       getCurrentImage,
     } = useTemplateStore();

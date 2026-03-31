@@ -9,7 +9,7 @@ export const Header = () => {
     return (
         <div className='header'>
             <Link className='header__home-link' to={PATHS.home}>
-              <Home />
+              <Home width={24} height={24} />
             </Link>
             <button 
             className="header__generate-planner-button"
