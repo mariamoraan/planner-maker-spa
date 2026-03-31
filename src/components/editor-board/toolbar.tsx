@@ -7,6 +7,7 @@ import './toolbar.scss'
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { FIELD_ICONS } from '../sidebar/FieldTypeSelector';
+import useOnClickOutside from '@/core/hooks/use-on-click-outside'
 
 export const Toolbar = () => {
     const getCurrentImage = useTemplateStore(state => state.getCurrentImage)
@@ -14,6 +15,10 @@ export const Toolbar = () => {
     const { updateAreaType, deleteArea} = useManageAreas();
     const [isEditAreaTypeMenuOpen, setIsEditAreaTypeMenuOpen] = useState(false);
     const editAreaTypeMenuRef = useRef();
+
+    useOnClickOutside(editAreaTypeMenuRef, () => {
+        setIsEditAreaTypeMenuOpen(false)
+    })
 
     const currentImage = getCurrentImage();
     const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
@@ -43,7 +48,6 @@ export const Toolbar = () => {
             >
                 Editar Tipo
                 <div ref={editAreaTypeMenuRef} className={clsx('toolbar__change-area-type-menu', {'toolbar__change-area-type-menu--visible': isEditAreaTypeMenuOpen})}>
-                    <p>Edit area type by selecting a new one</p>
                     <div className='toolbar__change-area-type-menu__options'>
                     {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).map(type => (
                         <div onClick={() => updateAreaType(currentSelectedBox.id, type)}>{FIELD_ICONS[type]}</div>
