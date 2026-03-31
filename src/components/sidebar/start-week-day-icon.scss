@@ -13,10 +13,11 @@
     transition: 200ms ease;
     &__boxes {
         display: flex;
-        gap: 1px;
+        gap: 2px;
         &__box {
             width: 4px;
             height: 4px;
+            border-radius: 1px;
         }
     }
 }

@@ -26,7 +26,7 @@ export const EndWeekDayIcon: React.FC<Props> = ({width, height}) => {
         }}>
             <div className="end-week-day-icon__day" style={{borderColor: CONFIG.bgColor}}>DOM</div>
             <div className="end-week-day-icon__boxes">
-                {Array.from({ length: 7 }, (_, i) => i + 1).map((day, index) => <div key={day} style={{background:index === 6 ? CONFIG.color : 'grey'}} className='end-week-day-icon__boxes__box' />)}
+                {Array.from({ length: 7 }, (_, i) => i + 1).map((day, index) => <div key={day} style={{background:index === 6 ? CONFIG.color : 'white'}} className='end-week-day-icon__boxes__box' />)}
             </div>
         </div>
     )
