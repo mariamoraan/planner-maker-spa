@@ -38,7 +38,7 @@ export const HomePage = () => {
 
     return (
         <div className="home-page">
-            <h1 className="home-page__title">Datlay</h1>
+            <h1 className="home-page__title">Calen</h1>
             <p  className="home-page__description">Tu planner, tu lenguaje.
             Upload your own designs, define dynamic areas, and generate fully-dated planners automatically — perfectly aligned, every time.</p>
             <div className="home-page__templates">
