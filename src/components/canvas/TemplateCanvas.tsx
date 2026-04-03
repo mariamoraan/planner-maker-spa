@@ -1,7 +1,7 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line } from 'react-konva';
 import useImage from 'use-image';
-import type { Rectangle } from '@/types/planner';
+import type { FieldType, Rectangle } from '@/types/planner';
 import { FIELD_TYPE_CONFIG } from '@/types/planner';
 import type Konva from 'konva';
 import { useTemplateStore } from '@/stores/template-store';
@@ -33,7 +33,7 @@ export const TemplateCanvas: React.FC = () => {
   const [image] = useImage(currentImage.src);
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 }); // offset global para centrar
+  const [offset, setOffset] = useState({ x: 0, y: 0 }); // global offset
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingRect, setDrawingRect] = useState<DrawingRect | null>(null);
   const [copiedRect, setCopiedRect] = useState<Rectangle | null>(null);
@@ -44,27 +44,26 @@ export const TemplateCanvas: React.FC = () => {
   const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
 
   const SNAP_THRESHOLD = 10;
-  const PADDING = 16; // el padding de tu wrapper p-4
+  const PADDING = 16; // wrapper padding
 
-  /** AJUSTAR IMAGEN AL CONTENEDOR */
+  /** ADJUST IMAGE TO CONTAINER */
   useEffect(() => {
     if (!containerRef.current || !currentImage.width || !currentImage.height) return;
 
     const updateSize = () => {
-      // Tamaño disponible restando padding
       const containerRect = containerRef.current!.getBoundingClientRect();
       const containerWidth = containerRect.width - PADDING * 2;
       const containerHeight = containerRect.height - PADDING * 2;
       console.log({containerHeight, containerWidth})
 
-      // Scale para fit-to-contain
+      // Scale - fit-to-contain
       const newScale = Math.min(containerWidth / currentImage.width, containerHeight / currentImage.height);
       setScale(newScale);
 
-      // Stage ocupa TODO el contenedor
+      // Stage - fill container
       setStageSize({ width: containerRect.width, height: containerRect.height });
 
-      // Offset para centrar la imagen dentro del stage
+      // Offset - center image
       setOffset({
         x: PADDING + (containerWidth - currentImage.width * newScale) / 2,
         y: PADDING + (containerHeight - currentImage.height * newScale) / 2,
@@ -98,14 +97,6 @@ export const TemplateCanvas: React.FC = () => {
       if (!stage) return;
       const pos = stage.getPointerPosition();
       if (!pos) return;
-
-      setIsDrawing(true);
-      setDrawingRect({
-        x: (pos.x - offset.x) / scale,
-        y: (pos.y - offset.y) / scale,
-        width: 0,
-        height: 0,
-      });
     },
     [scale, offset, setSelectedRectangleId, selectedFieldType]
   );
@@ -182,7 +173,6 @@ export const TemplateCanvas: React.FC = () => {
     [scale, offset, updateArea]
   );
 
-  /** SNAP + distribución igual */
   const handleDragMove = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
       const node = e.target;
@@ -232,7 +222,7 @@ export const TemplateCanvas: React.FC = () => {
     [currentImage.rectangles, scale, offset]
   );
 
-  /** TECLADO: DELETE / COPY / PASTE */
+  /** KEYBOARD: DELETE / COPY / PASTE */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!stageRef.current) return;
@@ -272,9 +262,11 @@ export const TemplateCanvas: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedRectangleId, currentImage.rectangles, copiedRect, addArea, deleteArea, updateArea, setSelectedRectangleId, scale, offset]);
 
-  /** RENDER */
   return (
-    <div ref={containerRef} className="template-canva">
+    <div 
+    ref={containerRef} 
+    className="template-canva"
+    >
         <Stage
           ref={stageRef}
           width={stageSize.width}

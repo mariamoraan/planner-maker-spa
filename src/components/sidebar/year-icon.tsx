@@ -8,10 +8,11 @@ const CONFIG = FIELD_TYPE_CONFIG.year;
 interface Props {
     width: number;
     height: number;
+    showActiveStyle?: boolean;
 }
 
 
-export const YearIcon: React.FC<Props> = ({width, height}) => {
+export const YearIcon: React.FC<Props> = ({width, height, showActiveStyle = true}) => {
     const currentYear = new Date().getFullYear();
     const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
     const isSelected = selectedFieldType === 'year'
@@ -23,7 +24,7 @@ export const YearIcon: React.FC<Props> = ({width, height}) => {
             color: CONFIG.color, 
             width, 
             height,
-            borderColor: isSelected ? CONFIG.color : 'transparent'
+            borderColor: showActiveStyle && isSelected ? CONFIG.color : 'transparent'
         }}>
             {currentYear}
         </div>

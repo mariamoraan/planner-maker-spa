@@ -8,10 +8,11 @@ const CONFIG = FIELD_TYPE_CONFIG.day;
 interface Props {
     width: number;
     height: number;
+    showActiveStyle?: boolean;
 }
 
 
-export const DayIcon: React.FC<Props> = ({width, height}) => {
+export const DayIcon: React.FC<Props> = ({width, height, showActiveStyle = true}) => {
     const currentDay = new Date().getDate();
     const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
     const isSelected = selectedFieldType === 'day'
@@ -21,7 +22,7 @@ export const DayIcon: React.FC<Props> = ({width, height}) => {
         style={{
             background: CONFIG.bgColor, 
             color: CONFIG.color, 
-            borderColor: isSelected ? CONFIG.color : 'transparent',
+            borderColor: showActiveStyle && isSelected ? CONFIG.color : 'transparent',
             width, 
             height
         }}>

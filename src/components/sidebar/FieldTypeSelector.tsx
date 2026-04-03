@@ -8,21 +8,23 @@ import { MonthIcon } from './month-icon';
 import { DayIcon } from './day-icon';
 import { StartWeekDayIcon } from './start-week-day-icon';
 import { EndWeekDayIcon } from './end-week-day-icon';
+import { useManageAreas } from '@/hooks/use-manage-areas';
 
 const ICON_HEIGHT = 50;
 const ICON_WIDTH = 50;
 
 export const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
-  year: <YearIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  month:  <MonthIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  day:  <DayIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  startDay: <StartWeekDayIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  endDay: <EndWeekDayIcon width={ICON_WIDTH} height={ICON_HEIGHT} />,
+  year: <YearIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
+  month:  <MonthIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
+  day:  <DayIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
+  startDay: <StartWeekDayIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
+  endDay: <EndWeekDayIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
 };
 
 export const FieldTypeSelector = () => {
   
   const {getCurrentImage, selectedFieldType, setSelectedFieldType} = useTemplateStore()
+  const {addArea} = useManageAreas();
   const currentImage = getCurrentImage()
 
   useEffect(() => {
@@ -36,6 +38,22 @@ export const FieldTypeSelector = () => {
       setSelectedFieldType(availableFieldTypes?.length ? availableFieldTypes[0] : undefined)
     }
   }, [currentImage.type, selectedFieldType])
+
+  const handleSelectType = (type: FieldType) => {
+    setSelectedFieldType(type);
+  
+    const DEFAULT_WIDTH = 150;
+    const DEFAULT_HEIGHT = 150;
+  
+    addArea({
+      x: currentImage.width / 2 - DEFAULT_WIDTH / 2,
+      y: currentImage.height / 2 - DEFAULT_HEIGHT / 2,
+      width: DEFAULT_WIDTH,
+      height: DEFAULT_HEIGHT,
+      fieldType: type,
+      order: currentImage.rectangles.length,
+    });
+  };
   
   return (
     <div className="field-type-selector">
@@ -45,7 +63,7 @@ export const FieldTypeSelector = () => {
             return (
               <button
                 key={type}
-                onClick={() => setSelectedFieldType(type)}
+                onClick={() => handleSelectType(type)}
                 className='field-type-selector__button'
               >
                 <div 

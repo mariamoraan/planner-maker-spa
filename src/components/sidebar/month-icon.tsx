@@ -7,9 +7,10 @@ const CONFIG = FIELD_TYPE_CONFIG.month;
 interface Props {
     width: number;
     height: number;
+    showActiveStyle?: boolean;
 }
 
-export const MonthIcon: React.FC<Props> = ({width, height}) => {
+export const MonthIcon: React.FC<Props> = ({width, height, showActiveStyle = true}) => {
     const currentMonth = new Date().toLocaleString('default', { month: 'short' })
     const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
     const isSelected = selectedFieldType === 'month'
@@ -21,7 +22,7 @@ export const MonthIcon: React.FC<Props> = ({width, height}) => {
             height, 
             background: CONFIG.bgColor, 
             color: CONFIG.color,
-            borderColor: isSelected ? CONFIG.color : 'transparent'
+            borderColor: showActiveStyle && isSelected ? CONFIG.color : 'transparent'
         }}
         >
             <p>{currentMonth}</p>

@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
+.animated-tagline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: 'Playfair Display', serif;
+}
+
+.animated-tagline__line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5ch;
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.animated-tagline__static {
+  opacity: 0.35;
+  font-style: italic;
+}
+
+.animated-tagline__dot {
+  opacity: 0.3;
+}
+
+.animated-tagline__slot {
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+}
+
+.animated-tagline__sizer {
+    display: inline-block;
+    visibility: hidden;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  
+  .animated-tagline__word {
+    position: absolute;
+    top: 0; 
+    left: 0;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(110%);
+    animation: animated-tagline-cycle 1s infinite;
+  }
+
+@keyframes animated-tagline-cycle {
+  0%        { opacity: 0; transform: translateY(110%); }   /* hidden */
+  5%        { opacity: 1; transform: translateY(0); }      /* slide in */
+  20%       { opacity: 1; transform: translateY(0); }      /* hold */
+  25%       { opacity: 0; transform: translateY(-110%); }  /* slide out */
+  100%      { opacity: 0; transform: translateY(-110%); }  /* wait */
+}

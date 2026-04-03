@@ -13,7 +13,6 @@ export const AppRouter = () => {
           <Route path={PATHS.landing} element={<LandingPage />} />
           <Route path={PATHS.home} element={<HomePage />} />
           <Route path={PATHS.editor} element={<TemplateEditor />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

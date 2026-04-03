@@ -8,10 +8,11 @@ const CONFIG = FIELD_TYPE_CONFIG.startDay;
 interface Props {
     width: number;
     height: number;
+    showActiveStyle?: boolean;
 }
 
 
-export const StartWeekDayIcon: React.FC<Props> = ({width, height}) => {
+export const StartWeekDayIcon: React.FC<Props> = ({width, height, showActiveStyle = true}) => {
     const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
     const isSelected = selectedFieldType === 'startDay'
     return (
@@ -20,7 +21,7 @@ export const StartWeekDayIcon: React.FC<Props> = ({width, height}) => {
         style={{
             background: CONFIG.bgColor, 
             color: CONFIG.color, 
-            borderColor: isSelected ? CONFIG.color : 'transparent',
+            borderColor: showActiveStyle && isSelected ? CONFIG.color : 'transparent',
             width, 
             height
         }}>

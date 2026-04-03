@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { useManageImages } from '@/hooks/use-manage-images';
 import { useTemplateStore } from '@/stores/template-store';
 import { TEMPLATE_TYPE_CONFIG, TemplateType } from '@/types/planner';
+import './image-uploader.scss'
 
 interface ImageUploaderProps {
   className?: string;
@@ -86,23 +87,23 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
   }, [handleImageUpload]);
   
   return (
-    <div className={cn("relative", className)}>
-      <input
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        onChange={handleFileChange}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-      />
+    <div className={cn("relative", "image-uploader", className)}>
       {
         customButton
         ? customButton
         : (
-          <Button variant="outline" className="w-full pointer-events-none">
+          <Button variant="outline" className="image-uploader__button">
             <Upload className="w-4 h-4 mr-2" />
             Upload Image
           </Button>
         )
       }
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        onChange={handleFileChange}
+        className="image-uploader__input"
+      />
       {/* Upload type dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent>
