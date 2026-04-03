@@ -1,4 +1,4 @@
-# Calen SPA
+# Dyna SPA
 
 ## Project Info
 
@@ -6,7 +6,7 @@
 
 ## About the Project
 
-**Calen** is a local-first tool that gives creators full control over their planners.  
+**Dyna** is a local-first tool that gives creators full control over their planners.  
 Upload your own designs for covers, monthly calendars, and weekly layouts, then define dynamic areas like dates, months, or weekdays.  
 
 When you generate your planner, all pages are automatically filled and exported to high-quality PDFs. Optional premium assets and features will allow you to extend your planners piece by piece — pay only for what you need.  
@@ -38,7 +38,7 @@ Flexible, simple, and powerful: build planners your way.
 
 ## Roadmap
 
-The roadmap outlines the planned evolution of Calen:
+The roadmap outlines the planned evolution of Dyna:
 
 | Phase | Description | Status |
 |-------------|-------------|--------|

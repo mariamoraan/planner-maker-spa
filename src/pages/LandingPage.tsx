@@ -59,7 +59,7 @@ export default function LandingPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="font-semibold tracking-tight">Calen</div>
+          <div className="font-semibold tracking-tight">Dyna</div>
           <nav className="flex gap-6 text-sm text-neutral-600">
             <a href="#how" className="hover:text-neutral-900">How it works</a>
             <a href="#features" className="hover:text-neutral-900">Features</a>
