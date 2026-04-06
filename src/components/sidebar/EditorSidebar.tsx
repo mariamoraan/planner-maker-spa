@@ -17,48 +17,11 @@ export const EditorSidebar: React.FC = () => {
   
   return (
     <aside className="editor-sidebar">
-      {/* Header */}
-
-      
-      {/* Template Actions */}
-      {/*
-      <div className="p-4 space-y-3">
-        {
-          templates?.length && (
-            <Select
-              value={template?.id}
-              onValueChange={(v) => {
-                setCurrentTemplate(v)
-                setCurrentImage(templates.find(template => template.id === v).images[0].id ?? null)
-              }}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {templates?.map(template => (
-                  <SelectItem key={template?.id} value={template?.id}>
-                    <div>
-                      <div>{template?.name}</div>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )
-        }
-        <AddTemplateButton />
-      </div>
-      */}
-      
-      {/* Scrollable content */}
-      <div className="flex-1 p-4 space-y-6">
+      <div className="editor-sidebar__main">
         {template && currentImage &&  (
             <FieldTypeSelector />
         )}
       </div>
-      
-      {/* Footer actions */}
     </aside>
   );
 };

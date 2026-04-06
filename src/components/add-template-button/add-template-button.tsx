@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { useTemplateStore } from '@/stores/template-store';
+import './add-template-button.scss'
 
 interface Props {
     customButton?: React.ReactElement;
@@ -39,8 +40,8 @@ export const AddTemplateButton = ({customButton}: Props) => {
                 customButton 
                 ? customButton
                 : (
-                    <Button className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground">
-                        <Plus className="w-4 h-4 mr-2" />
+                    <Button className="add-template-button__button">
+                        <Plus className="add-template-button__button__icon" />
                         New Template
                     </Button>
                 )
@@ -53,14 +54,14 @@ export const AddTemplateButton = ({customButton}: Props) => {
                   Give your planner template a name to get started.
                 </DialogDescription>
               </DialogHeader>
-              <div className="py-4">
+              <div className="add-template-button__dialog__content" >
                 <Label htmlFor="name">Template Name</Label>
                 <Input
                   id="name"
                   value={newTemplateName}
                   onChange={(e) => setNewTemplateName(e.target.value)}
                   placeholder="My Planner 2024"
-                  className="mt-2"
+                 className="add-template-button__dialog__content__input"
                 />
               </div>
               <DialogFooter>

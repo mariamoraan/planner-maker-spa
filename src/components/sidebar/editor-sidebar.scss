@@ -4,4 +4,11 @@
     display: flex;
     flex-direction: column;
     gap: 32px;
+    &__main {
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 12px;
+    }
 }
