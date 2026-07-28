@@ -30,4 +30,17 @@
             background: hsla(225, 20%, 100%,1);
         }
     }
+    &__show-guides-button {
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: hsla(225, 20%, 100%,0.9);
+        border-radius: 8px;
+        transition: 200ms ease;
+        cursor: pointer;
+        &:hover {
+            background: hsla(225, 20%, 100%,1);
+        }
+    }
 }

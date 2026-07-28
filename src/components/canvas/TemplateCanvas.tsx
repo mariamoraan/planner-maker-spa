@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line } from 'react-konva';
+import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line, Text, Group } from 'react-konva';
 import useImage from 'use-image';
 import type { FieldType, Rectangle } from '@/types/planner';
 import { FIELD_TYPE_CONFIG } from '@/types/planner';
@@ -8,6 +8,7 @@ import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import './template-canva.scss'
+import { MONTH_NAMES } from '@/lib/planner-utils';
 
 
 interface DrawingRect {
@@ -20,6 +21,33 @@ interface DrawingRect {
 interface GuideLine {
   x?: number;
   y?: number;
+}
+
+const date = new Date();
+const today = new Date(date.getFullYear(), date.getMonth(), 1);
+
+const RECTANGLE_PLACEHOLDERS: Record<FieldType, string> = {
+  'year': today.getFullYear().toString(),
+  'day': today.getDate().toString(),
+  'endDay': today.getDate().toString(),
+  'startDay': today.getDate().toString(),
+  'month': MONTH_NAMES[today.getMonth()],
+}
+
+const getRectanglePlaceholder = (fieldType: FieldType, offset?: number) => {
+  if(fieldType === 'day') {
+    const shiftedDate = new Date(date.getFullYear(), date.getMonth(), 1);
+    shiftedDate.setDate(shiftedDate.getDate() + offset);
+    return shiftedDate.getDate().toString();
+  }
+  if(fieldType === 'endDay') {
+    const shiftedDate = new Date(date.getFullYear(), date.getMonth(), 1);
+    shiftedDate.setDate(shiftedDate.getDate() + 7);
+    return shiftedDate.getDate().toString(); 
+  }
+  else {
+    return RECTANGLE_PLACEHOLDERS[fieldType]
+  }
 }
 
 export const TemplateCanvas: React.FC = () => {
@@ -42,6 +70,7 @@ export const TemplateCanvas: React.FC = () => {
   const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
   const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
   const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
+  const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
 
   const SNAP_THRESHOLD = 10;
   const PADDING = 16; // wrapper padding
@@ -82,7 +111,7 @@ export const TemplateCanvas: React.FC = () => {
       transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedRectangleId]);
+  }, [selectedRectangleId, currentImage?.rectangles]);
 
   /** MOUSE DRAW */
   const handleMouseDown = useCallback(
@@ -146,11 +175,13 @@ export const TemplateCanvas: React.FC = () => {
   const handleTransformEnd = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<Event>) => {
       const node = e.target;
+  
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
+  
       node.scaleX(1);
       node.scaleY(1);
-
+  
       updateArea(rectId, {
         x: (node.x() - offset.x) / scale,
         y: (node.y() - offset.y) / scale,
@@ -294,27 +325,45 @@ export const TemplateCanvas: React.FC = () => {
               />
             )}
 
-            {currentImage?.rectangles?.map(rect => {
+            {currentImage?.rectangles?.map((rect, index) => {
               const config = FIELD_TYPE_CONFIG[rect.fieldType];
               return (
+                <Group
+                key={rect.id}
+                id={`rect-${rect.id}`}
+                x={offset.x + rect.x * scale}
+                y={offset.y + rect.y * scale}
+                width={rect.width * scale}
+                height={rect.height * scale}
+                draggable
+                onClick={() => handleRectClick(rect.id)}
+                onTap={() => handleRectClick(rect.id)}
+                onDragMove={e => handleDragMove(rect.id, e)}
+                onDragEnd={e => handleDragEnd(rect.id, e)}
+                onTransformEnd={e => handleTransformEnd(rect.id, e)}
+              >
                 <Rect
-                  key={rect.id}
-                  id={`rect-${rect.id}`}
-                  x={offset.x + rect.x * scale}
-                  y={offset.y + rect.y * scale}
                   width={rect.width * scale}
                   height={rect.height * scale}
-                  fill={config.bgColor}
-                  stroke={config.color}
-                  strokeWidth={2}
-                  cornerRadius={4}
-                  draggable
-                  onClick={() => handleRectClick(rect.id)}
-                  onTap={() => handleRectClick(rect.id)}
-                  onDragMove={e => handleDragMove(rect.id, e)}
-                  onDragEnd={e => handleDragEnd(rect.id, e)}
-                  onTransformEnd={e => handleTransformEnd(rect.id, e)}
+                  fill={showRectangleGuides ? config.bgColor : undefined}
+                  stroke={showRectangleGuides ? config.color : undefined}
+                  strokeWidth={showRectangleGuides ? 2 : 0}
+                  cornerRadius={showRectangleGuides ? 4 : 0}
                 />
+
+                <Text
+                  text={getRectanglePlaceholder(rect.fieldType, index)}
+                  width={rect.width * scale}
+                  height={rect.height * scale}
+                  align="center"
+                  verticalAlign="middle"
+                  fontSize={rect.height * scale  - (rect.height * scale * 0.15 * 2)}
+                  fontFamily="Gloria Hallelujah"
+                  fill={showRectangleGuides ? config.color : 'black'}
+                  fontStyle="bold"
+                  listening={false}
+                />
+              </Group>
               );
             })}
 

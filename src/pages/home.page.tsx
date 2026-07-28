@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom"
 import { getEditorPath } from "@/core/routes/paths";
 import { useEffect, useState } from "react";
 import { get as idbGet } from 'idb-keyval';
-import {CloudUpload, EllipsisIcon, Plus} from 'lucide-react'
+import {CloudUpload, EllipsisIcon, Plus, TrashIcon} from 'lucide-react'
 import { AddTemplateButton } from "@/components/add-template-button/add-template-button";
 import { AnimatedTagline } from "@/components/animated-tagline/animated-tagline";
 import ActionMenuButton from "@/core/components/action-menu-button/action-menu-button";
@@ -84,7 +84,7 @@ export const HomePage = () => {
                                 <p className="home-page__main__templates__list__li__info__title">{template.name}</p>
                                 <p className="home-page__main__templates__list__li__info__updated">Editado el {template?.updatedAt.toLocaleString('default', {day: '2-digit', month: 'short', year: 'numeric'})}</p>
                                 <ActionMenuButton icon={<EllipsisIcon />} actions={[
-                                    {name: 'Delete Template', onClick: () => deleteTemplate(template.id)}
+                                    {icon: <TrashIcon />, name: 'Delete Template', onClick: () => deleteTemplate(template.id), variant: 'error'}
                                 ]} />
                             </div>
                             </li>

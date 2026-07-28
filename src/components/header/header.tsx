@@ -1,17 +1,30 @@
-import { Home, Sparkles } from 'lucide-react'
-import { useTemplateStore } from '@/stores/template-store'
 import './header.scss'
+
+import {
+  HomeIcon, 
+  SparklesIcon,
+  EyeIcon,
+  EyeClosedIcon,
+} from '@/core/icons'
+import { useTemplateStore } from '@/stores/template-store'
 import { Link } from 'react-router-dom'
 import { PATHS } from '@/core/routes/paths'
 import { useCurrentTemplate } from '@/hooks/use-current-template'
 
 export const Header = () => {
-    const openGenerator = useTemplateStore(state => state.openGenerator)
-    const template = useCurrentTemplate();
+  const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
+  const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
+  const openGenerator = useTemplateStore(state => state.openGenerator)
+  const template = useCurrentTemplate();
+
+  const toggleRectangleGuides = () => {
+    setShowRectangleGuides(!showRectangleGuides)
+  }
+
     return (
         <div className='header'>
             <Link className='header__home-link' to={PATHS.home}>
-              <Home width={24} height={24} />
+              <HomeIcon width={24} height={24} />
             </Link>
             <p className='header__template-name'>
               {template?.name}
@@ -20,8 +33,12 @@ export const Header = () => {
             className="header__generate-planner-button"
             onClick={openGenerator}
           >
-            <Sparkles className="w-4 h-4 mr-2" />
+            <SparklesIcon className="w-4 h-4 mr-2" />
             Generate Planner
+          </button>
+          <button  className="header__show-guides-button" onClick={toggleRectangleGuides}>
+            {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
+            {showRectangleGuides ? 'Hide Guides' : 'Show Guides'}
           </button>
         </div>
     )

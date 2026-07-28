@@ -47,11 +47,13 @@ interface TemplateState {
   // Rectangle actions
   selectedRectangleId: string | null;
   selectedFieldType?: FieldType;
+  showRectangleGuides: boolean;
   addRectangle: (templateId: string, imageId: string, rectangle: Omit<Rectangle, 'id'>) => string;
   updateRectangle: (templateId: string, imageId: string, rectangleId: string, updates: Partial<Rectangle>) => void;
   deleteRectangle: (templateId: string, imageId: string, rectangleId: string) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
   setSelectedRectangleId: (selectedRectangleId: string | null) => void;
+  setShowRectangleGuides: (showRectangleGuides: boolean) => void;
 
   // Generator Actions
   isGeneratorOpen: boolean;
@@ -236,6 +238,7 @@ export const useTemplateStore = create<TemplateState>()(
       // Rectangle actions
       selectedRectangleId: null,
       selectedFieldType: undefined,
+      showRectangleGuides: true,
       
       addRectangle: (templateId, imageId, rectangleData) => {
         const id = generateId();
@@ -306,7 +309,7 @@ export const useTemplateStore = create<TemplateState>()(
       
       setSelectedFieldType: (selectedFieldType?: FieldType) => set({selectedFieldType}),
       setSelectedRectangleId: (selectedRectangleId: string | null) =>  set({selectedRectangleId}),
-
+      setShowRectangleGuides: (showRectangleGuides: boolean) => set({showRectangleGuides}),
 
       // Generator Actions
 

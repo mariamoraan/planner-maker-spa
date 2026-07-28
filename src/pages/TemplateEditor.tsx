@@ -22,16 +22,16 @@ const TemplateEditor: React.FC = () => {
   const loadTemplateImages = useTemplateStore(state => state.loadTemplateImages);
   const setCurrentImage = useTemplateStore(state => state.setCurrentImage);
   const currentImageId = useTemplateStore(state => state.currentImageId);
-  const [hydrated, setHydrated] = useState(useTemplateStore.persist.hasHydrated());
-
+  const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
+  
   useEffect(() => {
-    const unsub = useTemplateStore.persist.onFinishHydration(() => setHydrated(true));
-    return unsub;
-  }, []);
-
-  useEffect(() => {
-    if (!templateId) return;
-    loadTemplateImages(templateId);
+    const handleLoadImages = async() => {
+      if (!templateId) return;
+      setIsLoadingImages(true)
+      await loadTemplateImages(templateId)
+      setIsLoadingImages(false)
+    }
+    handleLoadImages();
   }, [templateId, loadTemplateImages]);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ const TemplateEditor: React.FC = () => {
     }
   }, [templateId, currentTemplate, currentImageId, setCurrentImage]);
 
-  if (!hydrated) {
+  if (isLoadingImages) {
     return null;
   }
 
