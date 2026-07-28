@@ -74,7 +74,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
     
     try {
       const imageData = await fileToBase64(file);
-      
       // Get image dimensions
       const img = new Image();
       img.onload = () => {
@@ -229,32 +228,6 @@ const [newTemplateName, setNewTemplateName] = useState('');
   );
 }
 const EmptyCanvasStateUploadPhoto: React.FC = () => {
-  const {uploadImageToEmptyCanvas} = useManageImages();
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      console.error('Please upload an image file');
-      return;
-    }
-    
-    try {
-      const imageData = await fileToBase64(file);
-      
-      // Get image dimensions
-      const img = new Image();
-      img.onload = () => {
-        uploadImageToEmptyCanvas(imageData, img.width, img.height, file.name);
-      };
-      img.src = imageData;
-    } catch (error) {
-      console.error('Error loading image:', error);
-    }
-  }, [uploadImageToEmptyCanvas]);
-    
-  
   return (
     <div className="flex-1 flex items-center justify-center canvas-workspace">
       <div className="text-center animate-fade-in">
@@ -268,16 +241,13 @@ const EmptyCanvasStateUploadPhoto: React.FC = () => {
           Upload a PNG image to start defining dynamic fields for your planner template
         </p>
         <div className="relative inline-block">
-          <input
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            onChange={handleFileChange}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          />
-          <Button size="lg" className="pointer-events-none bg-accent hover:bg-accent/90 text-accent-foreground">
-            <Upload className="w-5 h-5 mr-2" />
-            Upload Template Image
-          </Button>
+          <ImageUploader customButton={
+            <Button size="lg" className="pointer-events-none bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Upload className="w-5 h-5 mr-2" />
+              Upload Template Image
+            </Button>
+          } />
+          
         </div>
       </div>
     </div>

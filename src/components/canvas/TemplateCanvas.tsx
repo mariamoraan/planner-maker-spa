@@ -54,7 +54,6 @@ export const TemplateCanvas: React.FC = () => {
       const containerRect = containerRef.current!.getBoundingClientRect();
       const containerWidth = containerRect.width - PADDING * 2;
       const containerHeight = containerRect.height - PADDING * 2;
-      console.log({containerHeight, containerWidth})
 
       // Scale - fit-to-contain
       const newScale = Math.min(containerWidth / currentImage.width, containerHeight / currentImage.height);
