@@ -14,12 +14,18 @@ import { Label } from '@/components/ui/label';
 import { useState } from 'react';
 import { useTemplateStore } from '@/stores/template-store';
 import './add-template-button.scss'
+import { useNavigate } from 'react-router-dom';
+import { PATHS } from '@/core/routes/paths';
 
 interface Props {
     customButton?: React.ReactElement;
 }
 
 export const AddTemplateButton = ({customButton}: Props) => {
+  const navigate = useNavigate();
+  const setCurrentTemplate = useTemplateStore(state => state.setCurrentTemplate)
+    const setCurrentImage = useTemplateStore(state => state.setCurrentImage)
+
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
 
@@ -27,9 +33,12 @@ export const AddTemplateButton = ({customButton}: Props) => {
 
   const handleCreateTemplate = () => {
     if (newTemplateName.trim()) {
-      createTemplate(newTemplateName.trim());
+      const templateId = createTemplate(newTemplateName.trim());
       setNewTemplateName('');
       setNewTemplateDialogOpen(false);
+      setCurrentTemplate(templateId)
+        setCurrentImage(null);
+        navigate(PATHS.editor);
     }
   };
 
