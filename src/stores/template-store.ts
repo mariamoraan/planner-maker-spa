@@ -205,7 +205,9 @@ export const useTemplateStore = create<TemplateState>()(
               ? { ...t, images: t.images.filter(img => img.id !== imageId), updatedAt: new Date() }
               : t
           ),
-          currentImageId: state.currentImageId === imageId ? null : state.currentImageId,
+          currentImageId: state.currentImageId === imageId 
+          ? state.templates?.find(template => template.id === templateId)?.images[0]?.id ?? null 
+          : state.currentImageId,
         }));
       },
 
