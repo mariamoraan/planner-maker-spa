@@ -3,12 +3,13 @@ import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line, Text, Group
 import useImage from 'use-image';
 import type { FieldType, Rectangle } from '@/types/planner';
 import { FIELD_TYPE_CONFIG } from '@/types/planner';
-import type Konva from 'konva';
+import Konva from 'konva';
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import './template-canva.scss'
 import { MONTH_NAMES } from '@/lib/planner-utils';
+import { TemplateRectangle } from './template-rectangle';
 
 
 interface DrawingRect {
@@ -21,33 +22,6 @@ interface DrawingRect {
 interface GuideLine {
   x?: number;
   y?: number;
-}
-
-const date = new Date();
-const today = new Date(date.getFullYear(), date.getMonth(), 1);
-
-const RECTANGLE_PLACEHOLDERS: Record<FieldType, string> = {
-  'year': today.getFullYear().toString(),
-  'day': today.getDate().toString(),
-  'endDay': today.getDate().toString(),
-  'startDay': today.getDate().toString(),
-  'month': MONTH_NAMES[today.getMonth()],
-}
-
-const getRectanglePlaceholder = (fieldType: FieldType, offset?: number) => {
-  if(fieldType === 'day') {
-    const shiftedDate = new Date(date.getFullYear(), date.getMonth(), 1);
-    shiftedDate.setDate(shiftedDate.getDate() + offset);
-    return shiftedDate.getDate().toString();
-  }
-  if(fieldType === 'endDay') {
-    const shiftedDate = new Date(date.getFullYear(), date.getMonth(), 1);
-    shiftedDate.setDate(shiftedDate.getDate() + 7);
-    return shiftedDate.getDate().toString(); 
-  }
-  else {
-    return RECTANGLE_PLACEHOLDERS[fieldType]
-  }
 }
 
 export const TemplateCanvas: React.FC = () => {
@@ -328,42 +302,19 @@ export const TemplateCanvas: React.FC = () => {
             {currentImage?.rectangles?.map((rect, index) => {
               const config = FIELD_TYPE_CONFIG[rect.fieldType];
               return (
-                <Group
-                key={rect.id}
-                id={`rect-${rect.id}`}
-                x={offset.x + rect.x * scale}
-                y={offset.y + rect.y * scale}
-                width={rect.width * scale}
-                height={rect.height * scale}
-                draggable
-                onClick={() => handleRectClick(rect.id)}
-                onTap={() => handleRectClick(rect.id)}
-                onDragMove={e => handleDragMove(rect.id, e)}
-                onDragEnd={e => handleDragEnd(rect.id, e)}
-                onTransformEnd={e => handleTransformEnd(rect.id, e)}
-              >
-                <Rect
-                  width={rect.width * scale}
-                  height={rect.height * scale}
-                  fill={showRectangleGuides ? config.bgColor : undefined}
-                  stroke={showRectangleGuides ? config.color : undefined}
-                  strokeWidth={showRectangleGuides ? 2 : 0}
-                  cornerRadius={showRectangleGuides ? 4 : 0}
+                <TemplateRectangle
+                  key={`${currentImage.id}-${rect.id}`}
+                  rect={rect}
+                  index={rect?.fieldType === 'day' ? currentImage?.rectangles?.filter(r => r.fieldType === 'day').findIndex(r => r.id === rect.id) : 0}
+                  scale={scale}
+                  offset={offset}
+                  config={config}
+                  showRectangleGuides={showRectangleGuides}
+                  onClick={() => handleRectClick(rect.id)}
+                  onDragMove={e => handleDragMove(rect.id, e)}
+                  onDragEnd={e => handleDragEnd(rect.id, e)}
+                  onTransformEnd={e => handleTransformEnd(rect.id, e)}
                 />
-
-                <Text
-                  text={getRectanglePlaceholder(rect.fieldType, index)}
-                  width={rect.width * scale}
-                  height={rect.height * scale}
-                  align="center"
-                  verticalAlign="middle"
-                  fontSize={rect.height * scale  - (rect.height * scale * 0.15 * 2)}
-                  fontFamily="Gloria Hallelujah"
-                  fill={showRectangleGuides ? config.color : 'black'}
-                  fontStyle="bold"
-                  listening={false}
-                />
-              </Group>
               );
             })}
 
