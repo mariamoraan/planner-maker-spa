@@ -1,0 +1,214 @@
+// ActionMenuButton.scss
+// Menú de acciones desplegable estilo Material UI — solo SCSS, sin dependencias.
+
+$amb-color-text: #1a1a1a;
+
+$amb-color-primary: #7c3aed;
+$amb-color-primary-hover: rgba(124, 58, 237, 0.08);
+$amb-color-primary-active: rgba(124, 58, 237, 0.16);
+
+$amb-color-error: #d32f2f;
+$amb-color-error-hover: rgba(211, 47, 47, 0.08);
+$amb-color-error-active: rgba(211, 47, 47, 0.16);
+
+$amb-color-default-hover: rgba(0, 0, 0, 0.06);
+$amb-color-default-active: rgba(0, 0, 0, 0.1);
+
+$amb-radius: 10px;
+
+// Curvas de easing tipo Material Design: entrada "decelerate", salida "accelerate".
+$amb-ease-enter: cubic-bezier(0.2, 0, 0.2, 1);
+$amb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+.amb {
+  position: relative;
+  max-width: max-content;
+  display: inline-block;
+
+  // ---- Botón disparador ----
+  &__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: rgba(0, 0, 0, 0.6);
+    cursor: pointer;
+
+    transition:
+      background-color 150ms $amb-ease-enter,
+      color 150ms $amb-ease-enter,
+      transform 100ms $amb-ease-enter;
+
+    &:hover:not(:disabled) {
+      background-color: $amb-color-default-hover;
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.9);
+      background-color: $amb-color-default-active;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $amb-color-primary;
+      outline-offset: 2px;
+    }
+
+    &--active {
+      background-color: $amb-color-default-active;
+      color: rgba(0, 0, 0, 0.87);
+    }
+
+    &:disabled {
+      color: rgba(0, 0, 0, 0.26);
+      cursor: not-allowed;
+    }
+
+    svg {
+      display: block;
+    }
+  }
+
+  // ---- Panel del menú (Paper) ----
+  &__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    min-width: 200px;
+    padding: 6px 0;
+    margin: 0;
+    background: #fff;
+    border-radius: $amb-radius;
+    box-shadow:
+      0 2px 4px -1px rgba(0, 0, 0, 0.1),
+      0 6px 12px 0 rgba(0, 0, 0, 0.08),
+      0 2px 20px 0 rgba(0, 0, 0, 0.06);
+    z-index: 1200;
+
+    // Estado cerrado: invisible, ligeramente encogido y desplazado.
+    opacity: 0;
+    transform: scale(0.9) translateY(-6px);
+    pointer-events: none;
+    visibility: hidden;
+    transition:
+      opacity 140ms $amb-ease-exit,
+      transform 140ms $amb-ease-exit,
+      visibility 0ms linear 140ms;
+
+    &--left {
+      left: 0;
+      transform-origin: top left;
+    }
+
+    &--right {
+      right: 0;
+      transform-origin: top right;
+    }
+
+    // Estado abierto: entra con "overshoot" sutil para sensación fluida.
+    &--open {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      pointer-events: auto;
+      visibility: visible;
+      transition:
+        opacity 190ms $amb-ease-enter,
+        transform 220ms $amb-ease-enter,
+        visibility 0ms;
+    }
+  }
+
+  // ---- Items del menú ----
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 9px 16px;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.43;
+    letter-spacing: 0.01em;
+    text-align: left;
+    color: $amb-color-text;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background-color 120ms $amb-ease-enter,
+      padding-left 120ms $amb-ease-enter;
+
+    &:hover:not(:disabled) {
+      background-color: $amb-color-default-hover;
+    }
+
+    &:active:not(:disabled) {
+      background-color: $amb-color-default-active;
+      padding-left: 20px;
+    }
+
+    &:focus-visible {
+      background-color: $amb-color-default-hover;
+      outline: none;
+    }
+
+    // Variante primary (morado)
+    &--primary {
+      color: $amb-color-primary;
+
+      &:hover:not(:disabled) {
+        background-color: $amb-color-primary-hover;
+      }
+      &:active:not(:disabled) {
+        background-color: $amb-color-primary-active;
+      }
+      &:focus-visible {
+        background-color: $amb-color-primary-hover;
+      }
+    }
+
+    // Variante error (rojo)
+    &--error {
+      color: $amb-color-error;
+
+      &:hover:not(:disabled) {
+        background-color: $amb-color-error-hover;
+      }
+      &:active:not(:disabled) {
+        background-color: $amb-color-error-active;
+      }
+      &:focus-visible {
+        background-color: $amb-color-error-hover;
+      }
+    }
+
+    &:disabled {
+      color: rgba(0, 0, 0, 0.26) !important;
+      cursor: not-allowed;
+      background: transparent !important;
+      padding-left: 16px !important;
+    }
+  }
+
+  &__item-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  &__item-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

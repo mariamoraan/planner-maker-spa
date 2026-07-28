@@ -1,23 +1,33 @@
-import { useTemplateStore } from "@/stores/template-store"
+
 import './home.page.scss'
+
+import { useTemplateStore } from "@/stores/template-store"
 import { useNavigate } from "react-router-dom"
 import { getEditorPath } from "@/core/routes/paths";
 import { useEffect, useState } from "react";
 import { get as idbGet } from 'idb-keyval';
-import {CloudUpload, Plus} from 'lucide-react'
+import {CloudUpload, EllipsisIcon, Plus} from 'lucide-react'
 import { AddTemplateButton } from "@/components/add-template-button/add-template-button";
 import { AnimatedTagline } from "@/components/animated-tagline/animated-tagline";
+import ActionMenuButton from "@/core/components/action-menu-button/action-menu-button";
+import { TemplateImage } from '@/types/planner';
 
 export const HomePage = () => {
     const navigate = useNavigate();
     const templatesWithoutImages = useTemplateStore(state => state.templates)
     const setCurrentImage = useTemplateStore(state => state.setCurrentImage)
+    const deleteTemplate = useTemplateStore(state => state.deleteTemplate)
     const goToTemplate = (templateId: string) => {
         setCurrentImage(templates?.find(template => template.id === templateId)?.images[0]?.id ?? null)
         navigate(getEditorPath(templateId))
     }
     const [templates, setTemplates] = useState([]);
     
+    const getCoverImage = (images: TemplateImage[]): TemplateImage => {
+        const cover = images?.find(image => image.type === 'cover')
+        if(cover) return cover;
+        return images[0];
+    }
 
       useEffect(() => {
        const loadTemplatesImages = async() => {
@@ -60,7 +70,10 @@ export const HomePage = () => {
                             >
                             {
                             template?.images?.length 
-                            ? <img  className="home-page__main__templates__list__li__img" src={template.images[0].src} /> 
+                            ? <img  
+                                className="home-page__main__templates__list__li__img" 
+                                src={getCoverImage(template.images).src} 
+                                /> 
                             : (
                                 <div className="home-page__main__templates__list__li__void-img">
                                     <CloudUpload />
@@ -70,6 +83,9 @@ export const HomePage = () => {
                             <div className="home-page__main__templates__list__li__info">
                                 <p className="home-page__main__templates__list__li__info__title">{template.name}</p>
                                 <p className="home-page__main__templates__list__li__info__updated">Editado el {template?.updatedAt.toLocaleString('default', {day: '2-digit', month: 'short', year: 'numeric'})}</p>
+                                <ActionMenuButton icon={<EllipsisIcon />} actions={[
+                                    {name: 'Delete Template', onClick: () => deleteTemplate(template.id)}
+                                ]} />
                             </div>
                             </li>
                         ))}
