@@ -40,14 +40,15 @@ export const Toolbar = () => {
              <p className='toolbar__name'>{config.label} {order + 1}</p>
              <div className='toolbar__divider' />
              <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsEditAreaTypeMenuOpen(true)
-                }}
-                className='toolbar__edit-button'
+            ref={editAreaTypeMenuRef} 
+            onClick={(e) => {
+                e.stopPropagation();
+                setIsEditAreaTypeMenuOpen(!isEditAreaTypeMenuOpen)
+            }}
+            className='toolbar__edit-button'
             >
                 Editar Tipo
-                <div ref={editAreaTypeMenuRef} className={clsx('toolbar__change-area-type-menu', {'toolbar__change-area-type-menu--visible': isEditAreaTypeMenuOpen})}>
+                <div className={clsx('toolbar__change-area-type-menu', {'toolbar__change-area-type-menu--visible': isEditAreaTypeMenuOpen})}>
                     <div className='toolbar__change-area-type-menu__options'>
                     {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).map(type => (
                         <div key={type} onClick={() => updateAreaType(currentSelectedBox.id, type)}>{FIELD_ICONS[type]}</div>
