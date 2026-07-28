@@ -1,10 +1,11 @@
 import { useTemplateStore } from '@/stores/template-store';
 import { FieldType } from '@/types/planner';
 import { useCallback } from 'react';
+import { useTemplateId } from './use-template-id';
 
 export const useManageAreas = () => {
+    const templateId = useTemplateId();
     const {
-    currentTemplateId,
     currentImageId,
     addRectangle,
     updateRectangle,
@@ -15,33 +16,33 @@ export const useManageAreas = () => {
     const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
       
     const addArea = useCallback((rect: Omit<import('@/types/planner').Rectangle, 'id'>) => {
-        if (currentTemplateId && currentImageId) {
-          const id = addRectangle(currentTemplateId, currentImageId, rect);
+        if (templateId && currentImageId) {
+          const id = addRectangle(templateId, currentImageId, rect);
           setSelectedRectangleId(id);
         }
-    }, [currentTemplateId, currentImageId, addRectangle]);
+    }, [templateId, currentImageId, addRectangle, setSelectedRectangleId]);
 
 
     const updateArea = useCallback((id: string, updates: Partial<import('@/types/planner').Rectangle>) => {
-        if (currentTemplateId && currentImageId) {
-          updateRectangle(currentTemplateId, currentImageId, id, updates);
+        if (templateId && currentImageId) {
+          updateRectangle(templateId, currentImageId, id, updates);
         }
-    }, [currentTemplateId, currentImageId, updateRectangle]);
+    }, [templateId, currentImageId, updateRectangle]);
 
     const deleteArea = useCallback((id: string) => {
-        if (currentTemplateId && currentImageId) {
-          deleteRectangle(currentTemplateId, currentImageId, id);
+        if (templateId && currentImageId) {
+          deleteRectangle(templateId, currentImageId, id);
           if (selectedRectangleId === id) {
             setSelectedRectangleId(null);
           }
         }
-    }, [currentTemplateId, currentImageId, deleteRectangle, selectedRectangleId]);
+    }, [templateId, currentImageId, deleteRectangle, selectedRectangleId, setSelectedRectangleId]);
       
     const updateAreaType = useCallback((id: string, type: FieldType) => {
-        if (currentTemplateId && currentImageId) {
-            updateRectangle(currentTemplateId, currentImageId, id, { fieldType: type });
+        if (templateId && currentImageId) {
+            updateRectangle(templateId, currentImageId, id, { fieldType: type });
         }
-    }, [currentTemplateId, currentImageId, updateRectangle]);
+    }, [templateId, currentImageId, updateRectangle]);
 
 
     return {

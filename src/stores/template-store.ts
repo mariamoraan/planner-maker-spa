@@ -27,12 +27,11 @@ interface TemplateState {
 
   // Template actions
   templates: Template[];
-  currentTemplateId: string | null;
   createTemplate: (name: string, description?: string) => string;
   updateTemplate: (id: string, updates: Partial<Template>) => void;
   deleteTemplate: (id: string) => Promise<void>;
-  setCurrentTemplate: (id: string | null) => Promise<void>;
-  getCurrentTemplate: () => Template | null;
+  loadTemplateImages: (id: string) => Promise<void>;
+  getTemplate: (id: string) => Template | null;
 
 
   // Image actions
@@ -42,7 +41,7 @@ interface TemplateState {
   updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage>) => void;
   deleteImage: (templateId: string, imageId: string) => Promise<void>;
   setCurrentImage: (id: string | null) => Promise<void>;
-  getCurrentImage: () => TemplateImage | null;
+  getCurrentImage: (templateId: string) => TemplateImage | null;
 
 
   // Rectangle actions
@@ -65,7 +64,6 @@ export const useTemplateStore = create<TemplateState>()(
   persist(
     (set, get) => ({
       templates: [],
-      currentTemplateId: null,
 
       // Template actions
 
@@ -82,7 +80,6 @@ export const useTemplateStore = create<TemplateState>()(
         };
         set(state => ({
           templates: [...state.templates, template],
-          currentTemplateId: id,
         }));
         return id;
       },
@@ -103,35 +100,29 @@ export const useTemplateStore = create<TemplateState>()(
         }
         set(state => ({
           templates: state.templates.filter(t => t.id !== id),
-          currentTemplateId: state.currentTemplateId === id ? null : state.currentTemplateId,
           currentImageId: state.currentImageId && template?.images.some(img => img.id === state.currentImageId) ? null : state.currentImageId,
         }));
       },
 
-      setCurrentTemplate: async (id) => {
-        set({ currentTemplateId: id, currentImageId: null });
-        if (id) {
-          const template = get().templates.find(t => t.id === id);
-          if (template) {
-            // cargar imágenes automáticamente desde IndexedDB
-            const imagesWithSrc = await Promise.all(
-              template.images.map(async (img) => ({
-                ...img,
-                src: await idbGet(`image-${img.id}`),
-              }))
-            );
-            set(state => ({
-              templates: state.templates.map(t =>
-                t.id === id ? { ...t, images: imagesWithSrc } : t
-              ),
-            }));
-          }
+      loadTemplateImages: async (id) => {
+        const template = get().templates.find(t => t.id === id);
+        if (template) {
+          const imagesWithSrc = await Promise.all(
+            template.images.map(async (img) => ({
+              ...img,
+              src: await idbGet(`image-${img.id}`),
+            }))
+          );
+          set(state => ({
+            templates: state.templates.map(t =>
+              t.id === id ? { ...t, images: imagesWithSrc } : t
+            ),
+          }));
         }
       },
 
-      getCurrentTemplate: () => {
-        const state = get();
-        return state.templates.find(t => t.id === state.currentTemplateId) ?? null;
+      getTemplate: (id) => {
+        return get().templates.find(t => t.id === id) ?? null;
       },
 
       // Image actions
@@ -206,7 +197,7 @@ export const useTemplateStore = create<TemplateState>()(
               : t
           ),
           currentImageId: state.currentImageId === imageId 
-          ? state.templates?.find(template => template.id === templateId)?.images[0]?.id ?? null 
+          ? null 
           : state.currentImageId,
         }));
       },
@@ -214,8 +205,8 @@ export const useTemplateStore = create<TemplateState>()(
       setCurrentImage: async (id) => {
         set({ currentImageId: id });
         if (id) {
-          // Cargar src desde IndexedDB automáticamente
-          const template = get().getCurrentTemplate();
+          const state = get();
+          const template = state.templates.find(t => t.images.some(img => img.id === id));
           if (!template) return;
           const image = template.images.find(img => img.id === id);
           if (image) {
@@ -236,9 +227,9 @@ export const useTemplateStore = create<TemplateState>()(
         }
       },
 
-       getCurrentImage: () => {
+       getCurrentImage: (templateId) => {
         const state = get();
-        const template = state.getCurrentTemplate();
+        const template = state.getTemplate(templateId);
         return template?.images.find(img => img.id === state.currentImageId) ?? null;
       },
 

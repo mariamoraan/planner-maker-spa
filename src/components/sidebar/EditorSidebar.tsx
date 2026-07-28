@@ -1,20 +1,13 @@
 import React from 'react';
 import { FieldTypeSelector } from './FieldTypeSelector';
-
-import { useTemplateStore } from '@/stores/template-store';
 import './editor-sidebar.scss'
+import { useCurrentTemplate } from '@/hooks/use-current-template';
+import { useCurrentImage } from '@/hooks/use-current-image';
 
 export const EditorSidebar: React.FC = () => {
+    const template = useCurrentTemplate();
+    const currentImage = useCurrentImage();
 
-  const {
-      getCurrentTemplate,
-      getCurrentImage,
-    } = useTemplateStore();
-
-    const template = getCurrentTemplate();
-    const currentImage = getCurrentImage();
-
-  
   return (
     <aside className="editor-sidebar">
       <div className="editor-sidebar__main">

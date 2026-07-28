@@ -1,5 +1,8 @@
 export const PATHS = {
     landing: '/',
-    editor: '/editor',
-    home: '/home'
-}
+    home: '/home',
+    editor: '/editor/:templateId',
+} as const;
+
+export const getEditorPath = (templateId: string) =>
+    `/editor/${templateId}`;

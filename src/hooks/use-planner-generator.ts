@@ -1,16 +1,16 @@
 import { useState, useCallback } from 'react';
-import { PDFDocument } from 'pdf-lib';
 import type { Template, GeneratedPage } from '@/types/planner';
 import { getFieldValue, loadImage, WeekData, getMonthsBetween } from '@/lib/planner-utils';
-import { useTemplateStore } from '@/stores/template-store';
+import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { WorkerResponse } from '@/workers/pdf.worker';
+
 
 export function usePlannerGenerator() {
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedPages, setGeneratedPages] = useState<GeneratedPage[]>([]);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const { getCurrentTemplate } = useTemplateStore();
+  const currentTemplate = useCurrentTemplate();
 
   // ─── Generación de páginas ────────────────────────────────────────────────
 
@@ -177,7 +177,6 @@ export function usePlannerGenerator() {
 
   const downloadPDF = useCallback(async () => {
     if (generatedPages.length === 0) return;
-    const currentTemplate = getCurrentTemplate();
     setIsGeneratingPDF(true);
   
     try {
@@ -216,7 +215,7 @@ export function usePlannerGenerator() {
     } finally {
       setIsGeneratingPDF(false);
     }
-  }, [generatedPages, getCurrentTemplate]);
+  }, [generatedPages, currentTemplate]);
 
   // ─── Descarga imágenes individuales ──────────────────────────────────────
 

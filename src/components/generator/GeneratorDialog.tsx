@@ -14,14 +14,14 @@ import { usePlannerGenerator } from '@/hooks/use-planner-generator';
 import { useTemplateStore } from '@/stores/template-store';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
+import { useCurrentTemplate } from '@/hooks/use-current-template';
 
 
 export const GeneratorDialog: React.FC = () => {
    const {
-      getCurrentTemplate,
       updateTemplate,
     } = useTemplateStore();
-  const template = getCurrentTemplate();
+  const template = useCurrentTemplate();
   const startDate: Date = template?.startDate ?? new Date();
   const endDate: Date = template?.endDate ?? new Date();
 
@@ -34,6 +34,7 @@ export const GeneratorDialog: React.FC = () => {
     
   
   const handleGenerate = useCallback(async () => {
+    if (!template) return;
     await generatePlanner(template, startDate, endDate);
   }, [template, startDate, endDate, generatePlanner]);
 
@@ -42,6 +43,8 @@ export const GeneratorDialog: React.FC = () => {
       handleGenerate()
     }
   }, [isGeneratorOpen])
+
+  if (!template) return null;
   
   return (
     <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>

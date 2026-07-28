@@ -9,6 +9,7 @@ import { DayIcon } from './day-icon';
 import { StartWeekDayIcon } from './start-week-day-icon';
 import { EndWeekDayIcon } from './end-week-day-icon';
 import { useManageAreas } from '@/hooks/use-manage-areas';
+import { useCurrentImage } from '@/hooks/use-current-image';
 
 const ICON_HEIGHT = 50;
 const ICON_WIDTH = 50;
@@ -23,11 +24,12 @@ export const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 
 export const FieldTypeSelector = () => {
   
-  const {getCurrentImage, selectedFieldType, setSelectedFieldType} = useTemplateStore()
+  const { selectedFieldType, setSelectedFieldType} = useTemplateStore()
   const {addArea} = useManageAreas();
-  const currentImage = getCurrentImage()
+  const currentImage = useCurrentImage()
 
   useEffect(() => {
+    if (!currentImage) return;
     const availableFieldTypes = (Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).filter(type => TEMPLATE_FIELD_TYPES[currentImage.type].includes(type))
     if(!selectedFieldType) {
       setSelectedFieldType(availableFieldTypes[0]);
@@ -37,7 +39,9 @@ export const FieldTypeSelector = () => {
     if(!includesCurrentFieldType) {
       setSelectedFieldType(availableFieldTypes?.length ? availableFieldTypes[0] : undefined)
     }
-  }, [currentImage.type, selectedFieldType])
+  }, [currentImage, currentImage?.type, selectedFieldType, setSelectedFieldType])
+
+  if (!currentImage) return null;
 
   const handleSelectType = (type: FieldType) => {
     setSelectedFieldType(type);

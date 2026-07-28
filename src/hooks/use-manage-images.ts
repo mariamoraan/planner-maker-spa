@@ -1,20 +1,20 @@
 import { useTemplateStore } from "@/stores/template-store";
 import { TemplateType } from "@/types/planner";
 import { useCallback } from "react";
+import { useTemplateId } from "./use-template-id";
 
 export const useManageImages = () => {
+    const templateId = useTemplateId();
     const {
-        currentTemplateId,
         addImage: addImageToStore,
         deleteImage: deleteImageStore,
-        createTemplate
       } = useTemplateStore();
 
     const deleteImage = useCallback((id: string) => {
-        if (currentTemplateId) {
-            deleteImageStore(currentTemplateId, id);
+        if (templateId) {
+            deleteImageStore(templateId, id);
         }
-    }, [currentTemplateId, deleteImageStore]);
+    }, [templateId, deleteImageStore]);
 
     const addImage = useCallback((
         imageData: string,
@@ -23,10 +23,10 @@ export const useManageImages = () => {
         name: string,
         type: TemplateType
       ) => {
-        if (currentTemplateId) {
-            addImageToStore({ templateId: currentTemplateId, imageData, width, height, name, type });
+        if (templateId) {
+            addImageToStore({ templateId, imageData, width, height, name, type });
         }
-      }, [currentTemplateId, addImageToStore]);
+      }, [templateId, addImageToStore]);
 
     const uploadImageToEmptyCanvas = useCallback((
     imageData: string,
@@ -34,9 +34,7 @@ export const useManageImages = () => {
     height: number,
     name: string
     ) => {
-    if (!currentTemplateId) {
-        // Create template first
-        const templateId = createTemplate('My Planner');
+    if (templateId) {
         addImageToStore({ 
         templateId,
         imageData, 
@@ -45,17 +43,8 @@ export const useManageImages = () => {
         name, 
         type: 'monthly-calendar' 
         });
-    } else {
-        addImageToStore({ 
-        templateId: currentTemplateId,
-        imageData, 
-        width, 
-        height, 
-        name, 
-        type: 'monthly-calendar' 
-        });
     }
-    }, [currentTemplateId, createTemplate, addImage]);
+    }, [templateId, addImageToStore]);
 
     return {
         addImage,

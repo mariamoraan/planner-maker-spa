@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useTemplateStore } from '@/stores/template-store'
 import { FIELD_TYPE_CONFIG, FieldType } from '@/types/planner'
 import { useManageAreas } from '@/hooks/use-manage-areas'
+import { useCurrentImage } from '@/hooks/use-current-image'
 import './toolbar.scss'
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
@@ -10,8 +11,10 @@ import { FIELD_ICONS } from '../sidebar/FieldTypeSelector';
 import useOnClickOutside from '@/core/hooks/use-on-click-outside'
 
 export const Toolbar = () => {
-    const getCurrentImage = useTemplateStore(state => state.getCurrentImage)
+    const currentImage = useCurrentImage();
     const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
+    const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
+
     const { updateAreaType, deleteArea} = useManageAreas();
     const [isEditAreaTypeMenuOpen, setIsEditAreaTypeMenuOpen] = useState(false);
     const editAreaTypeMenuRef = useRef();
@@ -19,9 +22,6 @@ export const Toolbar = () => {
     useOnClickOutside(editAreaTypeMenuRef, () => {
         setIsEditAreaTypeMenuOpen(false)
     })
-
-    const currentImage = getCurrentImage();
-    const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
 
     useEffect(() => {
         setIsEditAreaTypeMenuOpen(false)
@@ -50,7 +50,7 @@ export const Toolbar = () => {
                 <div ref={editAreaTypeMenuRef} className={clsx('toolbar__change-area-type-menu', {'toolbar__change-area-type-menu--visible': isEditAreaTypeMenuOpen})}>
                     <div className='toolbar__change-area-type-menu__options'>
                     {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).map(type => (
-                        <div onClick={() => updateAreaType(currentSelectedBox.id, type)}>{FIELD_ICONS[type]}</div>
+                        <div key={type} onClick={() => updateAreaType(currentSelectedBox.id, type)}>{FIELD_ICONS[type]}</div>
                     ))}
                     </div>
                 </div>

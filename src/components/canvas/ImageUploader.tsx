@@ -24,6 +24,8 @@ import { Input } from '@/components/ui/input';
 import { useManageImages } from '@/hooks/use-manage-images';
 import { useTemplateStore } from '@/stores/template-store';
 import { TEMPLATE_TYPE_CONFIG, TemplateType } from '@/types/planner';
+import { useNavigate } from 'react-router-dom';
+import { getEditorPath } from '@/core/routes/paths';
 import './image-uploader.scss'
 
 interface ImageUploaderProps {
@@ -165,16 +167,18 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
 
 const EmptyCanvasStateCreateTemplate: React.FC = () => {
  const {createTemplate} = useTemplateStore();
+ const navigate = useNavigate();
 const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
 
   const handleCreateTemplate = useCallback(() => {
     if (newTemplateName.trim()) {
-      createTemplate(newTemplateName.trim());
+      const templateId = createTemplate(newTemplateName.trim());
       setNewTemplateName('');
       setNewTemplateDialogOpen(false);
+      navigate(getEditorPath(templateId));
     }
-  }, [newTemplateName, createTemplate]);
+  }, [newTemplateName, createTemplate, navigate]);
     
   
   return (

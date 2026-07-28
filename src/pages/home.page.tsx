@@ -1,7 +1,7 @@
 import { useTemplateStore } from "@/stores/template-store"
 import './home.page.scss'
 import { useNavigate } from "react-router-dom"
-import { PATHS } from "@/core/routes/paths";
+import { getEditorPath } from "@/core/routes/paths";
 import { useEffect, useState } from "react";
 import { get as idbGet } from 'idb-keyval';
 import {CloudUpload, Plus} from 'lucide-react'
@@ -11,12 +11,10 @@ import { AnimatedTagline } from "@/components/animated-tagline/animated-tagline"
 export const HomePage = () => {
     const navigate = useNavigate();
     const templatesWithoutImages = useTemplateStore(state => state.templates)
-    const setCurrentTemplate = useTemplateStore(state => state.setCurrentTemplate)
     const setCurrentImage = useTemplateStore(state => state.setCurrentImage)
     const goToTemplate = (templateId: string) => {
-        setCurrentTemplate(templateId)
         setCurrentImage(templates?.find(template => template.id === templateId)?.images[0]?.id ?? null)
-        navigate(PATHS.editor)
+        navigate(getEditorPath(templateId))
     }
     const [templates, setTemplates] = useState([]);
     

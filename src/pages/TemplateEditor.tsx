@@ -1,11 +1,14 @@
-import React, { useEffect } from 'react';
-import { EditorSidebar } from '@/components/sidebar/EditorSidebar';
-import { TemplateCanvas } from '@/components/canvas/TemplateCanvas';
+import React, { useEffect, useState } from 'react';
 import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
 import { GeneratorDialog } from '@/components/generator/GeneratorDialog';
 import { useTemplateStore } from '@/stores/template-store';
 import { motion } from 'framer-motion';
 import { EditorBoard } from '@/components/editor-board/editor-board';
+import { Navigate } from 'react-router-dom';
+import { PATHS } from '@/core/routes/paths';
+import { useTemplateId } from '@/hooks/use-template-id';
+import { useCurrentTemplate } from '@/hooks/use-current-template';
+import { useCurrentImage } from '@/hooks/use-current-image';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -13,26 +16,41 @@ const fadeUp = {
 };
 
 const TemplateEditor: React.FC = () => {
-  
-  const {
-    templates,
-    currentTemplateId,
-    setCurrentTemplate,
-    setCurrentImage,
-    getCurrentTemplate,
-    getCurrentImage,
-  } = useTemplateStore();
-  
-  const currentTemplate = getCurrentTemplate();
-  const currentImage = getCurrentImage();
-  
+  const templateId = useTemplateId();
+  const currentTemplate = useCurrentTemplate();
+  const currentImage = useCurrentImage();
+  const loadTemplateImages = useTemplateStore(state => state.loadTemplateImages);
+  const setCurrentImage = useTemplateStore(state => state.setCurrentImage);
+  const currentImageId = useTemplateStore(state => state.currentImageId);
+  const [hydrated, setHydrated] = useState(useTemplateStore.persist.hasHydrated());
+
   useEffect(() => {
-    if(!currentTemplateId && templates?.length) {
-      setCurrentTemplate(templates[0].id)
-      setCurrentImage(templates[0].images[0].id ?? null)
+    const unsub = useTemplateStore.persist.onFinishHydration(() => setHydrated(true));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    if (!templateId) return;
+    loadTemplateImages(templateId);
+  }, [templateId, loadTemplateImages]);
+
+  useEffect(() => {
+    if (!templateId || !currentTemplate) return;
+    const firstImageId = currentTemplate.images[0]?.id ?? null;
+    const imageBelongsToTemplate = currentTemplate.images.some(img => img.id === currentImageId);
+    if (!imageBelongsToTemplate && firstImageId) {
+      setCurrentImage(firstImageId);
     }
-  },[templates, currentTemplateId] )
-  
+  }, [templateId, currentTemplate, currentImageId, setCurrentImage]);
+
+  if (!hydrated) {
+    return null;
+  }
+
+  if (!templateId || !currentTemplate) {
+    return <Navigate to={PATHS.home} replace />;
+  }
+
   return (
     <motion.div 
     initial="hidden"

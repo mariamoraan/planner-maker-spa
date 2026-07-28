@@ -1,6 +1,6 @@
 import NotFound from "@/pages/NotFound";
 import TemplateEditor from "@/pages/TemplateEditor";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PATHS } from "./paths";
 import LandingPage from "@/pages/LandingPage";
 import { HomePage } from "@/pages/home.page";
@@ -12,6 +12,7 @@ export const AppRouter = () => {
         <Routes>
           <Route path={PATHS.landing} element={<LandingPage />} />
           <Route path={PATHS.home} element={<HomePage />} />
+          <Route path="/editor" element={<Navigate to={PATHS.home} replace />} />
           <Route path={PATHS.editor} element={<TemplateEditor />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

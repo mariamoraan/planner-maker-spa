@@ -22,7 +22,7 @@ const tiers = [
     ],
     cta: 'Start for free',
     onClick: (navigate: (path: string) => void) => {
-      navigate(PATHS.editor)
+      navigate(PATHS.home)
     },
     highlight: true,
   },

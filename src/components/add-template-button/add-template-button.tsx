@@ -15,7 +15,7 @@ import { useState } from 'react';
 import { useTemplateStore } from '@/stores/template-store';
 import './add-template-button.scss'
 import { useNavigate } from 'react-router-dom';
-import { PATHS } from '@/core/routes/paths';
+import { getEditorPath } from '@/core/routes/paths';
 
 interface Props {
     customButton?: React.ReactElement;
@@ -23,8 +23,7 @@ interface Props {
 
 export const AddTemplateButton = ({customButton}: Props) => {
   const navigate = useNavigate();
-  const setCurrentTemplate = useTemplateStore(state => state.setCurrentTemplate)
-    const setCurrentImage = useTemplateStore(state => state.setCurrentImage)
+  const setCurrentImage = useTemplateStore(state => state.setCurrentImage)
 
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
@@ -36,9 +35,8 @@ export const AddTemplateButton = ({customButton}: Props) => {
       const templateId = createTemplate(newTemplateName.trim());
       setNewTemplateName('');
       setNewTemplateDialogOpen(false);
-      setCurrentTemplate(templateId)
-        setCurrentImage(null);
-        navigate(PATHS.editor);
+      setCurrentImage(null);
+        navigate(getEditorPath(templateId));
     }
   };
 

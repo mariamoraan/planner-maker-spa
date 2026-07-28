@@ -1,12 +1,11 @@
-import { useTemplateStore } from '@/stores/template-store';
 import './pages-map.scss'
 import { PageThumbnail } from './page-thumbnail';
 import { Plus } from 'lucide-react';
 import { ImageUploader } from '../canvas/ImageUploader';
+import { useCurrentTemplate } from '@/hooks/use-current-template';
 
 export const PagesMap = () => {
-    const { getCurrentTemplate } = useTemplateStore();
-    const template = getCurrentTemplate();
+    const template = useCurrentTemplate();
     const images = template?.images;
 
     if(!images?.length) return null;
