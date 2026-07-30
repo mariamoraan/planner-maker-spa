@@ -120,7 +120,7 @@
   "editor": {
     "currentPage": "Current Page",
     "dynamicBlocks": "Dynamic Blocks",
-    "actions": "Actions",
+    "actions": "Configuration",
     "blockSettings": "Block Settings",
     "blocksSelected": "{{count}} blocks selected",
     "blocksSelected_one": "{{count}} block selected",

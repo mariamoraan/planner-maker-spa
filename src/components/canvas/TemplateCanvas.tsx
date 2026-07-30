@@ -1002,13 +1002,6 @@ export const TemplateCanvas: React.FC = () => {
           onZoomIn={handleZoomIn}
           onZoomOut={handleZoomOut}
           onZoomReset={handleZoomReset}
-          hint={
-            isMeasureMode
-              ? t('editor.measureHint')
-              : isPanMode
-                ? t('editor.panHint')
-                : undefined
-          }
           measureAdjust={
             measureState.phase === 'done'
               ? {

@@ -120,7 +120,6 @@ export const EditorSidebar: React.FC = () => {
           open={sectionOpen.actions}
           onOpenChange={(open) => setSectionOpenState('actions', open)}
         >
-          <EditorPlannerActions variant="sidebar" />
           {template && (
             <div className="editor-sidebar__locale">
               <label className="editor-sidebar__locale-label" htmlFor="planner-locale">
@@ -184,6 +183,7 @@ export const EditorSidebar: React.FC = () => {
             <AreaStylePanel />
           </EditorSidebarSection>
         )}
+        <EditorPlannerActions variant="sidebar" />
       </div>
     </aside>
   );
