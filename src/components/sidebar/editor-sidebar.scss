@@ -101,15 +101,82 @@
         &__section {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            &__title {
-                padding-left: 8px;
-                text-transform: uppercase;
-                font-size: 12px;
-                font-weight: bold;
-                color: grey;
+
+            &__trigger {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                padding: 0 0 0 8px;
+                background: none;
+                border: none;
                 border-left: 1px solid grey;
+                cursor: pointer;
+                text-align: left;
+
+                &:hover {
+                    opacity: 0.75;
+                }
+
+                &__title {
+                    text-transform: uppercase;
+                    font-size: 12px;
+                    font-weight: bold;
+                    color: grey;
+                }
+
+                &__chevron {
+                    flex-shrink: 0;
+                    color: grey;
+                    transition: transform 0.2s ease;
+                }
+            }
+
+            &[data-state='open'] .editor-sidebar__main__section__trigger__chevron {
+                transform: rotate(180deg);
+            }
+
+            &__content {
+                overflow: hidden;
+
+                &[data-state='open'] {
+                    animation: editor-sidebar-section-down 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+
+                &[data-state='closed'] {
+                    animation: editor-sidebar-section-up 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                }
+            }
+
+            &__content-inner {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                padding-top: 16px;
+            }
+
+            &__content__title {
+                font-size: 14px;
+                font-weight: 500;
             }
         }
+    }
+}
+
+@keyframes editor-sidebar-section-down {
+    from {
+        height: 0;
+    }
+    to {
+        height: var(--radix-collapsible-content-height);
+    }
+}
+
+@keyframes editor-sidebar-section-up {
+    from {
+        height: var(--radix-collapsible-content-height);
+    }
+    to {
+        height: 0;
     }
 }
