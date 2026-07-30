@@ -26,13 +26,22 @@ function resolveImageRef(uid: string | null, pageId: string, existing?: ImageRef
 async function loadPageSrc(uid: string | null, image: TemplateImage): Promise<TemplateImage> {
   const ref = resolveImageRef(uid, image.id, image.imageRef);
   const { images } = getInfra();
-  const src = await images.load(ref);
+  let src = await images.load(ref);
+
+  if (!src && uid) {
+    src = await images.load({ provider: 'local', key: buildLegacyImageKey(image.id) });
+  }
+
   return {
     ...image,
     imageRef: ref,
     src: src ?? '',
     missingLocalAsset: !src,
   };
+}
+
+function needsImageLoad(image: TemplateImage): boolean {
+  return !image.src && !image.missingLocalAsset;
 }
 
 function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
@@ -159,8 +168,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
         const merged = remoteTemplate.images.map(remoteImg => {
           const localImg = localById.get(remoteImg.id);
           const src = srcByPageId.get(remoteImg.id) ?? '';
-          const missingLocalAsset =
-            missingByPageId.get(remoteImg.id) ?? !srcByPageId.has(remoteImg.id);
+          const missingLocalAsset = missingByPageId.get(remoteImg.id) ?? false;
 
           if (localImg && localImg.updatedAt.getTime() > remoteImg.updatedAt.getTime()) {
             return { ...localImg, src, missingLocalAsset };
@@ -274,9 +282,21 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
     const template = get().templates.find(t => t.id === id);
     if (!template) return;
 
-    const imagesWithSrc = await Promise.all(template.images.map(img => loadPageSrc(uid, img)));
+    const toLoad = template.images.filter(needsImageLoad);
+    if (toLoad.length === 0) return;
+
+    const loaded = await Promise.all(toLoad.map(img => loadPageSrc(uid, img)));
+    const loadedById = new Map(loaded.map(img => [img.id, img]));
+
     set(state => ({
-      templates: state.templates.map(t => (t.id === id ? { ...t, images: imagesWithSrc } : t)),
+      templates: state.templates.map(t =>
+        t.id !== id
+          ? t
+          : {
+              ...t,
+              images: t.images.map(img => loadedById.get(img.id) ?? img),
+            }
+      ),
     }));
   },
 
@@ -285,14 +305,20 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
     const templates = get().templates;
     if (templates.length === 0) return;
 
-    const updatedTemplates = await Promise.all(
-      templates.map(async template => ({
-        ...template,
-        images: await Promise.all(template.images.map(img => loadPageSrc(uid, img))),
-      }))
+    const toLoad = templates.flatMap(t =>
+      t.images.filter(needsImageLoad).map(img => img)
     );
+    if (toLoad.length === 0) return;
 
-    set({ templates: updatedTemplates });
+    const loaded = await Promise.all(toLoad.map(img => loadPageSrc(uid, img)));
+    const loadedById = new Map(loaded.map(img => [img.id, img]));
+
+    set(state => ({
+      templates: state.templates.map(t => ({
+        ...t,
+        images: t.images.map(img => loadedById.get(img.id) ?? img),
+      })),
+    }));
   },
 
   getTemplate: id => get().templates.find(t => t.id === id) ?? null,

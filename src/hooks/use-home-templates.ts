@@ -6,8 +6,11 @@ export const useHomeTemplates = () => {
   const loadAllTemplateImages = useTemplateStore(state => state.loadAllTemplateImages);
   const [isLoading, setIsLoading] = useState(true);
 
-  const templateIds = useMemo(
-    () => templates.map(template => template.id).join(','),
+  const imageFingerprint = useMemo(
+    () =>
+      templates
+        .map(template => `${template.id}:${template.images.map(img => img.id).join('.')}`)
+        .join('|'),
     [templates],
   );
 
@@ -15,7 +18,7 @@ export const useHomeTemplates = () => {
     let cancelled = false;
 
     const load = async () => {
-      if (!templateIds) {
+      if (!imageFingerprint) {
         setIsLoading(false);
         return;
       }
@@ -32,7 +35,7 @@ export const useHomeTemplates = () => {
     return () => {
       cancelled = true;
     };
-  }, [templateIds, loadAllTemplateImages]);
+  }, [imageFingerprint, loadAllTemplateImages]);
 
   return { templates, isLoading };
 };

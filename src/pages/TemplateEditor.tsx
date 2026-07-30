@@ -32,14 +32,24 @@ const TemplateEditor: React.FC = () => {
   const { isSupported } = useEditorViewportSupport();
   
   useEffect(() => {
-    const handleLoadImages = async() => {
+    let cancelled = false;
+
+    const handleLoadImages = async () => {
       if (!templateId) return;
-      setIsLoadingImages(true)
-      await loadTemplateImages(templateId)
-      normalizeImageOrder(templateId)
-      setIsLoadingImages(false)
-    }
-    handleLoadImages();
+      setIsLoadingImages(true);
+      await loadTemplateImages(templateId);
+      if (cancelled) return;
+      normalizeImageOrder(templateId);
+      if (!cancelled) {
+        setIsLoadingImages(false);
+      }
+    };
+
+    void handleLoadImages();
+
+    return () => {
+      cancelled = true;
+    };
   }, [templateId, loadTemplateImages, normalizeImageOrder]);
 
   useEffect(() => {
