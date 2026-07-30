@@ -1,4 +1,5 @@
 .template-canva {
+  position: relative;
   width: 100%;
   max-width: 100%;
   display: flex;
@@ -8,6 +9,38 @@
   min-width: 0;
   overflow: hidden;
   animation: fadeIn 0.3s ease-in-out;
+
+  &--measure {
+    cursor: crosshair;
+
+    .template-canva__stage {
+      cursor: crosshair;
+    }
+  }
+
+  &--zoomed:not(&--panning) {
+    cursor: grab;
+
+    .template-canva__stage {
+      cursor: grab;
+    }
+  }
+
+  &--space-pan:not(&--panning) {
+    cursor: grab;
+
+    .template-canva__stage {
+      cursor: grab;
+    }
+  }
+
+  &--panning {
+    cursor: grabbing;
+
+    .template-canva__stage {
+      cursor: grabbing;
+    }
+  }
 }
 
 @keyframes fadeIn {

@@ -50,6 +50,8 @@ function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
   };
 }
 
+export type CanvasTool = 'select' | 'measure';
+
 interface TemplateState {
   templates: Template[];
   syncUid: string | null;
@@ -86,6 +88,7 @@ interface TemplateState {
   selectedRectangleIds: string[];
   selectedFieldType?: FieldType;
   showRectangleGuides: boolean;
+  canvasTool: CanvasTool;
   addRectangle: (templateId: string, imageId: string, rectangle: Omit<Rectangle, 'id'>) => string;
   insertRectangle: (templateId: string, imageId: string, rectangle: Rectangle, index: number) => void;
   updateRectangle: (
@@ -106,6 +109,7 @@ interface TemplateState {
   addToSelection: (id: string) => void;
   clearSelection: () => void;
   setShowRectangleGuides: (showRectangleGuides: boolean) => void;
+  setCanvasTool: (canvasTool: CanvasTool) => void;
 
   insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
   normalizeImageOrder: (templateId: string) => void;
@@ -499,6 +503,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
   selectedRectangleIds: [],
   selectedFieldType: undefined,
   showRectangleGuides: true,
+  canvasTool: 'select',
 
   addRectangle: (templateId, imageId, rectangleData) => {
     const id = generateId();
@@ -685,6 +690,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
   clearSelection: () => set({ selectedRectangleIds: [] }),
   setShowRectangleGuides: showRectangleGuides => set({ showRectangleGuides }),
+  setCanvasTool: canvasTool => set({ canvasTool }),
 
   isGeneratorOpen: false,
   closeGenerator: () => set({ isGeneratorOpen: false }),
