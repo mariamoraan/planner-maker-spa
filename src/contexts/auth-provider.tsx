@@ -21,7 +21,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isConfigured: boolean;
   hasAccess: boolean;
-  signIn: () => Promise<void>;
+  signIn: () => Promise<UserProfile | null>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -69,8 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const infra = getInfra();
     const authUser = await infra.auth.signInWithGoogle();
     setUser(authUser);
-    await refreshProfile(authUser);
+    const profile = await refreshProfile(authUser);
     trackEvent('login', { method: 'google' });
+    return profile;
   }, [refreshProfile]);
 
   const signOut = useCallback(async () => {

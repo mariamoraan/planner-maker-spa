@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth-provider';
@@ -6,14 +7,27 @@ import './auth-pages.scss';
 
 export function LoginPage() {
   const { t } = useTranslation();
-  const { signIn, isConfigured, isLoading } = useAuth();
+  const { signIn, isConfigured, isLoading, user, hasAccess } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from ?? PATHS.home;
 
+  useEffect(() => {
+    if (isLoading) return;
+    if (user && hasAccess) {
+      navigate(from, { replace: true });
+    } else if (user && !hasAccess) {
+      navigate(PATHS.accessPending, { replace: true });
+    }
+  }, [user, hasAccess, isLoading, navigate, from]);
+
   const handleSignIn = async () => {
-    await signIn();
-    navigate(from, { replace: true });
+    const profile = await signIn();
+    if (profile?.isAccessGranted) {
+      navigate(from, { replace: true });
+      return;
+    }
+    navigate(PATHS.accessPending, { replace: true, state: { fromLogin: true } });
   };
 
   return (

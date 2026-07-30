@@ -101,8 +101,9 @@
     "backToLanding": "Back to landing"
   },
   "accessPending": {
-    "title": "You're on the waitlist",
-    "subtitle": "Thanks for signing up! We're granting access gradually. You'll be able to use Dyna once your account is approved.",
+    "title": "Access not enabled yet",
+    "loginSuccess": "You've signed in with Google successfully. Your account is connected, but you don't have access to the editor yet.",
+    "subtitle": "We're opening access gradually. You'll be able to use Dyna once your account is approved. If you joined the waitlist, we'll email you when it's your turn.",
     "signedInAs": "Signed in as",
     "backToLanding": "Back to landing"
   },

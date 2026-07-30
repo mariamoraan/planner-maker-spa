@@ -101,8 +101,9 @@
     "backToLanding": "Volver a la landing"
   },
   "accessPending": {
-    "title": "Estás en la lista de espera",
-    "subtitle": "¡Gracias por apuntarte! Estamos dando acceso de forma gradual. Podrás usar Dyna cuando tu cuenta sea aprobada.",
+    "title": "Acceso aún no activado",
+    "loginSuccess": "Has iniciado sesión con Google correctamente. Tu cuenta está conectada, pero todavía no tienes acceso al editor.",
+    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Dyna cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno.",
     "signedInAs": "Sesión iniciada como",
     "backToLanding": "Volver a la landing"
   },
