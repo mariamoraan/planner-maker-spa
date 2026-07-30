@@ -10,6 +10,7 @@ import {
   getFormatVariant,
   applyTextCase,
   isValidHexColor,
+  resolveCanvasTextX,
   resolveFieldStyle,
 } from '@/lib/field-style-config';
 import type { Rectangle, TemplateImage } from '@/types/planner';
@@ -189,6 +190,12 @@ describe('field style config helpers', () => {
     expect(isValidHexColor('#fff')).toBe(true);
     expect(isValidHexColor('1f2a3d')).toBe(false);
     expect(isValidHexColor('#gggggg')).toBe(false);
+  });
+
+  it('resolves canvas text x position by alignment', () => {
+    expect(resolveCanvasTextX(0, 100, 'left')).toBe(5);
+    expect(resolveCanvasTextX(0, 100, 'center')).toBe(50);
+    expect(resolveCanvasTextX(0, 100, 'right')).toBe(95);
   });
 
   it('applies text case transformations in Spanish', () => {

@@ -40,10 +40,6 @@ export interface SnapOptions {
   canvasBounds?: { width: number; height: number };
   /** When false, return raw position without snapping. */
   enabled?: boolean;
-  /** Grid cell size in image coordinates. */
-  gridSize?: number;
-  /** When true, snap positions to grid lines. */
-  snapToGrid?: boolean;
 }
 
 export interface GroupMember {
@@ -56,50 +52,9 @@ export interface GroupMember {
 
 const CANVAS_SNAP_ID = '__canvas__';
 
-export const GRID_SIZE = 20;
-
-/** Snap a coordinate to grid or nearest integer pixel. */
-export function normalizeCoord(value: number, gridSize?: number): number {
-  if (gridSize !== undefined && gridSize > 0) {
-    return Math.round(value / gridSize) * gridSize;
-  }
+/** Round a coordinate to the nearest integer pixel. */
+export function normalizeCoord(value: number): number {
   return Math.round(value);
-}
-
-export function normalizePoint(
-  x: number,
-  y: number,
-  gridSize?: number,
-): { x: number; y: number } {
-  return {
-    x: normalizeCoord(x, gridSize),
-    y: normalizeCoord(y, gridSize),
-  };
-}
-
-export function normalizeGroupOffset(
-  positions: { x: number; y: number }[],
-  offsetX: number,
-  offsetY: number,
-  gridSize?: number,
-): { x: number; y: number }[] {
-  if (positions.length === 0) return [];
-
-  const rawPositions = positions.map(position => ({
-    x: position.x + offsetX,
-    y: position.y + offsetY,
-  }));
-
-  const minRawX = Math.min(...rawPositions.map(position => position.x));
-  const minRawY = Math.min(...rawPositions.map(position => position.y));
-  const snappedOrigin = normalizePoint(minRawX, minRawY, gridSize);
-  const fixX = snappedOrigin.x - minRawX;
-  const fixY = snappedOrigin.y - minRawY;
-
-  return rawPositions.map(position => ({
-    x: position.x + fixX,
-    y: position.y + fixY,
-  }));
 }
 
 export function sanitizeRectangleGeometry(
@@ -138,19 +93,43 @@ function normalizeBounds(rect: RectBounds): RectBounds {
   };
 }
 
-function snapGridSize(options?: SnapOptions): number | undefined {
-  return options?.snapToGrid ? options.gridSize : undefined;
-}
-
-const BASE_THRESHOLD = 10;
+const EDGE_ALIGN_THRESHOLD = 4;
+const ADJACENT_SNAP_THRESHOLD = 2;
+const SPACING_SNAP_THRESHOLD = 3;
+const CENTER_SNAP_THRESHOLD = 2;
 const MAX_DISTANCE_LABEL = 300;
 const MAX_CHAIN_GAP = 120;
 const EDGE_ALIGN_TOLERANCE = 8;
 const MIN_OVERLAP_RATIO = 0.25;
-const SPACING_PRIORITY_BOOST = 0.85;
+const SPACING_PRIORITY_BOOST = 0.95;
 
-function threshold(scale: number): number {
-  return BASE_THRESHOLD / scale;
+type AlignCheckKind = 'edge' | 'adjacent' | 'center';
+
+function edgeThreshold(scale: number): number {
+  return EDGE_ALIGN_THRESHOLD / scale;
+}
+
+function adjacentThreshold(scale: number): number {
+  return ADJACENT_SNAP_THRESHOLD / scale;
+}
+
+function centerThreshold(scale: number): number {
+  return CENTER_SNAP_THRESHOLD / scale;
+}
+
+function spacingThreshold(scale: number): number {
+  return SPACING_SNAP_THRESHOLD / scale;
+}
+
+function alignCheckThreshold(kind: AlignCheckKind, scale: number): number {
+  switch (kind) {
+    case 'edge':
+      return edgeThreshold(scale);
+    case 'adjacent':
+      return adjacentThreshold(scale);
+    case 'center':
+      return centerThreshold(scale);
+  }
 }
 
 function edges(x: number, y: number, width: number, height: number) {
@@ -322,25 +301,28 @@ function collectAlignmentCandidates(
   snapW: number,
   snapH: number,
   others: RectBounds[],
-  t: number,
+  scale: number,
 ): SnapCandidate[] {
   const candidates: SnapCandidate[] = [];
-  const m = edges(snapX, snapY, snapW, snapH);
 
   for (const other of others) {
     const o = edges(other.x, other.y, other.width, other.height);
+    const isCanvas = other.id === CANVAS_SNAP_ID;
 
-    const xChecks: { snapX: number; lineX: number }[] = [
-      { snapX: o.left, lineX: o.left },
-      { snapX: o.right - snapW, lineX: o.right },
-      { snapX: o.centerX - snapW / 2, lineX: o.centerX },
-      { snapX: o.right, lineX: o.right },
-      { snapX: o.left - snapW, lineX: o.left },
+    const xChecks: { snapX: number; lineX: number; kind: AlignCheckKind }[] = [
+      { snapX: o.left, lineX: o.left, kind: 'edge' },
+      { snapX: o.right - snapW, lineX: o.right, kind: 'edge' },
+      ...(isCanvas
+        ? [{ snapX: o.centerX - snapW / 2, lineX: o.centerX, kind: 'center' as AlignCheckKind }]
+        : []),
+      { snapX: o.right, lineX: o.right, kind: 'adjacent' },
+      { snapX: o.left - snapW, lineX: o.left, kind: 'adjacent' },
     ];
 
     for (const check of xChecks) {
       const delta = check.snapX - snapX;
-      if (Math.abs(delta) < t) {
+      const checkThreshold = alignCheckThreshold(check.kind, scale);
+      if (Math.abs(delta) < checkThreshold) {
         candidates.push({
           axis: 'x',
           delta,
@@ -351,17 +333,20 @@ function collectAlignmentCandidates(
       }
     }
 
-    const yChecks: { snapY: number; lineY: number }[] = [
-      { snapY: o.top, lineY: o.top },
-      { snapY: o.bottom - snapH, lineY: o.bottom },
-      { snapY: o.centerY - snapH / 2, lineY: o.centerY },
-      { snapY: o.bottom, lineY: o.bottom },
-      { snapY: o.top - snapH, lineY: o.top },
+    const yChecks: { snapY: number; lineY: number; kind: AlignCheckKind }[] = [
+      { snapY: o.top, lineY: o.top, kind: 'edge' },
+      { snapY: o.bottom - snapH, lineY: o.bottom, kind: 'edge' },
+      ...(isCanvas
+        ? [{ snapY: o.centerY - snapH / 2, lineY: o.centerY, kind: 'center' as AlignCheckKind }]
+        : []),
+      { snapY: o.bottom, lineY: o.bottom, kind: 'adjacent' },
+      { snapY: o.top - snapH, lineY: o.top, kind: 'adjacent' },
     ];
 
     for (const check of yChecks) {
       const delta = check.snapY - snapY;
-      if (Math.abs(delta) < t) {
+      const checkThreshold = alignCheckThreshold(check.kind, scale);
+      if (Math.abs(delta) < checkThreshold) {
         candidates.push({
           axis: 'y',
           delta,
@@ -377,12 +362,13 @@ function collectAlignmentCandidates(
 }
 
 function buildRowChains(rects: RectBounds[]): RectBounds[][] {
+  const layoutRects = rects.filter(r => r.id !== CANVAS_SNAP_ID);
   const chains: RectBounds[][] = [];
   const used = new Set<string>();
 
-  for (const seed of rects) {
+  for (const seed of layoutRects) {
     if (used.has(seed.id)) continue;
-    const chain = rects
+    const chain = layoutRects
       .filter(r => !used.has(r.id) && sameRow(seed, r))
       .sort((a, b) => a.x - b.x);
     if (chain.length === 0) continue;
@@ -394,12 +380,13 @@ function buildRowChains(rects: RectBounds[]): RectBounds[][] {
 }
 
 function buildColumnChains(rects: RectBounds[]): RectBounds[][] {
+  const layoutRects = rects.filter(r => r.id !== CANVAS_SNAP_ID);
   const chains: RectBounds[][] = [];
   const used = new Set<string>();
 
-  for (const seed of rects) {
+  for (const seed of layoutRects) {
     if (used.has(seed.id)) continue;
-    const chain = rects
+    const chain = layoutRects
       .filter(r => !used.has(r.id) && sameColumn(seed, r))
       .sort((a, b) => a.y - b.y);
     if (chain.length === 0) continue;
@@ -482,9 +469,10 @@ function collectSpacingCandidates(
   snapW: number,
   snapH: number,
   others: RectBounds[],
-  t: number,
+  scale: number,
 ): SnapCandidate[] {
   const candidates: SnapCandidate[] = [];
+  const t = spacingThreshold(scale);
   const gapLabel = (g: number) => `${Math.round(g)}`;
 
   for (const chain of buildRowChains(others)) {
@@ -842,68 +830,18 @@ function computeDistanceGuides(
   return guides;
 }
 
-function gridGuideX(lineX: number, snapY: number, snapH: number): SnapGuide {
-  return { type: 'align-x', x: lineX, y1: snapY, y2: snapY + snapH };
-}
-
-function gridGuideY(lineY: number, snapX: number, snapW: number): SnapGuide {
-  return { type: 'align-y', y: lineY, x1: snapX, x2: snapX + snapW };
-}
-
-function collectGridCandidates(
-  snapX: number,
-  snapY: number,
-  snapW: number,
-  snapH: number,
-  gridSize: number,
-  t: number,
-): SnapCandidate[] {
-  const candidates: SnapCandidate[] = [];
-  const snappedX = Math.round(snapX / gridSize) * gridSize;
-  const snappedY = Math.round(snapY / gridSize) * gridSize;
-  const deltaX = snappedX - snapX;
-  const deltaY = snappedY - snapY;
-
-  if (Math.abs(deltaX) < t) {
-    candidates.push({
-      axis: 'x',
-      delta: deltaX,
-      kind: 'align',
-      chainLength: 0,
-      guides: [gridGuideX(snappedX, snapY, snapH)],
-    });
-  }
-
-  if (Math.abs(deltaY) < t) {
-    candidates.push({
-      axis: 'y',
-      delta: deltaY,
-      kind: 'align',
-      chainLength: 0,
-      guides: [gridGuideY(snappedY, snapX, snapW)],
-    });
-  }
-
-  return candidates;
-}
-
 function collectCandidatesForAxis(
   snapX: number,
   snapY: number,
   snapW: number,
   snapH: number,
   others: RectBounds[],
-  t: number,
+  scale: number,
   axis: 'x' | 'y',
-  gridSize?: number,
 ): SnapCandidate[] {
-  const align = collectAlignmentCandidates(snapX, snapY, snapW, snapH, others, t);
-  const spacing = collectSpacingCandidates(snapX, snapY, snapW, snapH, others, t);
-  const grid =
-    gridSize !== undefined
-      ? collectGridCandidates(snapX, snapY, snapW, snapH, gridSize, t)
-      : [];
-  return [...align, ...spacing, ...grid].filter(c => c.axis === axis);
+  const align = collectAlignmentCandidates(snapX, snapY, snapW, snapH, others, scale);
+  const spacing = collectSpacingCandidates(snapX, snapY, snapW, snapH, others, scale);
+  return [...align, ...spacing].filter(c => c.axis === axis);
 }
 
 export function computeSnap(
@@ -925,13 +863,11 @@ export function computeSnap(
     return { x: snapX, y: snapY, guides: [] };
   }
 
-  const t = threshold(scale);
   const others = buildSnapOthers(allRects, excludeIds, options?.canvasBounds);
-  const gridSize = options?.snapToGrid ? options?.gridSize : undefined;
 
   const guides: SnapGuide[] = [];
 
-  const xCandidates = collectCandidatesForAxis(snapX, snapY, snapW, snapH, others, t, 'x', gridSize);
+  const xCandidates = collectCandidatesForAxis(snapX, snapY, snapW, snapH, others, scale, 'x');
   const bestX = pickBestCandidate(xCandidates, 'x');
   const snappedX = bestX ? snapX + bestX.delta : snapX;
   if (bestX) guides.push(...bestX.guides);
@@ -942,9 +878,8 @@ export function computeSnap(
     snapW,
     snapH,
     others,
-    t,
+    scale,
     'y',
-    gridSize,
   );
   const bestY = pickBestCandidate(yCandidates, 'y');
   const snappedY = bestY ? snapY + bestY.delta : snapY;
@@ -952,9 +887,7 @@ export function computeSnap(
 
   guides.push(...computeDistanceGuides(snappedX, snappedY, snapW, snapH, others));
 
-  const positionGrid = snapGridSize(options);
-  const normalized = normalizePoint(snappedX, snappedY, positionGrid);
-  return { x: normalized.x, y: normalized.y, guides };
+  return { x: Math.round(snappedX), y: Math.round(snappedY), guides };
 }
 
 export function computeGroupSnap(
@@ -979,9 +912,7 @@ export function computeGroupSnap(
     return { x: snapX, y: snapY, guides: [] };
   }
 
-  const t = threshold(scale);
   const others = buildSnapOthers(allRects, excludeIds, options?.canvasBounds);
-  const gridSize = options?.snapToGrid ? options?.gridSize : undefined;
   const guides: SnapGuide[] = [];
 
   const xCandidates: SnapCandidate[] = [];
@@ -994,18 +925,15 @@ export function computeGroupSnap(
       member.width,
       member.height,
       others,
-      t,
+      scale,
     );
     xCandidates.push(...align.filter(c => c.axis === 'x'));
   }
   xCandidates.push(
-    ...collectSpacingCandidates(snapX, snapY, snapW, snapH, others, t).filter(c => c.axis === 'x'),
+    ...collectSpacingCandidates(snapX, snapY, snapW, snapH, others, scale).filter(
+      c => c.axis === 'x',
+    ),
   );
-  if (gridSize !== undefined) {
-    xCandidates.push(
-      ...collectGridCandidates(snapX, snapY, snapW, snapH, gridSize, t).filter(c => c.axis === 'x'),
-    );
-  }
 
   const bestX = pickBestCandidate(xCandidates, 'x');
   const deltaX = bestX ? bestX.delta : 0;
@@ -1021,22 +949,15 @@ export function computeGroupSnap(
       member.width,
       member.height,
       others,
-      t,
+      scale,
     );
     yCandidates.push(...align.filter(c => c.axis === 'y'));
   }
   yCandidates.push(
-    ...collectSpacingCandidates(snapX + deltaX, snapY, snapW, snapH, others, t).filter(
+    ...collectSpacingCandidates(snapX + deltaX, snapY, snapW, snapH, others, scale).filter(
       c => c.axis === 'y',
     ),
   );
-  if (gridSize !== undefined) {
-    yCandidates.push(
-      ...collectGridCandidates(snapX + deltaX, snapY, snapW, snapH, gridSize, t).filter(
-        c => c.axis === 'y',
-      ),
-    );
-  }
 
   const bestY = pickBestCandidate(yCandidates, 'y');
   const deltaY = bestY ? bestY.delta : 0;
@@ -1047,9 +968,7 @@ export function computeGroupSnap(
 
   guides.push(...computeDistanceGuides(snappedX, snappedY, snapW, snapH, others));
 
-  const positionGrid = snapGridSize(options);
-  const normalized = normalizePoint(snappedX, snappedY, positionGrid);
-  return { x: normalized.x, y: normalized.y, guides };
+  return { x: Math.round(snappedX), y: Math.round(snappedY), guides };
 }
 
 export function computeGroupBounds(

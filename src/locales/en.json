@@ -128,8 +128,6 @@
     "generatePlanner": "Generate Planner",
     "showGuides": "Show Guides",
     "hideGuides": "Hide Guides",
-    "showGrid": "Show Grid",
-    "hideGrid": "Hide Grid",
     "exportInProgress": "Export in progress…",
     "plannerLocale": "Planner language",
     "plannerLocaleHint": "Month and day names in the generated PDF",

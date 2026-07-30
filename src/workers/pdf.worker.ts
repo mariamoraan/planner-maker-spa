@@ -1,9 +1,14 @@
 import { PDFDocument } from 'pdf-lib';
+import { resolvePdfPageSize } from '@/lib/pdf-page-size';
 
-const A5_HORIZONTAL = { height: 419.53, width: 595.28 } // pt
+type WorkerPage = {
+  imageData: string;
+  width?: number;
+  height?: number;
+};
 
 type WorkerMessage = {
-  pages: { imageData: string }[];
+  pages: WorkerPage[];
 };
 
 export type WorkerResponse =
@@ -23,12 +28,16 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
       const pngBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
 
       const pngImage = await pdfDoc.embedPng(pngBytes);
-      const pdfPage = pdfDoc.addPage([A5_HORIZONTAL.width, A5_HORIZONTAL.height]);
+      const widthPx = page.width ?? pngImage.width;
+      const heightPx = page.height ?? pngImage.height;
+      const pageSize = resolvePdfPageSize(widthPx, heightPx);
+
+      const pdfPage = pdfDoc.addPage([pageSize.width, pageSize.height]);
       pdfPage.drawImage(pngImage, {
         x: 0,
         y: 0,
-        width: A5_HORIZONTAL.width,
-        height: A5_HORIZONTAL.height,
+        width: pageSize.width,
+        height: pageSize.height,
       });
 
       self.postMessage({

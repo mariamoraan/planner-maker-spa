@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSnap, computeGroupSnap, computeGroupBounds, GRID_SIZE, normalizeCoord, normalizePoint, normalizeGroupOffset, canonicalGap, sanitizeRectangleGeometry } from '@/lib/canvas-snap';
+import { computeSnap, computeGroupSnap, computeGroupBounds, normalizeCoord, canonicalGap, sanitizeRectangleGeometry } from '@/lib/canvas-snap';
 import type { RectBounds, GroupMember } from '@/lib/canvas-snap';
 
 const scale = 1;
@@ -21,10 +21,10 @@ describe('computeSnap', () => {
       rect('b', 60, 0, 40, 40),
       rect('c', 120, 0, 40, 40),
     ];
-    const moving = rect('d', 175, 2, 40, 40);
+    const moving = rect('d', 178, 2, 40, 40);
     const exclude = new Set(['d']);
 
-    const result = computeSnap(moving, 175, 2, [...row, moving], exclude, scale);
+    const result = computeSnap(moving, 178, 2, [...row, moving], exclude, scale);
 
     expect(result.x).toBe(180);
     expect(result.guides.some(g => g.type === 'spacing-h' && g.label === '20')).toBe(true);
@@ -45,13 +45,132 @@ describe('computeSnap', () => {
 
   it('aligns to nearest edge when within threshold', () => {
     const others = [rect('a', 100, 50, 40, 40)];
-    const moving = rect('m', 94, 50, 40, 40);
+    const moving = rect('m', 97, 50, 40, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 94, 50, [...others, moving], exclude, scale);
+    const result = computeSnap(moving, 97, 50, [...others, moving], exclude, scale);
 
     expect(result.x).toBe(100);
     expect(result.guides.some(g => g.type === 'align-x')).toBe(true);
+  });
+
+  it('does not snap to edge when just outside threshold', () => {
+    const others = [rect('a', 100, 50, 40, 40)];
+    const moving = rect('m', 96, 50, 40, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 96, 50, [...others, moving], exclude, scale);
+
+    expect(result.x).toBe(96);
+    expect(result.guides.filter(g => g.type === 'align-x')).toHaveLength(0);
+  });
+
+  it('allows free placement at 128 when neighbor ends at 126', () => {
+    const others = [rect('a', 0, 0, 126, 40)];
+    const moving = rect('m', 128, 0, 40, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 128, 0, [...others, moving], exclude, scale);
+
+    expect(result.x).toBe(128);
+  });
+
+  it('snaps adjacent flush within 2px when neighbor ends at 126', () => {
+    const others = [rect('a', 0, 0, 126, 40)];
+    const moving = rect('m', 127, 0, 40, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 127, 0, [...others, moving], exclude, scale);
+
+    expect(result.x).toBe(126);
+  });
+
+  it('allows fine movement near neighbor right edge and page center on narrow canvas', () => {
+    const others = [rect('a', 0, 0, 90, 40)];
+    const moving = rect('m', 100, 0, 40, 40);
+    const exclude = new Set(['m']);
+    const canvasBounds = { width: 266, height: 600 };
+
+    for (const x of [128, 132, 95]) {
+      const result = computeSnap(moving, x, 0, [...others, moving], exclude, scale, {
+        canvasBounds,
+      });
+      expect(result.x).toBe(x);
+    }
+
+    expect(
+      computeSnap(moving, 91, 0, [...others, moving], exclude, scale, { canvasBounds }).x,
+    ).toBe(90);
+
+    expect(
+      computeSnap(moving, 112, 0, [...others, moving], exclude, scale, { canvasBounds }).x,
+    ).toBe(113);
+  });
+
+  it('does not snap to page center when 3px away on narrow canvas', () => {
+    const moving = rect('m', 110, 0, 40, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 110, 0, [moving], exclude, scale, {
+      canvasBounds: { width: 266, height: 600 },
+    });
+
+    expect(result.x).toBe(110);
+  });
+
+  it('allows fine horizontal movement near page center without jumping', () => {
+    const others = [
+      rect('a', 100, 50, 80, 40),
+      rect('b', 220, 50, 80, 40),
+    ];
+    const moving = rect('m', 350, 50, 80, 40);
+    const exclude = new Set(['m']);
+    const canvasBounds = { width: 800, height: 600 };
+
+    for (const x of [353, 356, 365]) {
+      const result = computeSnap(moving, x, 50, [...others, moving], exclude, scale, {
+        canvasBounds,
+      });
+      expect(result.x).toBe(x);
+    }
+
+    const nearCenter = computeSnap(moving, 359, 50, [...others, moving], exclude, scale, {
+      canvasBounds,
+    });
+    expect(nearCenter.x).toBe(360);
+  });
+
+  it('still snaps to page center when very close', () => {
+    const moving = rect('m', 379, 50, 40, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 379, 50, [moving], exclude, scale, {
+      canvasBounds: { width: 800, height: 600 },
+    });
+
+    expect(result.x).toBe(380);
+    expect(result.guides.some(g => g.type === 'align-x')).toBe(true);
+  });
+
+  it('does not produce spacing guides from canvas bounds', () => {
+    const others = [
+      rect('a', 100, 50, 80, 40),
+      rect('b', 220, 50, 80, 40),
+    ];
+    const moving = rect('m', 350, 50, 80, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 350, 50, [...others, moving], exclude, scale, {
+      canvasBounds: { width: 800, height: 600 },
+    });
+
+    const spacingFromCanvas = result.guides.filter(
+      g =>
+        (g.type === 'spacing-h' || g.type === 'spacing-v') &&
+        g.label !== undefined &&
+        Number(g.label) < 0,
+    );
+    expect(spacingFromCanvas).toHaveLength(0);
   });
 
   it('snaps group using bbox via snapTarget', () => {
@@ -64,7 +183,7 @@ describe('computeSnap', () => {
     expect(groupBounds).toEqual({ x: 100, y: 0, width: 100, height: 60 });
 
     const snapTarget = {
-      x: 35,
+      x: 39,
       y: 0,
       width: groupBounds!.width,
       height: groupBounds!.height,
@@ -92,10 +211,10 @@ describe('computeSnap', () => {
       rect('b', 60, 0, 40, 40),
       rect('c', 120, 0, 40, 40),
     ];
-    const moving = rect('m', 177, 0, 40, 40);
+    const moving = rect('m', 178, 0, 40, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 177, 0, [...row, moving], exclude, scale);
+    const result = computeSnap(moving, 178, 0, [...row, moving], exclude, scale);
 
     expect(result.x).toBe(180);
   });
@@ -106,10 +225,10 @@ describe('computeSnap', () => {
       rect('b', 60, 0, 40, 40),
       rect('c', 120, 0, 40, 40),
     ];
-    const moving = rect('d', 175, 0, 40, 40);
+    const moving = rect('d', 178, 0, 40, 40);
     const exclude = new Set(['d']);
 
-    const result = computeSnap(moving, 175, 0, [...row, moving], exclude, scale);
+    const result = computeSnap(moving, 178, 0, [...row, moving], exclude, scale);
     const spacingGuide = result.guides.find(g => g.type === 'spacing-h' && g.label);
 
     expect(spacingGuide).toBeDefined();
@@ -119,10 +238,10 @@ describe('computeSnap', () => {
   });
 
   it('snaps to canvas left edge', () => {
-    const moving = rect('m', 4, 50, 40, 40);
+    const moving = rect('m', 3, 50, 40, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 4, 50, [moving], exclude, scale, {
+    const result = computeSnap(moving, 3, 50, [moving], exclude, scale, {
       canvasBounds: { width: 800, height: 600 },
     });
 
@@ -131,10 +250,10 @@ describe('computeSnap', () => {
   });
 
   it('snaps to canvas horizontal center', () => {
-    const moving = rect('m', 378, 50, 40, 40);
+    const moving = rect('m', 379, 50, 40, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 378, 50, [moving], exclude, scale, {
+    const result = computeSnap(moving, 379, 50, [moving], exclude, scale, {
       canvasBounds: { width: 800, height: 600 },
     });
 
@@ -143,10 +262,10 @@ describe('computeSnap', () => {
   });
 
   it('snaps to canvas bottom edge', () => {
-    const moving = rect('m', 50, 556, 40, 40);
+    const moving = rect('m', 50, 558, 40, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 50, 556, [moving], exclude, scale, {
+    const result = computeSnap(moving, 50, 558, [moving], exclude, scale, {
       canvasBounds: { width: 800, height: 600 },
     });
 
@@ -168,43 +287,16 @@ describe('computeSnap', () => {
     expect(result.guides).toHaveLength(0);
   });
 
-  it('snaps to grid when snapToGrid is enabled', () => {
-    const moving = rect('m', 23, 37, 40, 40);
-    const exclude = new Set(['m']);
-
-    const result = computeSnap(moving, 23, 37, [moving], exclude, scale, {
-      snapToGrid: true,
-      gridSize: GRID_SIZE,
-    });
-
-    expect(result.x).toBe(20);
-    expect(result.y).toBe(40);
-  });
-
-  it('prefers closer element snap over grid snap', () => {
-    const others = [rect('a', 100, 50, 40, 40)];
-    const moving = rect('m', 94, 38, 40, 40);
-    const exclude = new Set(['m']);
-
-    const result = computeSnap(moving, 94, 38, [...others, moving], exclude, scale, {
-      snapToGrid: true,
-      gridSize: GRID_SIZE,
-    });
-
-    expect(result.x).toBe(100);
-    expect(result.y).toBe(40);
-  });
-
   it('snaps a fourth block to match 20px vertical gap in a column', () => {
     const column = [
       rect('a', 0, 0, 40, 40),
       rect('b', 0, 60, 40, 40),
       rect('c', 0, 120, 40, 40),
     ];
-    const moving = rect('d', 2, 175, 40, 40);
+    const moving = rect('d', 2, 178, 40, 40);
     const exclude = new Set(['d']);
 
-    const result = computeSnap(moving, 2, 175, [...column, moving], exclude, scale);
+    const result = computeSnap(moving, 2, 178, [...column, moving], exclude, scale);
 
     expect(result.y).toBe(180);
     expect(result.guides.some(g => g.type === 'spacing-v' && g.label === '20')).toBe(true);
@@ -219,7 +311,7 @@ describe('computeSnap', () => {
     const moving = rect('m', 0, 115, 400, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 0, 115, [...column, moving], exclude, scale);
+    const result = computeSnap(moving, 0, 118, [...column, moving], exclude, scale);
 
     expect(result.y).toBe(120);
     expect(result.guides.some(g => g.type === 'spacing-v' && g.label === '20')).toBe(true);
@@ -254,10 +346,10 @@ describe('computeSnap', () => {
 
   it('shows distance-v label when flush against block above after edge snap', () => {
     const others = [rect('a', 0, 0, 400, 80)];
-    const moving = rect('m', 0, 85, 400, 40);
+    const moving = rect('m', 0, 81, 400, 40);
     const exclude = new Set(['m']);
 
-    const result = computeSnap(moving, 0, 85, [...others, moving], exclude, scale);
+    const result = computeSnap(moving, 0, 81, [...others, moving], exclude, scale);
 
     expect(result.y).toBe(80);
     expect(result.guides.some(g => g.type === 'distance-v' && g.label === '0')).toBe(true);
@@ -269,10 +361,10 @@ describe('computeSnap', () => {
       rect('b', 0, 60, 40, 40),
       rect('c', 0, 120, 40, 40),
     ];
-    const moving = rect('d', 0, 175, 40, 40);
+    const moving = rect('d', 0, 178, 40, 40);
     const exclude = new Set(['d']);
 
-    const result = computeSnap(moving, 0, 175, [...column, moving], exclude, scale);
+    const result = computeSnap(moving, 0, 178, [...column, moving], exclude, scale);
     const spacingGuide = result.guides.find(g => g.type === 'spacing-v' && g.label);
 
     expect(spacingGuide).toBeDefined();
@@ -304,9 +396,8 @@ describe('computeGroupSnap', () => {
       member('b', 160, 20, 40, 40),
     ];
 
-    // Provisional bbox x=42 would bbox-snap to ref.right (40) with delta -2.
-    // Member-a left at 6 snaps to ref.left (0) with delta -6 — only viable align snap.
-    const result = computeGroupSnap(members, -94, 0, [...others, a, b], exclude, scale);
+    // Member-a left at 3 snaps to ref.left (0) with delta -3 — within edge threshold.
+    const result = computeGroupSnap(members, -97, 0, [...others, a, b], exclude, scale);
 
     expect(result.x).toBe(0);
     expect(result.y).toBe(0);
@@ -322,7 +413,7 @@ describe('computeGroupSnap', () => {
       member('a', 100, 0, 40, 40),
       member('b', 160, 20, 40, 40),
     ];
-    const leaderDx = -94;
+    const leaderDx = -97;
     const leaderDy = 0;
 
     const result = computeGroupSnap(
@@ -358,7 +449,7 @@ describe('computeGroupSnap', () => {
       member('right', 160, 0, 40, 40),
     ];
 
-    const result = computeGroupSnap(members, 75, 0, [...row, left, right], exclude, scale);
+    const result = computeGroupSnap(members, 78, 0, [...row, left, right], exclude, scale);
 
     expect(result.x).toBe(180);
     expect(result.guides.some(g => g.type === 'spacing-h' && g.label === '20')).toBe(true);
@@ -379,7 +470,7 @@ describe('computeGroupSnap', () => {
       member('bottom', 0, 160, 40, 40),
     ];
 
-    const result = computeGroupSnap(members, 0, 75, [...column, top, bottom], exclude, scale);
+    const result = computeGroupSnap(members, 0, 78, [...column, top, bottom], exclude, scale);
 
     expect(result.y).toBe(180);
     expect(result.guides.some(g => g.type === 'spacing-v' && g.label === '20')).toBe(true);
@@ -404,77 +495,12 @@ describe('computeGroupSnap', () => {
     expect(result.guides).toHaveLength(0);
   });
 
-  it('snaps group origin to grid preserving relative offsets', () => {
-    const a = rect('a', 100, 0, 40, 40);
-    const b = rect('b', 160, 20, 40, 40);
-    const exclude = new Set(['a', 'b']);
-
-    const members = [
-      member('a', 100, 0, 40, 40),
-      member('b', 160, 20, 40, 40),
-    ];
-
-    const result = computeGroupSnap(members, 3, 7, [a, b], exclude, scale, {
-      snapToGrid: true,
-      gridSize: GRID_SIZE,
-    });
-
-    expect(result.x).toBe(100);
-    expect(result.y).toBe(0);
-
-    const deltaX = result.x - 100;
-    const deltaY = result.y - 0;
-    expect(a.x + deltaX).toBe(100);
-    expect(a.y + deltaY).toBe(0);
-    expect(b.x + deltaX - (a.x + deltaX)).toBe(60);
-    expect(b.y + deltaY - (a.y + deltaY)).toBe(20);
-  });
 });
 
 describe('normalizeCoord', () => {
-  it('rounds to nearest integer by default', () => {
+  it('rounds to nearest integer', () => {
     expect(normalizeCoord(99.6)).toBe(100);
     expect(normalizeCoord(100.4)).toBe(100);
-  });
-
-  it('snaps to grid size when provided', () => {
-    expect(normalizeCoord(23, GRID_SIZE)).toBe(20);
-    expect(normalizeCoord(31, GRID_SIZE)).toBe(40);
-  });
-
-  it('normalizes points', () => {
-    expect(normalizePoint(100.2, 50.8)).toEqual({ x: 100, y: 51 });
-  });
-});
-
-describe('normalizeGroupOffset', () => {
-  it('preserves relative gaps after grid snap', () => {
-    const positions = [
-      { x: 101, y: 0 },
-      { x: 161, y: 0 },
-      { x: 221, y: 0 },
-    ];
-    const width = 40;
-    const gap = 20;
-
-    const result = normalizeGroupOffset(positions, 0, 0, GRID_SIZE);
-
-    expect(result[1].x - (result[0].x + width)).toBe(gap);
-    expect(result[2].x - (result[1].x + width)).toBe(gap);
-  });
-
-  it('applies uniform offset when pasting a row', () => {
-    const positions = [
-      { x: 0, y: 0 },
-      { x: 60, y: 0 },
-      { x: 120, y: 0 },
-    ];
-
-    const firstPaste = normalizeGroupOffset(positions, 23, 0, GRID_SIZE);
-    const secondPaste = normalizeGroupOffset(firstPaste, 20, 0, GRID_SIZE);
-
-    expect(secondPaste[1].x - (secondPaste[0].x + 40)).toBe(20);
-    expect(secondPaste[2].x - (secondPaste[1].x + 40)).toBe(20);
   });
 });
 

@@ -1,10 +1,12 @@
 import { 
+    AlignCenter,
+    AlignLeft,
+    AlignRight,
     ArrowLeft,
     ArrowRight,
     Ellipsis,   
     Eye,
     EyeClosed,
-    Grid3x3,
     Home,
     Sparkles,
     Trash2,
@@ -19,6 +21,9 @@ import {
 
 
 export {
+    AlignLeft as AlignLeftIcon,
+    AlignCenter as AlignCenterIcon,
+    AlignRight as AlignRightIcon,
     ArrowLeft as ArrowLeftIcon,
     ArrowRight as ArrowRightIcon,
     Home as HomeIcon,
@@ -26,7 +31,6 @@ export {
     Trash2 as TrashIcon,
     Eye as EyeIcon,
     EyeClosed as EyeClosedIcon,
-    Grid3x3 as GridIcon,
     Sparkles as SparklesIcon,
     MoveLeft as LargeArrowLeftIcon,
     MoveRight as LargeArrowRightIcon,

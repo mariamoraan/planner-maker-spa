@@ -86,7 +86,6 @@ interface TemplateState {
   selectedRectangleIds: string[];
   selectedFieldType?: FieldType;
   showRectangleGuides: boolean;
-  showGrid: boolean;
   addRectangle: (templateId: string, imageId: string, rectangle: Omit<Rectangle, 'id'>) => string;
   insertRectangle: (templateId: string, imageId: string, rectangle: Rectangle, index: number) => void;
   updateRectangle: (
@@ -107,7 +106,6 @@ interface TemplateState {
   addToSelection: (id: string) => void;
   clearSelection: () => void;
   setShowRectangleGuides: (showRectangleGuides: boolean) => void;
-  setShowGrid: (showGrid: boolean) => void;
 
   insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
   normalizeImageOrder: (templateId: string) => void;
@@ -501,7 +499,6 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
   selectedRectangleIds: [],
   selectedFieldType: undefined,
   showRectangleGuides: true,
-  showGrid: false,
 
   addRectangle: (templateId, imageId, rectangleData) => {
     const id = generateId();
@@ -688,7 +685,6 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
   clearSelection: () => set({ selectedRectangleIds: [] }),
   setShowRectangleGuides: showRectangleGuides => set({ showRectangleGuides }),
-  setShowGrid: showGrid => set({ showGrid }),
 
   isGeneratorOpen: false,
   closeGenerator: () => set({ isGeneratorOpen: false }),

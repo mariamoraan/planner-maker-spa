@@ -4,6 +4,7 @@ import type {
   FontId,
   FormatVariant,
   Rectangle,
+  TextAlign,
   TextCase,
   YearFormatVariant,
   MonthFormatVariant,
@@ -37,11 +38,22 @@ export interface TextCaseOption {
   preview: string;
 }
 
+export interface TextAlignOption {
+  id: TextAlign;
+  label: string;
+}
+
 export const TEXT_CASE_REGISTRY: readonly TextCaseOption[] = [
   { id: 'default', label: 'Original', preview: 'Ab' },
   { id: 'capitalize', label: 'Capitalizado', preview: 'Aa' },
   { id: 'uppercase', label: 'Mayúsculas', preview: 'AA' },
   { id: 'lowercase', label: 'Minúsculas', preview: 'aa' },
+] as const;
+
+export const TEXT_ALIGN_REGISTRY: readonly TextAlignOption[] = [
+  { id: 'left', label: 'Izquierda' },
+  { id: 'center', label: 'Centro' },
+  { id: 'right', label: 'Derecha' },
 ] as const;
 
 export const FONT_REGISTRY: readonly FontOption[] = [
@@ -98,6 +110,7 @@ export function getDefaultFieldStyle(): FieldStyle {
     bold: false,
     italic: false,
     textCase: 'capitalize',
+    textAlign: 'center',
   };
 }
 
@@ -148,6 +161,19 @@ export function buildCanvasFont(style: FieldStyle, fontSize: number): string {
   const fontWeight = style.bold ? 'bold' : 'normal';
   const family = resolveFontFamily(style.fontId);
   return `${fontStyle} ${fontWeight} ${fontSize}px "${family}", system-ui, -apple-system, sans-serif`;
+}
+
+export function resolveCanvasTextX(x: number, width: number, textAlign: TextAlign): number {
+  const padding = width * 0.05;
+  switch (textAlign) {
+    case 'left':
+      return x + padding;
+    case 'right':
+      return x + width - padding;
+    case 'center':
+    default:
+      return x + width / 2;
+  }
 }
 
 function capitalizeWord(word: string, locale = 'es'): string {

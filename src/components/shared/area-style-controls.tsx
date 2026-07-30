@@ -8,12 +8,24 @@ import { useAreaStyleEditing } from '@/hooks/use-area-style-editing';
 import {
   COLOR_PRESET_REGISTRY,
   FONT_REGISTRY,
+  TEXT_ALIGN_REGISTRY,
   TEXT_CASE_REGISTRY,
 } from '@/lib/field-style-config';
-import type { FontId, FormatVariant, Rectangle, TextCase } from '@/types/planner';
-import { CaseSensitiveIcon, FontIcon } from '@/core/icons';
+import type { FontId, FormatVariant, Rectangle, TextAlign, TextCase } from '@/types/planner';
+import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, CaseSensitiveIcon, FontIcon } from '@/core/icons';
 
 type PopoverId = 'format' | 'color' | 'font' | 'style' | null;
+
+function TextAlignIcon({ align, size = 16 }: { align: TextAlign; size?: number }) {
+  switch (align) {
+    case 'left':
+      return <AlignLeftIcon size={size} />;
+    case 'center':
+      return <AlignCenterIcon size={size} />;
+    case 'right':
+      return <AlignRightIcon size={size} />;
+  }
+}
 
 interface AreaStyleControlsProps {
   rectangle: Rectangle;
@@ -159,6 +171,25 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
           >
             I
           </button>
+        </div>
+      </div>
+
+      <div className="area-style-controls__group">
+        <p className="area-style-controls__label">Alineación</p>
+        <div className="area-style-controls__options">
+          {TEXT_ALIGN_REGISTRY.map(option => (
+            <button
+              key={option.id}
+              type="button"
+              className={clsx('area-style-controls__style-toggle', {
+                'area-style-controls__style-toggle--active': style.textAlign === option.id,
+              })}
+              title={option.label}
+              onClick={() => updateStyle({ textAlign: option.id })}
+            >
+              <TextAlignIcon align={option.id} />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -349,6 +380,21 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
             >
               I
             </button>
+          </div>
+          <div className="area-style-controls__options">
+            {TEXT_ALIGN_REGISTRY.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                className={clsx('area-style-controls__style-toggle', {
+                  'area-style-controls__style-toggle--active': style.textAlign === option.id,
+                })}
+                title={option.label}
+                onClick={() => updateStyle({ textAlign: option.id })}
+              >
+                <TextAlignIcon align={option.id} />
+              </button>
+            ))}
           </div>
           <div className="area-style-controls__options area-style-controls__options--text-case">
             {TEXT_CASE_REGISTRY.map(option => (

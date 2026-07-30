@@ -81,7 +81,7 @@ async function generatePage(
     date?: Date;
   },
   plannerLocale: Template['locale'] = 'es'
-): Promise<{ imageData: string }> {
+): Promise<{ imageData: string; width: number; height: number }> {
   const img = await loadImage(templateImage.src);
 
   const canvas = document.createElement('canvas');
@@ -113,6 +113,8 @@ async function generatePage(
 
   return {
     imageData: canvas.toDataURL('image/png'),
+    width: templateImage.width,
+    height: templateImage.height,
   };
 }
 

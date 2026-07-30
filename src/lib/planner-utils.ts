@@ -12,6 +12,7 @@ import {
   SECONDARY_COLOR,
   getFormatVariant,
   resolveFieldStyle,
+  resolveCanvasTextX,
   buildCanvasFont,
   formatFieldValue,
   isYearFormatVariant,
@@ -383,11 +384,12 @@ export async function renderFieldOnCanvas(
   ctx.save();
   await document.fonts.load(fontString);
   ctx.font = fontString;
-  ctx.textAlign = 'center';
+  ctx.textAlign = style.textAlign;
   ctx.textBaseline = 'middle';
   ctx.fillStyle = color;
 
-  ctx.fillText(value, x + width / 2, y + height / 2, width * 0.9);
+  const textX = resolveCanvasTextX(x, width, style.textAlign);
+  ctx.fillText(value, textX, y + height / 2, width * 0.9);
   ctx.restore();
 }
 

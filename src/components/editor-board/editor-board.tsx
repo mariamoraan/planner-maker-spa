@@ -5,9 +5,11 @@ import './editor-board.scss'
 import { EditorSidebar } from "../sidebar/editor-sidebar"
 import { blockSelectionZoneProps } from "@/lib/block-selection"
 import { useClearBlockSelectionOnOutsideClick } from "@/hooks/use-clear-block-selection-on-outside-click"
+import { useUndoRedoShortcuts } from "@/hooks/use-undo-redo-shortcuts"
 
 export const EditorBoard = () => {
     useClearBlockSelectionOnOutsideClick()
+    useUndoRedoShortcuts()
 
     return (
         <div className="editor-board">

@@ -54,7 +54,7 @@ flowchart LR
 - **Pages map** — thumbnail navigation grouped by page type, with drag-to-reorder within each group
 - **Undo / redo** — full editor history for block and page operations
 - **Planner generation** — real calendar logic (configurable week start: Monday or Sunday) fills every page for a chosen date range
-- **PDF export** — A5 landscape output generated off the main thread via a Web Worker
+- **PDF export** — print-ready output that matches each uploaded page's size and orientation, generated off the main thread via a Web Worker
 - **Local persistence** — template metadata in localStorage, image blobs in IndexedDB; no server required
 - **Desktop editor** — optimized for viewports ≥ 900 × 560 px
 

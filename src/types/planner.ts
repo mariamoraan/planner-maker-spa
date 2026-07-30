@@ -15,12 +15,15 @@ export type FontId = 'gloria' | 'great-vibes' | 'lato';
 
 export type TextCase = 'default' | 'uppercase' | 'lowercase' | 'capitalize';
 
+export type TextAlign = 'left' | 'center' | 'right';
+
 export interface FieldStyle {
   color: string;
   fontId: FontId;
   bold: boolean;
   italic: boolean;
   textCase: TextCase;
+  textAlign: TextAlign;
 }
 
 export type TemplateType = 
@@ -85,6 +88,8 @@ export interface PlannerConfig {
 
 export interface GeneratedPage {
   imageData: string;
+  width: number;
+  height: number;
   pageNumber: number;
   type: TemplateType;
   month?: number;

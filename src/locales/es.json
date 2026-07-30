@@ -128,8 +128,6 @@
     "generatePlanner": "Generar planner",
     "showGuides": "Mostrar guías",
     "hideGuides": "Ocultar guías",
-    "showGrid": "Mostrar cuadrícula",
-    "hideGrid": "Ocultar cuadrícula",
     "exportInProgress": "Exportación en curso…",
     "plannerLocale": "Idioma del planner",
     "plannerLocaleHint": "Nombres de meses y días en el PDF generado",

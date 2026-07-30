@@ -9,9 +9,8 @@ import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
-import { computeSnap, computeGroupSnap, computeGroupBounds, rectsIntersect, GRID_SIZE, normalizeCoord, normalizePoint, normalizeGroupOffset, type SnapGuide } from '@/lib/canvas-snap';
+import { computeSnap, computeGroupSnap, computeGroupBounds, rectsIntersect, normalizeCoord, type SnapGuide } from '@/lib/canvas-snap';
 import { SnapGuidesOverlay } from './snap-guides-overlay';
-import { GridOverlay } from './grid-overlay';
 import './template-canva.scss';
 import { TemplateRectangle } from './template-rectangle';
 
@@ -78,7 +77,6 @@ export const TemplateCanvas: React.FC = () => {
   const addToSelection = useTemplateStore(state => state.addToSelection);
   const clearSelection = useTemplateStore(state => state.clearSelection);
   const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides);
-  const showGrid = useTemplateStore(state => state.showGrid);
 
   const PADDING = 16;
 
@@ -336,13 +334,13 @@ export const TemplateCanvas: React.FC = () => {
       node.scaleY(1);
 
       updateArea(rectId, {
-        x: normalizeCoord((node.x() - offset.x) / scale, showGrid ? GRID_SIZE : undefined),
-        y: normalizeCoord((node.y() - offset.y) / scale, showGrid ? GRID_SIZE : undefined),
+        x: normalizeCoord((node.x() - offset.x) / scale),
+        y: normalizeCoord((node.y() - offset.y) / scale),
         width: Math.round((node.width() * scaleX) / scale),
         height: Math.round((node.height() * scaleY) / scale),
       });
     },
-    [scale, offset, updateArea, showGrid],
+    [scale, offset, updateArea],
   );
 
   const handleDragEnd = useCallback(
@@ -352,19 +350,10 @@ export const TemplateCanvas: React.FC = () => {
       if (!startEntries || !delta) return;
 
       if (delta.dx !== 0 || delta.dy !== 0) {
-        const positionGrid = showGrid ? GRID_SIZE : undefined;
-        const leaderId = dragState?.leaderId ?? startEntries[0].id;
-        const leaderStart = startEntries.find(entry => entry.id === leaderId) ?? startEntries[0];
-        const leaderRawX = leaderStart.x + delta.dx;
-        const leaderRawY = leaderStart.y + delta.dy;
-        const snappedLeader = normalizePoint(leaderRawX, leaderRawY, positionGrid);
-        const fixX = snappedLeader.x - leaderRawX;
-        const fixY = snappedLeader.y - leaderRawY;
-
         const moves = startEntries.map(entry => ({
           id: entry.id,
-          x: entry.x + delta.dx + fixX,
-          y: entry.y + delta.dy + fixY,
+          x: entry.x + delta.dx,
+          y: entry.y + delta.dy,
         }));
         moveAreas(moves);
       }
@@ -375,7 +364,7 @@ export const TemplateCanvas: React.FC = () => {
       setDragState(null);
       setDragOverlay(null);
     },
-    [moveAreas, showGrid, dragState],
+    [moveAreas],
   );
 
   const handleDragMove = useCallback(
@@ -407,8 +396,6 @@ export const TemplateCanvas: React.FC = () => {
         canvasBounds: currentImage
           ? { width: currentImage.width, height: currentImage.height }
           : undefined,
-        snapToGrid: showGrid,
-        gridSize: showGrid ? GRID_SIZE : undefined,
       };
 
       let snapResult;
@@ -475,7 +462,7 @@ export const TemplateCanvas: React.FC = () => {
         previewPositions,
       });
     },
-    [currentImage, scale, offset, showGrid],
+    [currentImage, scale, offset],
   );
 
   useEffect(() => {
@@ -524,19 +511,12 @@ export const TemplateCanvas: React.FC = () => {
         const offsetX = pasteOriginX - minX;
         const offsetY = pasteOriginY - minY;
 
-        const positionGrid = showGrid ? GRID_SIZE : undefined;
-        const normalizedPositions = normalizeGroupOffset(
-          copiedRects.map(rect => ({ x: rect.x, y: rect.y })),
-          offsetX,
-          offsetY,
-          positionGrid,
-        );
         const newRects = copiedRects.map((rect, index) => {
           const { id: _ignored, ...rectData } = rect;
           return {
             ...rectData,
-            x: normalizedPositions[index].x,
-            y: normalizedPositions[index].y,
+            x: Math.round(rect.x + offsetX),
+            y: Math.round(rect.y + offsetY),
             order: (currentImage?.rectangles?.length ?? 0) + index,
           };
         });
@@ -557,7 +537,6 @@ export const TemplateCanvas: React.FC = () => {
     setSelectedRectangleIds,
     scale,
     offset,
-    showGrid,
   ]);
 
   return (
@@ -587,7 +566,6 @@ export const TemplateCanvas: React.FC = () => {
               scaleY={scale}
               x={offset.x}
               y={offset.y}
-              opacity={showGrid ? 1 : 1}
               shadowColor="rgba(0, 0, 0, 0.1)"
               shadowOffsetX={0}
               shadowOffsetY={4}
@@ -665,16 +643,6 @@ export const TemplateCanvas: React.FC = () => {
               dash={[6, 4]}
               cornerRadius={6}
               listening={false}
-            />
-          )}
-
-          {showGrid && currentImage && (
-            <GridOverlay
-              width={currentImage.width}
-              height={currentImage.height}
-              gridSize={GRID_SIZE}
-              scale={scale}
-              offset={offset}
             />
           )}
 

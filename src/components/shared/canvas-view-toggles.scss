@@ -40,15 +40,4 @@
     padding: 10px 16px;
     font-size: 14px;
   }
-
-  &__grid--active {
-    background-color: hsl(168, 76%, 42%);
-    color: white;
-  }
-
-  &__icon {
-    width: 1rem;
-    height: 1rem;
-    flex-shrink: 0;
-  }
 }
