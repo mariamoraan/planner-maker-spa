@@ -24,6 +24,17 @@
       "subtitle": "Sube tu diseño, marca dónde van las fechas y genera un planner fechado automáticamente — alineado y listo para imprimir.",
       "cta": "Unirme a la lista de espera"
     },
+    "showcase": {
+      "url": "dyna.app/editor",
+      "templateName": "Planner Semanal 2026",
+      "blockMonth": "Mes",
+      "blockDay": "Día",
+      "sampleMonth": "Enero",
+      "sampleDay": "Lun 6",
+      "startDate": "1 ene 2026",
+      "endDate": "31 dic 2026",
+      "a11yLabel": "Vista previa animada del flujo de trabajo del editor Dyna"
+    },
     "compare": {
       "title": "Manual vs Dyna",
       "subtitle": "Mira exactamente dónde ahorras tiempo",

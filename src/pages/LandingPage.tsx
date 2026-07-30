@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PATHS } from '@/core/routes/paths';
+import { EditorShowcaseMockup } from '@/components/landing/editor-showcase-mockup';
 import { WaitlistForm } from '@/components/landing/waitlist-form';
 import { trackPageView } from '@/lib/analytics';
 import './landing-page.scss';
@@ -56,6 +57,9 @@ export default function LandingPage() {
       >
         <h1 className="landing-page__hero-title">{t('landing.hero.title')}</h1>
         <p className="landing-page__hero-subtitle">{t('landing.hero.subtitle')}</p>
+        <div className="landing-page__hero-showcase">
+          <EditorShowcaseMockup />
+        </div>
         <div className="landing-page__hero-waitlist">
           <WaitlistForm source="landing_hero" />
         </div>

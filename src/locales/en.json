@@ -24,6 +24,17 @@
       "subtitle": "Upload your design, mark where dates go, and generate a fully dated planner automatically — aligned and print-ready.",
       "cta": "Join the waitlist"
     },
+    "showcase": {
+      "url": "dyna.app/editor",
+      "templateName": "2026 Weekly Planner",
+      "blockMonth": "Month",
+      "blockDay": "Day",
+      "sampleMonth": "January",
+      "sampleDay": "Mon 6",
+      "startDate": "Jan 1, 2026",
+      "endDate": "Dec 31, 2026",
+      "a11yLabel": "Animated preview of the Dyna editor workflow"
+    },
     "compare": {
       "title": "Manual vs Dyna",
       "subtitle": "See exactly where you save time",
