@@ -57,18 +57,18 @@ export const COLOR_PRESET_REGISTRY: readonly ColorPreset[] = [
 ] as const;
 
 const YEAR_FORMAT_OPTIONS: readonly FormatOption[] = [
-  { id: 'YYYY', label: '2026', preview: '2026' },
-  { id: 'YY', label: '26', preview: '26' },
+  { id: 'YYYY', label: '4 dígitos', preview: '2026' },
+  { id: 'YY', label: '2 dígitos', preview: '26' },
 ] as const;
 
 const MONTH_FORMAT_OPTIONS: readonly FormatOption[] = [
-  { id: 'numeric', label: '5', preview: '5' },
-  { id: 'name', label: 'mayo', preview: 'mayo' },
+  { id: 'numeric', label: 'Número', preview: '5' },
+  { id: 'name', label: 'Texto', preview: 'mayo' },
 ] as const;
 
 const DAY_FORMAT_OPTIONS: readonly FormatOption[] = [
-  { id: 'numeric', label: '15', preview: '15' },
-  { id: 'weekdayName', label: 'jueves', preview: 'jueves' },
+  { id: 'numeric', label: 'Número', preview: '15' },
+  { id: 'weekdayName', label: 'Texto', preview: 'jueves' },
 ] as const;
 
 export const FIELD_FORMAT_REGISTRY: Record<FieldType, readonly FormatOption[]> = {

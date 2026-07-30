@@ -70,9 +70,10 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
             className={clsx('area-style-controls__option', {
               'area-style-controls__option--active': formatVariant === option.id,
             })}
+            title={option.preview}
             onClick={() => handleFormatChange(option.id)}
           >
-            {option.preview}
+            {option.label}
           </button>
         ))}
       </div>
@@ -193,7 +194,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
     );
   }
 
-  const activeFormat = formatOptions.find(o => o.id === formatVariant)?.preview ?? 'Formato';
+  const activeFormat = formatOptions.find(o => o.id === formatVariant)?.label ?? 'Formato';
   const activeFont = FONT_REGISTRY.find(f => f.id === style.fontId)?.label ?? 'Tipografía';
 
   return (
@@ -218,12 +219,13 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
                 className={clsx('area-style-controls__option', {
                   'area-style-controls__option--active': formatVariant === option.id,
                 })}
+                title={option.preview}
                 onClick={() => {
                   handleFormatChange(option.id as FormatVariant);
                   setOpenPopover(null);
                 }}
               >
-                {option.preview}
+                {option.label}
               </button>
             ))}
           </div>
