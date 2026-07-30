@@ -43,7 +43,9 @@ $toolbar-padding-x: 24px;
 
     &__divider {
         align-self: stretch;
-        width: 2px;
+        width: 1px;
+        height: 20px;
+        align-self: center;
         margin: 10px 0;
         background: grey;
         border-radius: 4px;

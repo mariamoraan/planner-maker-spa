@@ -75,6 +75,12 @@
       align-items: stretch;
       gap: 12px;
     }
+
+    &__presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
   }
 
   &__color-swatch {
@@ -165,7 +171,7 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     height: 36px;
     padding: 0 12px;
     border: none;

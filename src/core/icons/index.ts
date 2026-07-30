@@ -11,6 +11,9 @@ import {
     MoveRight,
     Pencil,
     Dot,
+    Type,
+    CaseSensitive,
+    Signature,
 } from 'lucide-react';
 
 
@@ -27,4 +30,7 @@ export {
     MoveRight as LargeArrowRightIcon,
     Pencil as PencilIcon,
     Dot as DotIcon,
+    Type as FontIcon,
+    CaseSensitive as CaseSensitiveIcon,
+    Signature as SignatureIcon,
 };

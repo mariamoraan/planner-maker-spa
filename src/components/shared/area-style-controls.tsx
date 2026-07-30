@@ -11,6 +11,7 @@ import {
   TEXT_CASE_REGISTRY,
 } from '@/lib/field-style-config';
 import type { FontId, FormatVariant, Rectangle, TextCase } from '@/types/planner';
+import { CaseSensitiveIcon, FontIcon } from '@/core/icons';
 
 type PopoverId = 'format' | 'color' | 'font' | 'style' | null;
 
@@ -239,7 +240,6 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
             className="area-style-controls__toolbar-color-preview"
             style={{ backgroundColor: style.color }}
           />
-          Color
         </button>
         <div
           className={clsx('area-style-controls__popover', 'area-style-controls__popover--color', {
@@ -248,6 +248,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
           onMouseDown={e => e.stopPropagation()}
         >
           <div className="area-style-controls__color-row area-style-controls__color-row--toolbar-popover">
+            <div className="area-style-controls__color-row__presets">
             {COLOR_PRESET_REGISTRY.map(preset => (
               <button
                 key={preset.id}
@@ -262,6 +263,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
                 onClick={() => handleColorPreset(preset.value)}
               />
             ))}
+            </div>
             <Input
               className="area-style-controls__hex-input"
               value={displayHex}
@@ -281,6 +283,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
         className="area-style-controls__toolbar-trigger"
         onClick={togglePopover('font')}
       >
+        <FontIcon size={12} />
         {activeFont}
         <div
           className={clsx('area-style-controls__popover', {
@@ -314,6 +317,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
         className="area-style-controls__toolbar-trigger"
         onClick={togglePopover('style')}
       >
+        <CaseSensitiveIcon size={12} />
         Estilo
         <div
           className={clsx('area-style-controls__popover', {
