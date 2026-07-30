@@ -11,6 +11,7 @@ import {
   type Unsubscribe as FirestoreUnsubscribe,
 } from 'firebase/firestore';
 import type { Template, TemplateImage, Rectangle } from '@/types/planner';
+import type { ImageRef } from '../ports/image-asset.port';
 import type {
   TemplatePageRecord,
   TemplateRecord,
@@ -30,6 +31,16 @@ function toDate(value: unknown): Date {
   return new Date();
 }
 
+function normalizeImageRef(value: unknown): ImageRef | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const ref = value as Record<string, unknown>;
+  if (typeof ref.key !== 'string' || !ref.key) return undefined;
+  return {
+    provider: typeof ref.provider === 'string' ? ref.provider : 'local',
+    key: ref.key,
+  };
+}
+
 function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord {
   return {
     id,
@@ -38,7 +49,7 @@ function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord 
     width: Number(data.width ?? 0),
     height: Number(data.height ?? 0),
     rectangles: (data.rectangles as Rectangle[]) ?? [],
-    imageRef: data.imageRef as TemplatePageRecord['imageRef'],
+    imageRef: normalizeImageRef(data.imageRef),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
   };

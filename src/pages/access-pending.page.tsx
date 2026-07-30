@@ -1,4 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth-provider';
 import { PATHS } from '@/core/routes/paths';
@@ -6,9 +7,21 @@ import './auth-pages.scss';
 
 export function AccessPendingPage() {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, hasAccess, refreshProfile } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const fromLogin = (location.state as { fromLogin?: boolean } | null)?.fromLogin === true;
+
+  useEffect(() => {
+    if (!user) return;
+    void refreshProfile();
+  }, [user, refreshProfile]);
+
+  useEffect(() => {
+    if (hasAccess) {
+      navigate(PATHS.home, { replace: true });
+    }
+  }, [hasAccess, navigate]);
 
   return (
     <main className="auth-page">

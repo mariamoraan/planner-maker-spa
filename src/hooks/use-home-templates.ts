@@ -3,6 +3,7 @@ import { useTemplateStore } from '@/stores/template-store';
 
 export const useHomeTemplates = () => {
   const templates = useTemplateStore(state => state.templates);
+  const isSyncReady = useTemplateStore(state => state.isSyncReady);
   const loadAllTemplateImages = useTemplateStore(state => state.loadAllTemplateImages);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -18,8 +19,8 @@ export const useHomeTemplates = () => {
     let cancelled = false;
 
     const load = async () => {
-      if (!imageFingerprint) {
-        setIsLoading(false);
+      if (!isSyncReady || !imageFingerprint) {
+        setIsLoading(!isSyncReady);
         return;
       }
 
@@ -35,7 +36,7 @@ export const useHomeTemplates = () => {
     return () => {
       cancelled = true;
     };
-  }, [imageFingerprint, loadAllTemplateImages]);
+  }, [imageFingerprint, isSyncReady, loadAllTemplateImages]);
 
   return { templates, isLoading };
 };

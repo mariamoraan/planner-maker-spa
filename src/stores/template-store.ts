@@ -23,25 +23,53 @@ function resolveImageRef(uid: string | null, pageId: string, existing?: ImageRef
   return { provider: 'local', key: buildLegacyImageKey(pageId) };
 }
 
-async function loadPageSrc(uid: string | null, image: TemplateImage): Promise<TemplateImage> {
-  const ref = resolveImageRef(uid, image.id, image.imageRef);
-  const { images } = getInfra();
-  let src = await images.load(ref);
+function buildImageRefCandidates(
+  uid: string | null,
+  pageId: string,
+  existing?: ImageRef
+): ImageRef[] {
+  const candidates: ImageRef[] = [];
+  const seen = new Set<string>();
 
-  if (!src && uid) {
-    src = await images.load({ provider: 'local', key: buildLegacyImageKey(image.id) });
+  const add = (ref: ImageRef) => {
+    if (!ref.key || seen.has(ref.key)) return;
+    seen.add(ref.key);
+    candidates.push(ref);
+  };
+
+  if (existing?.key) add(existing);
+  if (uid) add(buildLocalImageRef(uid, pageId));
+  add({ provider: 'local', key: buildLegacyImageKey(pageId) });
+
+  return candidates;
+}
+
+async function loadImageFromCandidates(
+  candidates: ImageRef[]
+): Promise<{ src: string; ref: ImageRef } | null> {
+  const { images } = getInfra();
+  for (const ref of candidates) {
+    const src = await images.load(ref);
+    if (src) return { src, ref };
   }
+  return null;
+}
+
+async function loadPageSrc(uid: string | null, image: TemplateImage): Promise<TemplateImage> {
+  const candidates = buildImageRefCandidates(uid, image.id, image.imageRef);
+  const loaded = await loadImageFromCandidates(candidates);
+  const ref = loaded?.ref ?? resolveImageRef(uid, image.id, image.imageRef);
 
   return {
     ...image,
     imageRef: ref,
-    src: src ?? '',
-    missingLocalAsset: !src,
+    src: loaded?.src ?? '',
+    missingLocalAsset: !loaded,
   };
 }
 
 function needsImageLoad(image: TemplateImage): boolean {
-  return !image.src && !image.missingLocalAsset;
+  return !image.src;
 }
 
 function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
@@ -150,11 +178,9 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
   hydrateFromRemote: remoteTemplates => {
     set(state => {
       const srcByPageId = new Map<string, string>();
-      const missingByPageId = new Map<string, boolean>();
       state.templates.forEach(t =>
         t.images.forEach(img => {
           if (img.src) srcByPageId.set(img.id, img.src);
-          if (img.missingLocalAsset) missingByPageId.set(img.id, true);
         })
       );
 
@@ -168,13 +194,12 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
         const merged = remoteTemplate.images.map(remoteImg => {
           const localImg = localById.get(remoteImg.id);
           const src = srcByPageId.get(remoteImg.id) ?? '';
-          const missingLocalAsset = missingByPageId.get(remoteImg.id) ?? false;
 
           if (localImg && localImg.updatedAt.getTime() > remoteImg.updatedAt.getTime()) {
-            return { ...localImg, src, missingLocalAsset };
+            return { ...localImg, src, missingLocalAsset: false };
           }
 
-          return { ...remoteImg, src, missingLocalAsset };
+          return { ...remoteImg, src, missingLocalAsset: false };
         });
 
         localTemplate?.images.forEach(localImg => {
@@ -182,7 +207,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
             merged.push({
               ...localImg,
               src: srcByPageId.get(localImg.id) ?? localImg.src ?? '',
-              missingLocalAsset: missingByPageId.get(localImg.id) ?? false,
+              missingLocalAsset: false,
             });
           }
         });
