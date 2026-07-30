@@ -1,12 +1,25 @@
-.base-toolbar {
-    padding: 9px 24px;
-    width: 60%;
+$toolbar-height: 52px;
+$toolbar-padding-x: 24px;
+
+%editor-toolbar-shell {
+    box-sizing: border-box;
+    height: $toolbar-height;
+    min-height: $toolbar-height;
+    max-height: $toolbar-height;
+    padding: 0 $toolbar-padding-x;
     display: flex;
     align-items: center;
-    gap: 24px;
     background: #ffffff;
     border-radius: 16px;
     box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+    overflow: visible;
+}
+
+.base-toolbar {
+    @extend %editor-toolbar-shell;
+    width: max-content;
+    gap: 24px;
+
     &__undo,
     &__redo {
         color: grey;
@@ -50,62 +63,29 @@
 }
 
 .toolbar {
-    padding: 12px 24px;
-    width: 60%;
-    display: flex;
-    align-items: center;
+    @extend %editor-toolbar-shell;
+    width: max-content;
     gap: 12px;
-    background: #ffffff;
-    border-radius: 16px;
-    box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+
     &__divider {
-        height: 60%;
+        align-self: stretch;
         width: 2px;
+        margin: 10px 0;
         background: grey;
         border-radius: 4px;
+        flex-shrink: 0;
     }
     &__name {
+        margin: 0;
         padding-right: 8px;
         font-weight: 700;
-    }
-    &__edit-button {
-        position: relative;
+        font-size: 14px;
+        line-height: 1;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
     &__delete-button {
-        padding: 8px;
         margin-left: auto;
-        border-radius: 8px;
-        &__icon {
-            width: 18px;
-            height: 18px;
-        }
-    }
-    &__change-area-type-menu {
-        position: absolute;
-        top: calc(100% + 24px);
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 1;
-        padding: 24px;
-        flex-direction: column;
-        gap: 12px;
-        transition: 400ms ease;
-        transition-behavior: allow discrete;
-        opacity: 0;
-        background: white;
-        text-align: start;
-        border-radius: 24px;
-        box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
-        visibility: collapse;
-        &--visible {
-            opacity: 1;
-            visibility: visible;
-        }
-        &__options {
-            width: 300px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
+        flex-shrink: 0;
     }
 }

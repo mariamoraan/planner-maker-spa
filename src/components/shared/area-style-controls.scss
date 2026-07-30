@@ -1,8 +1,16 @@
-.area-style-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-bottom: 16px;
+.area-style-controls {
+  &--sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-bottom: 16px;
+  }
+
+  &--toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 
   &__group {
     display: flex;
@@ -24,6 +32,10 @@
 
     &--fonts {
       flex-direction: column;
+    }
+
+    &--text-case {
+      margin-top: 8px;
     }
   }
 
@@ -131,6 +143,58 @@
     &--active {
       border-color: #1f2a3d;
       background: #f2f2f2;
+    }
+  }
+
+  &__toolbar-trigger {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 8px;
+    background: #f2f2f2;
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    transition: 200ms ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+
+    &:has(.area-style-controls__popover--visible) {
+      z-index: 1;
+    }
+
+    &--color {
+      gap: 8px;
+    }
+  }
+
+  &__toolbar-color-preview {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid #ececec;
+    flex-shrink: 0;
+  }
+
+  &__popover {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    padding: 16px;
+    min-width: 160px;
+    display: none;
+    background: white;
+    border-radius: 16px;
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+
+    &--visible {
+      display: block;
     }
   }
 }

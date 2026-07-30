@@ -10,7 +10,9 @@ export const EditorBoard = () => {
             <div className="editor-board__main">
                 <EditorSidebar />
                 <div className="editor-board__main__content">
+                <div className="editor-board__toolbar-slot">
                     <Toolbar />
+                </div>
                     <TemplateCanvas />
                     <PagesMap />
                 </div>

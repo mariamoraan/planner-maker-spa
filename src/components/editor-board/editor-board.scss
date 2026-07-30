@@ -7,13 +7,28 @@
     &__main {
         display: flex;
         flex: 1;
+        min-height: 0;
+        align-items: flex-start;
+
         &__content {
             padding: 20px;
             padding-top: 10px;
             flex: 1;
+            align-self: stretch;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
+            min-height: 0;
+        }
+
+        &__toolbar-slot {
+            position: relative;
+            z-index: 10;
+            height: 52px;
+            flex-shrink: 0;
+            width: 100%;
+            display: flex;
             justify-content: center;
         }
     }

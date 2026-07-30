@@ -1,0 +1,23 @@
+.block-delete-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  transition: 200ms ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #f2f2f2;
+  }
+
+  &__icon {
+    width: 18px;
+    height: 18px;
+  }
+}

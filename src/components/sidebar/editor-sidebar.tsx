@@ -3,6 +3,7 @@ import './editor-sidebar.scss'
 import React, { useState } from 'react';
 import { FieldTypeSelector } from './FieldTypeSelector';
 import { AreaStylePanel } from './area-style-panel';
+import { BlockSettingsHeader } from './block-settings-header';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import { Link } from 'react-router-dom';
@@ -68,6 +69,7 @@ export const EditorSidebar: React.FC = () => {
         {selectedRectangleId && (
             <div className='editor-sidebar__main__section'>
             <p className='editor-sidebar__main__section__title'>Block Settings</p>
+            <BlockSettingsHeader rectangleId={selectedRectangleId} />
             <AreaStylePanel />
             </div>
         )}

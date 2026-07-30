@@ -1,6 +1,9 @@
 .editor-sidebar {
     margin: 12px;
     width: 240px;
+    height: 100%;
+    max-height: calc(100% - 24px);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 16px;
