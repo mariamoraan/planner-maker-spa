@@ -86,20 +86,33 @@ export const TemplateCanvas: React.FC = () => {
     }
   }, [selectedRectangleId, currentImage?.rectangles]);
 
+  /** DESELECT ON CLICK OUTSIDE CANVAS */
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (!selectedRectangleId) return;
+      if (containerRef.current?.contains(e.target as Node)) return;
+      setSelectedRectangleId(null);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedRectangleId, setSelectedRectangleId]);
+
   /** MOUSE DRAW */
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if(!selectedFieldType) return;
       const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
       if (!clickedOnEmpty) return;
 
       setSelectedRectangleId(null);
+      if (!selectedFieldType) return;
+
       const stage = stageRef.current;
       if (!stage) return;
       const pos = stage.getPointerPosition();
       if (!pos) return;
     },
-    [scale, offset, setSelectedRectangleId, selectedFieldType]
+    [setSelectedRectangleId, selectedFieldType]
   );
 
   const handleMouseMove = useCallback(
