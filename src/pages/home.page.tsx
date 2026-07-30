@@ -1,13 +1,14 @@
 import './home.page.scss';
 
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LayoutTemplate } from 'lucide-react';
 import { AddTemplateButton } from '@/components/add-template-button/add-template-button';
 import { AnimatedTagline } from '@/components/animated-tagline/animated-tagline';
+import { HomeRail } from '@/components/home/home-rail';
 import { NewProjectCard } from '@/components/home/new-project-card';
 import { TemplateCard } from '@/components/home/template-card';
-import { PATHS, getEditorPath } from '@/core/routes/paths';
+import { getEditorPath } from '@/core/routes/paths';
 import { useHomeTemplates } from '@/hooks/use-home-templates';
 import { useTemplateStore } from '@/stores/template-store';
 
@@ -37,16 +38,11 @@ export const HomePage = () => {
 
   return (
     <div className="home-page">
-      <aside className="home-page__rail">
-        <div className="home-page__rail-inner">
-          <Link to={PATHS.landing} className="home-page__logo">
-            Dyna
-          </Link>
-          <p className="home-page__rail-tagline">Planners dinámicos</p>
-          <div className="home-page__rail-spacer" />
-          <AddTemplateButton label="Nuevo proyecto" />
-        </div>
-      </aside>
+      <HomeRail
+        templates={templates}
+        isLoading={isLoading}
+        onOpenTemplate={goToTemplate}
+      />
 
       <main className="home-page__workspace">
         <div className="home-page__content">

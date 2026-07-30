@@ -1,8 +1,4 @@
-@import '../styles/breakpoints';
-
 .home-page {
-  --home-rail-width: #{$editor-sidebar-width};
-
   display: flex;
   min-height: 100dvh;
   background-color: hsl(var(--background));
@@ -10,74 +6,6 @@
 
   @media (max-width: 767px) {
     flex-direction: column;
-  }
-
-  &__rail {
-    flex-shrink: 0;
-    padding: 12px;
-    width: calc(var(--home-rail-width) + 24px);
-
-    @media (max-width: 767px) {
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      width: 100%;
-      padding: 0;
-      background-color: hsl(var(--card) / 0.92);
-      backdrop-filter: blur(8px);
-      border-bottom: 1px solid hsl(var(--border));
-    }
-  }
-
-  &__rail-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    height: calc(100dvh - 24px);
-    padding: 24px 16px;
-    background: hsl(var(--card));
-    border-radius: 16px;
-    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px;
-
-    @media (max-width: 767px) {
-      flex-direction: row;
-      align-items: center;
-      height: auto;
-      padding: 1rem 1.25rem;
-      border-radius: 0;
-      box-shadow: none;
-      gap: 1rem;
-    }
-  }
-
-  &__logo {
-    font-size: 1.125rem;
-    font-weight: 600;
-    letter-spacing: -0.025em;
-    color: hsl(var(--foreground));
-    text-decoration: none;
-
-    &:hover {
-      color: hsl(var(--accent));
-    }
-  }
-
-  &__rail-tagline {
-    margin: 0;
-    font-size: 0.8125rem;
-    color: hsl(var(--muted-foreground));
-
-    @media (max-width: 767px) {
-      display: none;
-    }
-  }
-
-  &__rail-spacer {
-    flex: 1;
-
-    @media (max-width: 767px) {
-      display: none;
-    }
   }
 
   &__workspace {
@@ -210,12 +138,5 @@
       min-height: 2.75rem;
       font-size: 0.9375rem;
     }
-  }
-}
-
-@media (max-width: 767px) {
-  .home-page__rail .add-template-button__button {
-    width: auto;
-    white-space: nowrap;
   }
 }
