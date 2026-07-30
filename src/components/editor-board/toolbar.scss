@@ -4,6 +4,7 @@ $toolbar-padding-x: 24px;
 %editor-toolbar-shell {
     box-sizing: border-box;
     height: $toolbar-height;
+    min-width: min(600px, 40dvw);
     min-height: $toolbar-height;
     max-height: $toolbar-height;
     padding: 0 $toolbar-padding-x;

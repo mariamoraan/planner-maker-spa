@@ -23,7 +23,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
   const editing = useAreaStyleEditing(rectangle);
   const [openPopover, setOpenPopover] = useState<PopoverId>(null);
   const formatRef = useRef<HTMLButtonElement>(null);
-  const colorRef = useRef<HTMLButtonElement>(null);
+  const colorRef = useRef<HTMLDivElement>(null);
   const fontRef = useRef<HTMLButtonElement>(null);
   const styleRef = useRef<HTMLButtonElement>(null);
 
@@ -229,23 +229,25 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
         </div>
       </button>
 
-      <button
-        ref={colorRef}
-        type="button"
-        className="area-style-controls__toolbar-trigger area-style-controls__toolbar-trigger--color"
-        onClick={togglePopover('color')}
-      >
-        <span
-          className="area-style-controls__toolbar-color-preview"
-          style={{ backgroundColor: style.color }}
-        />
-        Color
+      <div ref={colorRef} className="area-style-controls__toolbar-popover-anchor">
+        <button
+          type="button"
+          className="area-style-controls__toolbar-trigger area-style-controls__toolbar-trigger--color"
+          onClick={togglePopover('color')}
+        >
+          <span
+            className="area-style-controls__toolbar-color-preview"
+            style={{ backgroundColor: style.color }}
+          />
+          Color
+        </button>
         <div
-          className={clsx('area-style-controls__popover', {
+          className={clsx('area-style-controls__popover', 'area-style-controls__popover--color', {
             'area-style-controls__popover--visible': openPopover === 'color',
           })}
+          onMouseDown={e => e.stopPropagation()}
         >
-          <div className="area-style-controls__color-row">
+          <div className="area-style-controls__color-row area-style-controls__color-row--toolbar-popover">
             {COLOR_PRESET_REGISTRY.map(preset => (
               <button
                 key={preset.id}
@@ -271,7 +273,7 @@ export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps
             />
           </div>
         </div>
-      </button>
+      </div>
 
       <button
         ref={fontRef}

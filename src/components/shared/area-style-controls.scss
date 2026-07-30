@@ -69,6 +69,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
+
+    &--toolbar-popover {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+    }
   }
 
   &__color-swatch {
@@ -146,6 +152,15 @@
     }
   }
 
+  &__toolbar-popover-anchor {
+    position: relative;
+    flex-shrink: 0;
+
+    &:has(.area-style-controls__popover--visible) {
+      z-index: 1;
+    }
+  }
+
   &__toolbar-trigger {
     position: relative;
     display: flex;
@@ -195,6 +210,16 @@
 
     &--visible {
       display: block;
+    }
+
+    &--color {
+      min-width: 200px;
+
+      .area-style-controls__hex-input {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+      }
     }
   }
 }

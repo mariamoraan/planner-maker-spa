@@ -3,7 +3,7 @@
     width: 240px;
     height: 100%;
     max-height: calc(100% - 24px);
-    overflow-y: auto;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -12,6 +12,7 @@
     box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
 
     &__header {
+        flex-shrink: 0;
         padding: 24px 16px;
         display: flex;
         flex-direction: column;
@@ -56,7 +57,28 @@
         display: flex;
         flex-direction: column;
         flex: 1;
+        min-height: 0;
+        overflow-y: auto;
         gap: 24px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+
+        &::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        &::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.12);
+            border-radius: 999px;
+        }
+
+        &::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.22);
+        }
         &__section {
             display: flex;
             flex-direction: column;
