@@ -11,6 +11,7 @@ import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/stores/template-store';
 import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
+import { blockSelectionZoneProps } from '@/lib/block-selection';
 
 export const EditorSidebar: React.FC = () => {
     const template = useCurrentTemplate();
@@ -21,7 +22,7 @@ export const EditorSidebar: React.FC = () => {
     const [templateName, setTemplateName] = useState(template?.name ?? '');
 
   return (
-    <aside className="editor-sidebar">
+    <aside className="editor-sidebar" {...blockSelectionZoneProps}>
       <div className='editor-sidebar__header'>
         <div className='editor-sidebar__header__home-icon'>
           <Link to={PATHS.home}><HomeIcon /></Link>

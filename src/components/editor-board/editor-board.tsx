@@ -3,14 +3,18 @@ import { PagesMap } from "../pages-map/pages-map"
 import { Toolbar } from "./toolbar"
 import './editor-board.scss'
 import { EditorSidebar } from "../sidebar/editor-sidebar"
+import { blockSelectionZoneProps } from "@/lib/block-selection"
+import { useClearBlockSelectionOnOutsideClick } from "@/hooks/use-clear-block-selection-on-outside-click"
 
 export const EditorBoard = () => {
+    useClearBlockSelectionOnOutsideClick()
+
     return (
         <div className="editor-board">
             <div className="editor-board__main">
                 <EditorSidebar />
                 <div className="editor-board__main__content">
-                <div className="editor-board__toolbar-slot">
+                <div className="editor-board__toolbar-slot" {...blockSelectionZoneProps}>
                     <Toolbar />
                 </div>
                     <TemplateCanvas />

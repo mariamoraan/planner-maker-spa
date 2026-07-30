@@ -7,6 +7,7 @@ import Konva from 'konva';
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
+import { blockSelectionZoneProps } from '@/lib/block-selection';
 import './template-canva.scss'
 import { TemplateRectangle } from './template-rectangle';
 
@@ -85,18 +86,6 @@ export const TemplateCanvas: React.FC = () => {
       transformerRef.current.getLayer()?.batchDraw();
     }
   }, [selectedRectangleId, currentImage?.rectangles]);
-
-  /** DESELECT ON CLICK OUTSIDE CANVAS */
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!selectedRectangleId) return;
-      if (containerRef.current?.contains(e.target as Node)) return;
-      setSelectedRectangleId(null);
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedRectangleId, setSelectedRectangleId]);
 
   /** MOUSE DRAW */
   const handleMouseDown = useCallback(
@@ -279,6 +268,7 @@ export const TemplateCanvas: React.FC = () => {
     key={currentImage?.id}
     ref={containerRef} 
     className="template-canva"
+    {...blockSelectionZoneProps}
     >
         <Stage
           ref={stageRef}

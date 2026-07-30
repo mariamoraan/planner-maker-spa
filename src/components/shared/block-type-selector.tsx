@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FIELD_ICONS, getFieldIcon } from '@/components/sidebar/FieldTypeSelector';
+import { blockSelectionZoneProps } from '@/lib/block-selection';
 import { FIELD_TYPE_CONFIG, FieldType } from '@/types/planner';
 
 const GRID_ICON_SIZES = {
@@ -131,6 +132,7 @@ export const BlockTypeSelector = ({
             <div
               ref={floatingMenuRef}
               className="block-type-selector__floating-menu"
+              {...blockSelectionZoneProps}
               style={{
                 top: menuPosition.top,
                 left: menuPosition.left,
