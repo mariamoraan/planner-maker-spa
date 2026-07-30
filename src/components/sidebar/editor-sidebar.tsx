@@ -2,6 +2,7 @@ import './editor-sidebar.scss'
 
 import React, { useState } from 'react';
 import { FieldTypeSelector } from './FieldTypeSelector';
+import { AreaStylePanel } from './area-style-panel';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import { Link } from 'react-router-dom';
@@ -14,6 +15,7 @@ export const EditorSidebar: React.FC = () => {
     const template = useCurrentTemplate();
     const currentImage = useCurrentImage();
     const updateTemplate = useTemplateStore(state => state.updateTemplate);
+    const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId);
     const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
     const [templateName, setTemplateName] = useState(template?.name ?? '');
 
@@ -61,6 +63,12 @@ export const EditorSidebar: React.FC = () => {
             <div className='editor-sidebar__main__section'>
             <p className='editor-sidebar__main__section__title'>Dynamic Blocks</p>
             <FieldTypeSelector />
+            </div>
+        )}
+        {selectedRectangleId && (
+            <div className='editor-sidebar__main__section'>
+            <p className='editor-sidebar__main__section__title'>Block Settings</p>
+            <AreaStylePanel />
             </div>
         )}
       </div>

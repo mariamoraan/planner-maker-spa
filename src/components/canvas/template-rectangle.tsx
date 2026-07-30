@@ -1,40 +1,14 @@
-import { MONTH_NAMES } from "@/lib/planner-utils";
-import { FIELD_TYPE_CONFIG, FieldType, Rectangle } from "@/types/planner";
+import { getEditorPreviewContext, getFieldValue } from "@/lib/planner-utils";
+import { buildKonvaFontStyle, resolveFieldStyle, resolveFontFamily } from "@/lib/field-style-config";
+import { FIELD_TYPE_CONFIG, FieldType, Rectangle, TemplateImage } from "@/types/planner";
 import Konva from "konva";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { Group, Rect, Text } from "react-konva";
 import { useKonvaFade } from "./use-konva-fade";
 
-const date = new Date();
-const today = new Date(date.getFullYear(), date.getMonth(), 1);
-
-const RECTANGLE_PLACEHOLDERS: Record<FieldType, string> = {
-    'year': today.getFullYear().toString(),
-    'day': today.getDate().toString(),
-    'endDay': today.getDate().toString(),
-    'startDay': today.getDate().toString(),
-    'month': MONTH_NAMES[today.getMonth()],
-  }
-  
-  const getRectanglePlaceholder = (fieldType: FieldType, offset?: number) => {
-    if(fieldType === 'day') {
-      const shiftedDate = new Date(date.getFullYear(), date.getMonth(), 1);
-      shiftedDate.setDate(shiftedDate.getDate() + offset);
-      return shiftedDate.getDate().toString();
-    }
-    if(fieldType === 'endDay') {
-      const shiftedDate = new Date(date.getFullYear(), date.getMonth(), 1);
-      shiftedDate.setDate(shiftedDate.getDate() + 6);
-      return shiftedDate.getDate().toString(); 
-    }
-    else {
-      return RECTANGLE_PLACEHOLDERS[fieldType]
-    }
-  }
-
 interface TemplateRectangleProps {
     rect: Rectangle;
-    index?: number;
+    templateImage: TemplateImage;
     scale: number;
     offset: { x: number; y: number };
     config: typeof FIELD_TYPE_CONFIG[FieldType];
@@ -47,7 +21,7 @@ interface TemplateRectangleProps {
   
 export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     rect,
-    index = 0,
+    templateImage,
     scale,
     offset,
     config,
@@ -69,6 +43,27 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     plainTextRef,
     !showRectangleGuides,
     );
+
+    const previewContext = useMemo(
+      () => getEditorPreviewContext(templateImage),
+      [templateImage],
+    );
+
+    const { fieldValue, fieldColor } = useMemo(
+      () => getFieldValue({
+        fieldType: rect.fieldType,
+        context: previewContext,
+        templateImage,
+        rectangle: rect,
+        fillIncompleteWeeks: true,
+        fillIncompleteMonths: true,
+      }),
+      [rect, templateImage, previewContext],
+    );
+
+    const style = useMemo(() => resolveFieldStyle(rect), [rect]);
+    const fontFamily = resolveFontFamily(style.fontId);
+    const fontStyle = buildKonvaFontStyle(style);
   
     const width = rect.width * scale;
     const height = rect.height * scale;
@@ -100,30 +95,30 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
           />
   
           <Text
-            text={getRectanglePlaceholder(rect.fieldType, index)}
+            text={fieldValue}
             width={width}
             height={height}
             align="center"
             verticalAlign="middle"
             fontSize={height * 0.7}
-            fontFamily="Gloria Hallelujah"
+            fontFamily={fontFamily}
             fill={config.color}
-            fontStyle="bold"
+            fontStyle={fontStyle}
             listening={false}
           />
         </Group>
   
         <Text
           ref={plainTextRef}
-          text={getRectanglePlaceholder(rect.fieldType, index)}
+          text={fieldValue}
           width={width}
           height={height}
           align="center"
           verticalAlign="middle"
           fontSize={height * 0.7}
-          fontFamily="Gloria Hallelujah"
-          fill="black"
-          fontStyle="normal"
+          fontFamily={fontFamily}
+          fill={fieldColor}
+          fontStyle={fontStyle}
           listening={false}
         />
       </Group>

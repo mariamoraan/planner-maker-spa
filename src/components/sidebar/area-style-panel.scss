@@ -1,0 +1,136 @@
+.area-style-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-bottom: 16px;
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: grey;
+    text-transform: uppercase;
+  }
+
+  &__options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    &--fonts {
+      flex-direction: column;
+    }
+  }
+
+  &__option {
+    min-width: 48px;
+    padding: 6px 10px;
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 200ms ease;
+
+    &:hover {
+      border-color: #ccc;
+    }
+
+    &--active {
+      border-color: #1f2a3d;
+      background: #f2f2f2;
+      font-weight: 600;
+    }
+
+    &--text-case {
+      min-width: 40px;
+      font-size: 14px;
+    }
+  }
+
+  &__color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__color-swatch {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: 200ms ease;
+
+    &--white {
+      border-color: #ececec;
+    }
+
+    &--active {
+      border-color: #1f2a3d;
+      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1f2a3d;
+    }
+  }
+
+  &__hex-input {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+
+  &__font-option {
+    padding: 8px 12px;
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 16px;
+    text-align: left;
+    cursor: pointer;
+    transition: 200ms ease;
+
+    &:hover {
+      border-color: #ccc;
+    }
+
+    &--active {
+      border-color: #1f2a3d;
+      background: #f2f2f2;
+    }
+  }
+
+  &__style-toggle {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 200ms ease;
+
+    &--italic {
+      font-style: italic;
+    }
+
+    &:hover {
+      border-color: #ccc;
+    }
+
+    &--active {
+      border-color: #1f2a3d;
+      background: #f2f2f2;
+    }
+  }
+}

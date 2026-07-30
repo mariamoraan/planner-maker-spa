@@ -1,6 +1,7 @@
 import { useTemplateStore } from '@/stores/template-store';
 import { useHistoryStore } from '@/stores/history-store';
 import { FieldType, Rectangle } from '@/types/planner';
+import { getDefaultFormatVariant } from '@/lib/field-style-config';
 import { useCallback } from 'react';
 import { useTemplateId } from './use-template-id';
 
@@ -81,14 +82,22 @@ export const useManageAreas = () => {
             const rectangle = currentImage?.rectangles.find(r => r.id === id);
             if (!rectangle) return;
 
+            const updates = {
+              fieldType: type,
+              formatVariant: getDefaultFormatVariant(type),
+            };
+
             pushHistory(templateId, {
               type: 'updateRectangle',
               imageId: currentImageId,
               rectangleId: id,
-              before: { fieldType: rectangle.fieldType },
-              after: { fieldType: type },
+              before: {
+                fieldType: rectangle.fieldType,
+                formatVariant: rectangle.formatVariant,
+              },
+              after: updates,
             });
-            updateRectangle(templateId, currentImageId, id, { fieldType: type });
+            updateRectangle(templateId, currentImageId, id, updates);
         }
     }, [templateId, currentImageId, updateRectangle, getCurrentImage, pushHistory]);
 

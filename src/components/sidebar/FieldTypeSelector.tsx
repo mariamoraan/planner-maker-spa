@@ -11,6 +11,7 @@ import { StartWeekDayIcon } from './start-week-day-icon';
 import { EndWeekDayIcon } from './end-week-day-icon';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
+import { getDefaultFieldStyle, getDefaultFormatVariant } from '@/lib/field-style-config';
 
 const ICON_HEIGHT = 50;
 const ICON_WIDTH = 50;
@@ -57,6 +58,8 @@ export const FieldTypeSelector = () => {
       height: DEFAULT_HEIGHT,
       fieldType: type,
       order: currentImage.rectangles.length,
+      formatVariant: getDefaultFormatVariant(type),
+      style: getDefaultFieldStyle(),
     });
   };
 

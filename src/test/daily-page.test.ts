@@ -4,7 +4,15 @@ import {
   getFieldValue,
   getMonthsBetween,
 } from '@/lib/planner-utils';
-import type { TemplateImage } from '@/types/planner';
+import {
+  getDefaultFieldStyle,
+  getDefaultFormatVariant,
+  getFormatVariant,
+  applyTextCase,
+  isValidHexColor,
+  resolveFieldStyle,
+} from '@/lib/field-style-config';
+import type { Rectangle, TemplateImage } from '@/types/planner';
 
 const dailyTemplate: TemplateImage = {
   id: 'daily-1',
@@ -46,6 +54,17 @@ const dailyTemplate: TemplateImage = {
   src: '',
 };
 
+function makeRectangle(overrides: Partial<Rectangle> & Pick<Rectangle, 'id' | 'fieldType'>): Rectangle {
+  return {
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    order: 0,
+    ...overrides,
+  };
+}
+
 describe('getDaysOfMonth', () => {
   it('returns 31 days for January', () => {
     const days = getDaysOfMonth({ year: 2026, month: 0 });
@@ -63,7 +82,7 @@ describe('getDaysOfMonth', () => {
 describe('getFieldValue for daily-page context', () => {
   const date = new Date(2026, 4, 15);
 
-  it('resolves year, month and day from context.date', () => {
+  it('resolves year, month and day from context.date with Spanish locale defaults', () => {
     const context = { date, year: date.getFullYear(), month: date.getMonth() };
 
     expect(
@@ -82,7 +101,7 @@ describe('getFieldValue for daily-page context', () => {
         templateImage: dailyTemplate,
         rectangle: dailyTemplate.rectangles[1],
       }).fieldValue
-    ).toBe('May');
+    ).toBe('Mayo');
 
     expect(
       getFieldValue({
@@ -92,6 +111,110 @@ describe('getFieldValue for daily-page context', () => {
         rectangle: dailyTemplate.rectangles[2],
       }).fieldValue
     ).toBe('15');
+  });
+
+  it('supports year YY format variant', () => {
+    const context = { date, year: date.getFullYear(), month: date.getMonth() };
+    const rectangle = makeRectangle({
+      id: 'year-yy',
+      fieldType: 'year',
+      formatVariant: 'YY',
+    });
+
+    expect(
+      getFieldValue({
+        fieldType: 'year',
+        context,
+        templateImage: dailyTemplate,
+        rectangle,
+      }).fieldValue
+    ).toBe('26');
+  });
+
+  it('supports month numeric format variant', () => {
+    const context = { date, year: date.getFullYear(), month: date.getMonth() };
+    const rectangle = makeRectangle({
+      id: 'month-num',
+      fieldType: 'month',
+      formatVariant: 'numeric',
+    });
+
+    expect(
+      getFieldValue({
+        fieldType: 'month',
+        context,
+        templateImage: dailyTemplate,
+        rectangle,
+      }).fieldValue
+    ).toBe('5');
+  });
+
+  it('supports day weekdayName format variant in Spanish', () => {
+    const context = { date, year: date.getFullYear(), month: date.getMonth() };
+    const rectangle = makeRectangle({
+      id: 'day-name',
+      fieldType: 'day',
+      formatVariant: 'weekdayName',
+    });
+
+    expect(
+      getFieldValue({
+        fieldType: 'day',
+        context,
+        templateImage: dailyTemplate,
+        rectangle,
+      }).fieldValue
+    ).toBe('Viernes');
+  });
+});
+
+describe('field style config helpers', () => {
+  it('returns defaults for rectangles without style or formatVariant', () => {
+    const rectangle = makeRectangle({ id: 'legacy', fieldType: 'month' });
+
+    expect(getFormatVariant(rectangle)).toBe('name');
+    expect(resolveFieldStyle(rectangle)).toEqual(getDefaultFieldStyle());
+  });
+
+  it('returns type-specific default format variants', () => {
+    expect(getDefaultFormatVariant('year')).toBe('YYYY');
+    expect(getDefaultFormatVariant('month')).toBe('name');
+    expect(getDefaultFormatVariant('day')).toBe('numeric');
+    expect(getDefaultFormatVariant('startDay')).toBe('numeric');
+    expect(getDefaultFormatVariant('endDay')).toBe('numeric');
+  });
+
+  it('validates hex colors', () => {
+    expect(isValidHexColor('#1f2a3d')).toBe(true);
+    expect(isValidHexColor('#fff')).toBe(true);
+    expect(isValidHexColor('1f2a3d')).toBe(false);
+    expect(isValidHexColor('#gggggg')).toBe(false);
+  });
+
+  it('applies text case transformations in Spanish', () => {
+    expect(applyTextCase('mayo', 'capitalize', 'es')).toBe('Mayo');
+    expect(applyTextCase('mayo', 'uppercase', 'es')).toBe('MAYO');
+    expect(applyTextCase('MAYO', 'lowercase', 'es')).toBe('mayo');
+    expect(applyTextCase('mayo', 'default', 'es')).toBe('mayo');
+  });
+
+  it('applies text case via getFieldValue when style.textCase is set', () => {
+    const date = new Date(2026, 4, 15);
+    const context = { date, year: date.getFullYear(), month: date.getMonth() };
+    const rectangle = makeRectangle({
+      id: 'month-cap',
+      fieldType: 'month',
+      style: { ...getDefaultFieldStyle(), textCase: 'capitalize' },
+    });
+
+    expect(
+      getFieldValue({
+        fieldType: 'month',
+        context,
+        templateImage: dailyTemplate,
+        rectangle,
+      }).fieldValue
+    ).toBe('Mayo');
   });
 });
 

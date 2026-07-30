@@ -301,7 +301,7 @@ export const TemplateCanvas: React.FC = () => {
                 <TemplateRectangle
                   key={`${currentImage.id}-${rect.id}`}
                   rect={rect}
-                  index={rect?.fieldType === 'day' ? currentImage?.rectangles?.filter(r => r.fieldType === 'day').findIndex(r => r.id === rect.id) : 0}
+                  templateImage={currentImage}
                   scale={scale}
                   offset={offset}
                   config={config}

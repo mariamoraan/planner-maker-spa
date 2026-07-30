@@ -1,8 +1,21 @@
 import { 
   format, 
 } from 'date-fns';
-import type {  Rectangle, FieldType, TemplateImage } from '@/types/planner';
+import type { Locale } from 'date-fns';
+import type { Rectangle, FieldType, TemplateImage } from '@/types/planner';
+import {
+  SECONDARY_COLOR,
+  getFormatVariant,
+  resolveFieldStyle,
+  buildCanvasFont,
+  formatFieldValue,
+  isYearFormatVariant,
+  isMonthFormatVariant,
+  isDayFormatVariant,
+} from '@/lib/field-style-config';
+import { DEFAULT_LOCALE, formatMonthName, formatWeekdayName } from '@/lib/locale-config';
 
+/** @deprecated Use formatMonthName with locale instead */
 export const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
@@ -171,12 +184,79 @@ function getWeekRange(date) {
   return { monday, sunday };
 }
 
+export function getEditorPreviewContext(templateImage: TemplateImage): {
+  year?: number;
+  month?: number;
+  week?: WeekData;
+  days?: Date[];
+  date?: Date;
+} {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+
+  switch (templateImage.type) {
+    case 'daily-page':
+      return { date: firstOfMonth, year, month };
+    case 'month-cover':
+      return { year, month };
+    case 'monthly-calendar':
+      return { year, month, days: getMonthDatesStartingOnMonday({ year, month }) };
+    case 'weekly-calendar': {
+      const days = Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(firstOfMonth);
+        d.setDate(firstOfMonth.getDate() + i);
+        return d;
+      });
+      return {
+        year,
+        month,
+        week: {
+          weekNumber: 1,
+          startDate: days[0],
+          endDate: days[6],
+          days,
+        },
+      };
+    }
+    default:
+      return { year, month, date: firstOfMonth };
+  }
+}
+
 /**
  * Get field value based on type and context
  */
 
-const MAIN_COLOR = '#1f2a3d'
-const SECONDARY_COLOR = '#929599'
+function formatYearValue(date: Date, formatVariant: ReturnType<typeof getFormatVariant>): string {
+  if (isYearFormatVariant(formatVariant)) {
+    return formatVariant === 'YY' ? format(date, 'yy') : format(date, 'yyyy');
+  }
+  return format(date, 'yyyy');
+}
+
+function formatMonthValue(date: Date, formatVariant: ReturnType<typeof getFormatVariant>, locale: Locale): string {
+  if (isMonthFormatVariant(formatVariant)) {
+    return formatVariant === 'numeric'
+      ? format(date, 'M')
+      : formatMonthName(date, locale);
+  }
+  return formatMonthName(date, locale);
+}
+
+function formatDayValue(date: Date, formatVariant: ReturnType<typeof getFormatVariant>, locale: Locale): string {
+  if (isDayFormatVariant(formatVariant)) {
+    return formatVariant === 'numeric'
+      ? format(date, 'd')
+      : formatWeekdayName(date, locale);
+  }
+  return format(date, 'd');
+}
+
+function resolveFieldColor(isInCurrentMonth: boolean, userColor: string): string {
+  return isInCurrentMonth ? userColor : SECONDARY_COLOR;
+}
 
 export function getFieldValue({
   fieldType,
@@ -184,7 +264,8 @@ export function getFieldValue({
   templateImage,
   rectangle,
   fillIncompleteWeeks,
-  fillIncompleteMonths
+  fillIncompleteMonths,
+  locale = DEFAULT_LOCALE,
 }: {
   fieldType: FieldType,
   context: {
@@ -198,23 +279,41 @@ export function getFieldValue({
   rectangle: Rectangle,
   fillIncompleteWeeks?: boolean;
   fillIncompleteMonths?: boolean;
+  locale?: Locale;
 }): {fieldValue: string, fieldColor: string} {
   const dateContext = context.date;
+  const formatVariant = getFormatVariant(rectangle);
+  const style = resolveFieldStyle(rectangle);
+  const userColor = style.color;
+  const localeCode = locale.code ?? 'es';
+
+  const result = (fieldValue: string, fieldColor: string) => ({
+    fieldValue: formatFieldValue(fieldValue, style, localeCode),
+    fieldColor,
+  });
 
   switch (fieldType) {
     case 'year':
       if (dateContext) {
-        return { fieldValue: dateContext.getFullYear().toString(), fieldColor: MAIN_COLOR };
+        return result(formatYearValue(dateContext, formatVariant), userColor);
       }
-      return {fieldValue: context.year?.toString() ?? '', fieldColor: MAIN_COLOR};
+      if (context.year !== undefined) {
+        const yearDate = new Date(context.year, 0, 1);
+        return result(formatYearValue(yearDate, formatVariant), userColor);
+      }
+      return result('', userColor);
     case 'month':
       if (dateContext) {
-        return { fieldValue: MONTH_NAMES[dateContext.getMonth()], fieldColor: MAIN_COLOR };
+        return result(formatMonthValue(dateContext, formatVariant, locale), userColor);
       }
-      return {fieldValue: context.month !== undefined ? MONTH_NAMES[context.month] : '', fieldColor: MAIN_COLOR};
+      if (context.month !== undefined && context.year !== undefined) {
+        const monthDate = new Date(context.year, context.month, 1);
+        return result(formatMonthValue(monthDate, formatVariant, locale), userColor);
+      }
+      return result('', userColor);
     case 'day':
       if (dateContext) {
-        return { fieldValue: format(dateContext, 'd'), fieldColor: MAIN_COLOR };
+        return result(formatDayValue(dateContext, formatVariant, locale), userColor);
       }
       if (context.week) {
         const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
@@ -224,10 +323,13 @@ export function getFieldValue({
           const day = context.week.days[index];
           const isDayInCurrentMonth = day.getMonth() === context.month;
           if(fillIncompleteWeeks) {
-            return {fieldValue: format(day, 'd'), fieldColor: isDayInCurrentMonth ? MAIN_COLOR : SECONDARY_COLOR }
+            return result(
+              formatDayValue(day, formatVariant, locale),
+              resolveFieldColor(isDayInCurrentMonth, userColor),
+            );
           }
-          else if (isDayInCurrentMonth) { // Only show if in current month
-            return {fieldValue: format(day, 'd'), fieldColor: MAIN_COLOR}
+          else if (isDayInCurrentMonth) {
+            return result(formatDayValue(day, formatVariant, locale), userColor);
           }
         }
       }
@@ -239,30 +341,34 @@ export function getFieldValue({
           const day = context.days[index];
           const isDayInCurrentMonth = day.getMonth() === context.month;
           if(fillIncompleteMonths) {
-             return {fieldValue: format(day, 'd'), fieldColor: isDayInCurrentMonth ? MAIN_COLOR : SECONDARY_COLOR}
+            return result(
+              formatDayValue(day, formatVariant, locale),
+              resolveFieldColor(isDayInCurrentMonth, userColor),
+            );
           }
-          else if (isDayInCurrentMonth) { // Only show if in current month
-            return {fieldValue: format(day, 'd'), fieldColor: MAIN_COLOR}
+          else if (isDayInCurrentMonth) {
+            return result(formatDayValue(day, formatVariant, locale), userColor);
           }
         }
       }
-      return {fieldValue: '', fieldColor: MAIN_COLOR};
+      return result('', userColor);
     case 'startDay':
       if(context.week) {
         const filteredDays = context.week.days;
         const startDate = filteredDays[0];
-        return {fieldValue: format(startDate, 'd'), fieldColor: MAIN_COLOR}
+        return result(formatDayValue(startDate, formatVariant, locale), userColor);
       }
-      return {fieldValue: '', fieldColor: MAIN_COLOR};
+      return result('', userColor);
     case 'endDay':
       if(context.week) {
         const filteredDays = context.week.days;
         const endDate = filteredDays.at(-1);
-        return {fieldValue: format(endDate, 'd'), fieldColor: MAIN_COLOR}
+        if (!endDate) return result('', userColor);
+        return result(formatDayValue(endDate, formatVariant, locale), userColor);
       }
-      return {fieldValue: '', fieldColor: MAIN_COLOR};
+      return result('', userColor);
     default:
-      return {fieldValue: '', fieldColor: MAIN_COLOR};
+      return result('', userColor);
   }
 }
 
@@ -273,6 +379,7 @@ export async function renderFieldOnCanvas(
   ctx: CanvasRenderingContext2D,
   rectangle: Rectangle,
   value: string,
+  color: string,
   scaleX: number = 1,
   scaleY: number = 1
 ): Promise<void> {
@@ -280,20 +387,19 @@ export async function renderFieldOnCanvas(
   const y = rectangle.y * scaleY;
   const width = rectangle.width * scaleX;
   const height = rectangle.height * scaleY;
-  
-  // Calculate font size based on rectangle height
-  const paddingY = rectangle.height * 0.15; // respiración vertical
-  const fontSize = rectangle.height - paddingY * 2;
-  const fontName = `"Gloria Hallelujah"`
-  
+
+  const paddingY = rectangle.height * 0.15;
+  const fontSize = (rectangle.height - paddingY * 2) * scaleY;
+  const style = resolveFieldStyle(rectangle);
+  const fontString = buildCanvasFont(style, fontSize);
+
   ctx.save();
-  await document.fonts.load(`normal ${fontSize}px ${fontName}`);
-  ctx.font = `normal ${fontSize}px ${fontName}, system-ui, -apple-system, sans-serif`;
+  await document.fonts.load(fontString);
+  ctx.font = fontString;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#1e293b';
-  
-  // Draw the text centered in the rectangle
+  ctx.fillStyle = color;
+
   ctx.fillText(value, x + width / 2, y + height / 2, width * 0.9);
   ctx.restore();
 }

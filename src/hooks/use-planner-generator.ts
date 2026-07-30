@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Template, GeneratedPage } from '@/types/planner';
-import { getFieldValue, loadImage, WeekData, getMonthsBetween, getDaysOfMonth } from '@/lib/planner-utils';
+import { getFieldValue, loadImage, WeekData, getMonthsBetween, getDaysOfMonth, renderFieldOnCanvas } from '@/lib/planner-utils';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { WorkerResponse } from '@/workers/pdf.worker';
 
@@ -46,23 +46,7 @@ export function usePlannerGenerator() {
       });
 
       if (fieldValue) {
-        const paddingY = rect.height * 0.15;
-        const fontSize = rect.height - paddingY * 2;
-        const fontName = `"Gloria Hallelujah"`;
-
-        ctx.save();
-        await document.fonts.load(`normal ${fontSize}px ${fontName}`);
-        ctx.font = `normal ${fontSize}px ${fontName}, system-ui, -apple-system, sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = fieldColor;
-        ctx.fillText(
-          fieldValue,
-          rect.x + rect.width / 2,
-          rect.y + rect.height / 2,
-          rect.width * 0.9
-        );
-        ctx.restore();
+        await renderFieldOnCanvas(ctx, rect, fieldValue, fieldColor);
       }
     }
 
