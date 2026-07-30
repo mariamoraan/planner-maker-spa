@@ -1,23 +1,22 @@
-import { Trash2 } from 'lucide-react'
+import './toolbar.scss'
 
 import {
-    SparklesIcon,
     EyeIcon,
     EyeClosedIcon,
+    TrashIcon,
+    LargeArrowLeftIcon,
+    LargeArrowRightIcon,
 } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
 import { FIELD_TYPE_CONFIG, FieldType } from '@/types/planner'
 import { useManageAreas } from '@/hooks/use-manage-areas'
 import { useCurrentImage } from '@/hooks/use-current-image'
-import './toolbar.scss'
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { FIELD_ICONS } from '../sidebar/FieldTypeSelector';
 import useOnClickOutside from '@/core/hooks/use-on-click-outside'
-import { useCurrentTemplate } from '@/hooks/use-current-template'
 
 export const Toolbar = () => {
-    const template = useCurrentTemplate();
     const currentImage = useCurrentImage();
     const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
     const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
@@ -46,16 +45,18 @@ export const Toolbar = () => {
     if(!currentSelectedBox) {
         return (
             <div className='base-toolbar'>
+                <button className='base-toolbar__undo'><LargeArrowLeftIcon /></button>
+                <button className='base-toolbar__redo'><LargeArrowRightIcon /></button>
                 <button 
                 className="base-toolbar__generate-planner-button"
                 onClick={openGenerator}
-            >
-                Generate Planner
-            </button>
-            <button  className="base-toolbar__show-guides-button" onClick={toggleRectangleGuides}>
-                {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
-   
-            </button>
+                >
+                    Generate Planner
+                </button>
+                <button  className="base-toolbar__show-guides-button" onClick={toggleRectangleGuides}>
+                    {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
+    
+                </button>
             </div>
         );
     }
@@ -91,7 +92,7 @@ export const Toolbar = () => {
                 }}
                 className='toolbar__delete-button'
             >
-                <Trash2 className="toolbar__delete-button__icon" />
+                <TrashIcon className="toolbar__delete-button__icon" />
             </button>
             
         </div>

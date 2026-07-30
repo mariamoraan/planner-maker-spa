@@ -3,10 +3,23 @@
     width: 60%;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 24px;
     background: #ffffff;
     border-radius: 16px;
     box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
+    &__undo,
+    &__redo {
+        color: grey;
+        transition: 200ms ease;
+    }
+    &__undo:hover,
+    &__redo:hover {
+        opacity: 0.5;
+    }
+    &__undo:disabled,
+    &__redo:disabled {
+        opacity: 0.5;
+    }
     &__generate-planner-button {
         margin-left: auto;
         padding: 8px 16px;
@@ -18,7 +31,7 @@
         transition: 200ms ease;
         cursor: pointer;
         &:hover {
-            background: hsla(225, 20%, 100%,1);
+            opacity: 0.5;
         }
     }
     &__show-guides-button {
@@ -31,7 +44,7 @@
         transition: 200ms ease;
         cursor: pointer;
         &:hover {
-            background: hsla(225, 20%, 100%,1);
+            opacity: 0.5;
         }
     }
 }
