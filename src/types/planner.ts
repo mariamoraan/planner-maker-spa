@@ -7,6 +7,7 @@ export type TemplateType =
   | 'month-cover' 
   | 'monthly-calendar' 
   | 'weekly-calendar' 
+  | 'daily-page'
   | 'extra';
 
 export interface Rectangle {
@@ -56,6 +57,7 @@ export interface GeneratedPage {
   month?: number;
   year?: number;
   weekNumber?: number;
+  day?: number;
 }
 
 // Field type configuration for rendering
@@ -102,6 +104,7 @@ export const TEMPLATE_FIELD_TYPES: Record<TemplateType, FieldType[]> = {
   'month-cover': ['year', 'month'],
   'monthly-calendar': ['year', 'month', 'day'],
   'weekly-calendar': ['year', 'month', 'day', 'startDay', 'endDay'],
+  'daily-page': ['year', 'month', 'day'],
   'extra': [],
 }
 
@@ -124,6 +127,10 @@ export const TEMPLATE_TYPE_CONFIG: Record<TemplateType, {
   'weekly-calendar': {
     label: 'Weekly Calendar',
     description: 'Week-by-week planning pages',
+  },
+  'daily-page': {
+    label: 'Daily Page',
+    description: 'Single-day planning page',
   },
   extra: {
     label: 'Extra Page',

@@ -5,6 +5,7 @@ export const TEMPLATE_TYPE_ORDER: TemplateType[] = [
   'month-cover',
   'monthly-calendar',
   'weekly-calendar',
+  'daily-page',
   'extra',
 ];
 

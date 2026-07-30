@@ -61,6 +61,17 @@ export function getMonthDatesStartingOnMonday({
   return dates;
 }
 
+export function getDaysOfMonth({ year, month }: { year: number; month: number }): Date[] {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const dates: Date[] = [];
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    dates.push(new Date(year, month, day));
+  }
+
+  return dates;
+}
+
 function getISOWeekNumber(date: Date): number {
   const d = new Date(Date.UTC(
     date.getFullYear(),
@@ -181,18 +192,30 @@ export function getFieldValue({
     month?: number;
     week?: WeekData;
     days?: Date[];
+    date?: Date;
   },
   templateImage: TemplateImage,
   rectangle: Rectangle,
   fillIncompleteWeeks?: boolean;
   fillIncompleteMonths?: boolean;
 }): {fieldValue: string, fieldColor: string} {
+  const dateContext = context.date;
+
   switch (fieldType) {
     case 'year':
+      if (dateContext) {
+        return { fieldValue: dateContext.getFullYear().toString(), fieldColor: MAIN_COLOR };
+      }
       return {fieldValue: context.year?.toString() ?? '', fieldColor: MAIN_COLOR};
     case 'month':
+      if (dateContext) {
+        return { fieldValue: MONTH_NAMES[dateContext.getMonth()], fieldColor: MAIN_COLOR };
+      }
       return {fieldValue: context.month !== undefined ? MONTH_NAMES[context.month] : '', fieldColor: MAIN_COLOR};
     case 'day':
+      if (dateContext) {
+        return { fieldValue: format(dateContext, 'd'), fieldColor: MAIN_COLOR };
+      }
       if (context.week) {
         const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
 

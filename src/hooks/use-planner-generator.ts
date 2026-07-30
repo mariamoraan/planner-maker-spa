@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { Template, GeneratedPage } from '@/types/planner';
-import { getFieldValue, loadImage, WeekData, getMonthsBetween } from '@/lib/planner-utils';
+import { getFieldValue, loadImage, WeekData, getMonthsBetween, getDaysOfMonth } from '@/lib/planner-utils';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { WorkerResponse } from '@/workers/pdf.worker';
 
@@ -21,6 +21,7 @@ export function usePlannerGenerator() {
       month?: number;
       week?: WeekData;
       days?: Date[];
+      date?: Date;
     }
   ): Promise<{ imageData: string }> => {
     const img = await loadImage(templateImage.src);
@@ -85,16 +86,32 @@ export function usePlannerGenerator() {
     // Cálculo de pasos para la barra de progreso
     let totalSteps = 0;
     const coverImages = template.images.filter(img => img.type === 'cover');
+    const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
+    const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
     coverImages.forEach(() => totalSteps++);
 
     for (const month of months) {
-      const monthCover = template.images.find(img => img.type === 'month-cover');
-      const monthlyCalendar = template.images.find(img => img.type === 'monthly-calendar');
-      const weeklyCalendar = template.images.find(img => img.type === 'weekly-calendar');
+      const monthCovers = template.images.filter(img => img.type === 'month-cover');
+      const monthlyCalendars = template.images.filter(img => img.type === 'monthly-calendar');
+      const daysInMonth = getDaysOfMonth({ year: month.year, month: month.month });
 
-      if (monthCover) totalSteps++;
-      if (monthlyCalendar) totalSteps++;
-      if (weeklyCalendar) totalSteps += month.weeks.length;
+      if (monthCovers.length > 0) totalSteps++;
+      if (monthlyCalendars.length > 0) totalSteps++;
+
+      if (weeklyCalendars.length > 0 && dailyPageTemplates.length > 0) {
+        for (const week of month.weeks) {
+          totalSteps += weeklyCalendars.length;
+          const monthDaysInWeek = week.days.filter(d => d.getMonth() === month.month).length;
+          totalSteps += dailyPageTemplates.length * monthDaysInWeek;
+        }
+      } else {
+        if (weeklyCalendars.length > 0) {
+          totalSteps += weeklyCalendars.length * month.weeks.length;
+        }
+        if (dailyPageTemplates.length > 0) {
+          totalSteps += dailyPageTemplates.length * daysInMonth.length;
+        }
+      }
     }
 
     let currentStep = 0;
@@ -135,25 +152,83 @@ export function usePlannerGenerator() {
         }
         updateProgress();
 
-        const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
-        for (const weeklyCalendar of weeklyCalendars) {
-          let i = 0;
+        const daysInMonth = getDaysOfMonth({ year: month.year, month: month.month });
+
+        const pushDailyPage = async (
+          dailyTemplate: Template['images'][0],
+          date: Date
+        ) => {
+          const page = await generatePage(dailyTemplate, {
+            year: date.getFullYear(),
+            month: date.getMonth(),
+            date,
+          });
+          pages.push({
+            ...page,
+            pageNumber: pages.length + 1,
+            type: 'daily-page',
+            year: date.getFullYear(),
+            month: date.getMonth(),
+            day: date.getDate(),
+          });
+          updateProgress();
+        };
+
+        if (weeklyCalendars.length > 0 && dailyPageTemplates.length > 0) {
+          let weekIndex = 0;
           for (const week of month.weeks) {
-            const page = await generatePage(weeklyCalendar, {
-              year: month.year,
-              month: month.month,
-              week,
-            });
-            pages.push({
-              ...page,
-              pageNumber: pages.length + 1,
-              type: 'weekly-calendar',
-              month: month.month,
-              year: month.year,
-              weekNumber: i,
-            });
-            i++;
-            updateProgress();
+            for (const weeklyCalendar of weeklyCalendars) {
+              const page = await generatePage(weeklyCalendar, {
+                year: month.year,
+                month: month.month,
+                week,
+              });
+              pages.push({
+                ...page,
+                pageNumber: pages.length + 1,
+                type: 'weekly-calendar',
+                month: month.month,
+                year: month.year,
+                weekNumber: weekIndex,
+              });
+              updateProgress();
+            }
+
+            const monthDaysInWeek = week.days.filter(d => d.getMonth() === month.month);
+            for (const date of monthDaysInWeek) {
+              for (const dailyTemplate of dailyPageTemplates) {
+                await pushDailyPage(dailyTemplate, date);
+              }
+            }
+
+            weekIndex++;
+          }
+        } else {
+          for (const weeklyCalendar of weeklyCalendars) {
+            let i = 0;
+            for (const week of month.weeks) {
+              const page = await generatePage(weeklyCalendar, {
+                year: month.year,
+                month: month.month,
+                week,
+              });
+              pages.push({
+                ...page,
+                pageNumber: pages.length + 1,
+                type: 'weekly-calendar',
+                month: month.month,
+                year: month.year,
+                weekNumber: i,
+              });
+              i++;
+              updateProgress();
+            }
+          }
+
+          for (const date of daysInMonth) {
+            for (const dailyTemplate of dailyPageTemplates) {
+              await pushDailyPage(dailyTemplate, date);
+            }
           }
         }
       }
