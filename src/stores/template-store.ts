@@ -49,11 +49,15 @@ interface TemplateState {
   selectedFieldType?: FieldType;
   showRectangleGuides: boolean;
   addRectangle: (templateId: string, imageId: string, rectangle: Omit<Rectangle, 'id'>) => string;
+  insertRectangle: (templateId: string, imageId: string, rectangle: Rectangle, index: number) => void;
   updateRectangle: (templateId: string, imageId: string, rectangleId: string, updates: Partial<Rectangle>) => void;
   deleteRectangle: (templateId: string, imageId: string, rectangleId: string) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
   setSelectedRectangleId: (selectedRectangleId: string | null) => void;
   setShowRectangleGuides: (showRectangleGuides: boolean) => void;
+
+  // Image history helpers
+  insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
 
   // Generator Actions
   isGeneratorOpen: boolean;
@@ -204,6 +208,20 @@ export const useTemplateStore = create<TemplateState>()(
         }));
       },
 
+      insertImage: async (templateId, image, imageData, index) => {
+        const imageWithSrc: TemplateImage = { ...image, src: imageData };
+        set(state => ({
+          templates: state.templates.map(t => {
+            if (t.id !== templateId) return t;
+            const images = [...t.images];
+            images.splice(index, 0, imageWithSrc);
+            return { ...t, images, updatedAt: new Date() };
+          }),
+          currentImageId: image.id,
+        }));
+        await idbSet(`image-${image.id}`, imageData);
+      },
+
       setCurrentImage: async (id) => {
         set({ currentImageId: id });
         if (id) {
@@ -259,6 +277,25 @@ export const useTemplateStore = create<TemplateState>()(
           ),
         }));
         return id;
+      },
+
+      insertRectangle: (templateId, imageId, rectangle, index) => {
+        set(state => ({
+          templates: state.templates.map(t =>
+            t.id === templateId
+              ? {
+                  ...t,
+                  images: t.images.map(img => {
+                    if (img.id !== imageId) return img;
+                    const rectangles = [...img.rectangles];
+                    rectangles.splice(index, 0, rectangle);
+                    return { ...img, rectangles, updatedAt: new Date() };
+                  }),
+                  updatedAt: new Date(),
+                }
+              : t
+          ),
+        }));
       },
 
       updateRectangle: (templateId, imageId, rectangleId, updates) => {

@@ -235,10 +235,6 @@ export const TemplateCanvas: React.FC = () => {
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
         deleteArea(selectedRectangleId);
-        const remaining = currentImage?.rectangles
-          .filter(r => r.id !== selectedRectangleId)
-          .map((r, index) => ({ ...r, order: index }));
-        remaining.forEach(r => updateArea(r.id, { order: r.order }));
       }
 
       if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
@@ -264,7 +260,7 @@ export const TemplateCanvas: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRectangleId, currentImage?.rectangles, copiedRect, addArea, deleteArea, updateArea, setSelectedRectangleId, scale, offset]);
+  }, [selectedRectangleId, currentImage?.rectangles, copiedRect, addArea, deleteArea, setSelectedRectangleId, scale, offset]);
 
   return (
     <div 

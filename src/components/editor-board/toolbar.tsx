@@ -8,21 +8,33 @@ import {
     LargeArrowRightIcon,
 } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
+import { useHistoryStore } from '@/stores/history-store'
 import { FIELD_TYPE_CONFIG, FieldType } from '@/types/planner'
 import { useManageAreas } from '@/hooks/use-manage-areas'
 import { useCurrentImage } from '@/hooks/use-current-image'
+import { useTemplateId } from '@/hooks/use-template-id'
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { FIELD_ICONS } from '../sidebar/FieldTypeSelector';
 import useOnClickOutside from '@/core/hooks/use-on-click-outside'
 
 export const Toolbar = () => {
+    const templateId = useTemplateId();
     const currentImage = useCurrentImage();
     const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
     const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
     const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
     const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
     const openGenerator = useTemplateStore(state => state.openGenerator)
+
+    const canUndo = useHistoryStore(state =>
+      templateId ? (state.histories[templateId]?.past.length ?? 0) > 0 : false
+    )
+    const canRedo = useHistoryStore(state =>
+      templateId ? (state.histories[templateId]?.future.length ?? 0) > 0 : false
+    )
+    const undo = useHistoryStore(state => state.undo)
+    const redo = useHistoryStore(state => state.redo)
    
 
   const toggleRectangleGuides = () => {
@@ -45,8 +57,22 @@ export const Toolbar = () => {
     if(!currentSelectedBox) {
         return (
             <div className='base-toolbar'>
-                <button className='base-toolbar__undo'><LargeArrowLeftIcon /></button>
-                <button className='base-toolbar__redo'><LargeArrowRightIcon /></button>
+                <button
+                  className='base-toolbar__undo'
+                  type="button"
+                  disabled={!canUndo}
+                  onClick={() => templateId && undo(templateId)}
+                >
+                  <LargeArrowLeftIcon />
+                </button>
+                <button
+                  className='base-toolbar__redo'
+                  type="button"
+                  disabled={!canRedo}
+                  onClick={() => templateId && redo(templateId)}
+                >
+                  <LargeArrowRightIcon />
+                </button>
                 <button 
                 className="base-toolbar__generate-planner-button"
                 onClick={openGenerator}
