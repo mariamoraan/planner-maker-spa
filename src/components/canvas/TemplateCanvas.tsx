@@ -253,18 +253,16 @@ export const TemplateCanvas: React.FC = () => {
       }
 
       if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
+        e.preventDefault();
         const stage = stageRef.current;
         const pos = stage.getPointerPosition();
-        if (!pos) return;
-        const newRect = {
-          ...copiedRect,
-          id: crypto.randomUUID(),
-          x: (pos.x - offset.x) / scale,
-          y: (pos.y - offset.y) / scale,
+        const { id: _ignored, ...rectData } = copiedRect;
+        addArea({
+          ...rectData,
+          x: pos ? (pos.x - offset.x) / scale : copiedRect.x + 20,
+          y: pos ? (pos.y - offset.y) / scale : copiedRect.y + 20,
           order: currentImage?.rectangles?.length ?? 0,
-        };
-        addArea(newRect);
-        setSelectedRectangleId(newRect.id);
+        });
       }
     };
 

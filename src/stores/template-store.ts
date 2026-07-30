@@ -136,14 +136,49 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
         })
       );
 
-      const templates = remoteTemplates.map(t => ({
-        ...t,
-        images: t.images.map(img => ({
-          ...img,
-          src: srcByPageId.get(img.id) ?? '',
-          missingLocalAsset: missingByPageId.get(img.id) ?? !srcByPageId.has(img.id),
-        })),
-      }));
+      const remoteTemplateIds = new Set(remoteTemplates.map(t => t.id));
+      const localOnlyTemplates = state.templates.filter(t => !remoteTemplateIds.has(t.id));
+
+      const mergeImages = (localTemplate: Template | undefined, remoteTemplate: Template): TemplateImage[] => {
+        const localById = new Map(localTemplate?.images.map(img => [img.id, img]) ?? []);
+        const remoteImageIds = new Set(remoteTemplate.images.map(img => img.id));
+
+        const merged = remoteTemplate.images.map(remoteImg => {
+          const localImg = localById.get(remoteImg.id);
+          const src = srcByPageId.get(remoteImg.id) ?? '';
+          const missingLocalAsset =
+            missingByPageId.get(remoteImg.id) ?? !srcByPageId.has(remoteImg.id);
+
+          if (localImg && localImg.updatedAt.getTime() > remoteImg.updatedAt.getTime()) {
+            return { ...localImg, src, missingLocalAsset };
+          }
+
+          return { ...remoteImg, src, missingLocalAsset };
+        });
+
+        localTemplate?.images.forEach(localImg => {
+          if (!remoteImageIds.has(localImg.id)) {
+            merged.push({
+              ...localImg,
+              src: srcByPageId.get(localImg.id) ?? localImg.src ?? '',
+              missingLocalAsset: missingByPageId.get(localImg.id) ?? false,
+            });
+          }
+        });
+
+        return merged;
+      };
+
+      const templates = [
+        ...remoteTemplates.map(remoteTemplate => {
+          const localTemplate = state.templates.find(t => t.id === remoteTemplate.id);
+          return {
+            ...remoteTemplate,
+            images: mergeImages(localTemplate, remoteTemplate),
+          };
+        }),
+        ...localOnlyTemplates,
+      ];
 
       return { templates, isSyncReady: true };
     });
