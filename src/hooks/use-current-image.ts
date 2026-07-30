@@ -3,6 +3,9 @@ import { useTemplateId } from './use-template-id';
 
 export const useCurrentImage = () => {
   const templateId = useTemplateId();
-  const getCurrentImage = useTemplateStore(s => s.getCurrentImage);
-  return templateId ? getCurrentImage(templateId) : null;
+  return useTemplateStore(state => {
+    if (!templateId || !state.currentImageId) return null;
+    const template = state.templates.find(t => t.id === templateId);
+    return template?.images.find(img => img.id === state.currentImageId) ?? null;
+  });
 };

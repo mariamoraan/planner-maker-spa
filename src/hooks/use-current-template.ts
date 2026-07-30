@@ -3,6 +3,8 @@ import { useTemplateId } from './use-template-id';
 
 export const useCurrentTemplate = () => {
   const templateId = useTemplateId();
-  const getTemplate = useTemplateStore(s => s.getTemplate);
-  return templateId ? getTemplate(templateId) : null;
+  return useTemplateStore(state => {
+    if (!templateId) return null;
+    return state.templates.find(t => t.id === templateId) ?? null;
+  });
 };
