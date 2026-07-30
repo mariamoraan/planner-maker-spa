@@ -1,5 +1,10 @@
 import { Trash2 } from 'lucide-react'
 
+import {
+    SparklesIcon,
+    EyeIcon,
+    EyeClosedIcon,
+} from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
 import { FIELD_TYPE_CONFIG, FieldType } from '@/types/planner'
 import { useManageAreas } from '@/hooks/use-manage-areas'
@@ -9,11 +14,21 @@ import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { FIELD_ICONS } from '../sidebar/FieldTypeSelector';
 import useOnClickOutside from '@/core/hooks/use-on-click-outside'
+import { useCurrentTemplate } from '@/hooks/use-current-template'
 
 export const Toolbar = () => {
+    const template = useCurrentTemplate();
     const currentImage = useCurrentImage();
     const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
     const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
+    const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
+    const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
+    const openGenerator = useTemplateStore(state => state.openGenerator)
+   
+
+  const toggleRectangleGuides = () => {
+    setShowRectangleGuides(!showRectangleGuides)
+  }
 
     const { updateAreaType, deleteArea} = useManageAreas();
     const [isEditAreaTypeMenuOpen, setIsEditAreaTypeMenuOpen] = useState(false);
@@ -29,7 +44,20 @@ export const Toolbar = () => {
 
 
     if(!currentSelectedBox) {
-        return <div className='void-toolbar' />;
+        return (
+            <div className='base-toolbar'>
+                <button 
+                className="base-toolbar__generate-planner-button"
+                onClick={openGenerator}
+            >
+                Generate Planner
+            </button>
+            <button  className="base-toolbar__show-guides-button" onClick={toggleRectangleGuides}>
+                {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
+   
+            </button>
+            </div>
+        );
     }
 
     const config = FIELD_TYPE_CONFIG[currentSelectedBox.fieldType];

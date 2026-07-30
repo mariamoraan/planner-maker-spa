@@ -1,6 +1,6 @@
 .field-type-selector {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
   z-index: 1;
   &__button {
@@ -16,7 +16,6 @@
     }
 
     &__icon-wrapper {
-        padding: 4px 8px;
         width: 100%;
         display: flex;
         justify-content: center;

@@ -1,8 +1,9 @@
+import './field-type-selector.scss'
+
 import React, { useEffect } from 'react';
 import type { FieldType } from '@/types/planner';
 import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/types/planner';
 import { useTemplateStore } from '@/stores/template-store';
-import './field-type-selector.scss'
 import { YearIcon } from './year-icon';
 import { MonthIcon } from './month-icon';
 import { DayIcon } from './day-icon';
