@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { LayoutTemplate } from 'lucide-react';
 import { AddTemplateButton } from '@/components/add-template-button/add-template-button';
 import { AnimatedTagline } from '@/components/animated-tagline/animated-tagline';
+import { NewProjectCard } from '@/components/home/new-project-card';
 import { TemplateCard } from '@/components/home/template-card';
 import { PATHS, getEditorPath } from '@/core/routes/paths';
 import { useHomeTemplates } from '@/hooks/use-home-templates';
@@ -82,6 +83,7 @@ export const HomePage = () => {
                       onDelete={() => deleteTemplate(template.id)}
                     />
                   ))}
+                  <NewProjectCard index={templates.length} />
                 </ol>
               </section>
             </>
