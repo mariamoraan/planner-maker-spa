@@ -1,8 +1,6 @@
 import './toolbar.scss'
 
 import {
-    EyeIcon,
-    EyeClosedIcon,
     LargeArrowLeftIcon,
     LargeArrowRightIcon,
 } from '@/core/icons'
@@ -15,6 +13,7 @@ import { useTemplateId } from '@/hooks/use-template-id'
 import { AreaStyleControls } from '@/components/shared/area-style-controls'
 import { BlockDeleteButton } from '@/components/shared/block-delete-button'
 import { BlockTypeSelector } from '@/components/shared/block-type-selector'
+import { EditorPlannerActions } from '@/components/shared/editor-planner-actions'
 import { useEffect, useRef } from 'react'
 
 export const Toolbar = () => {
@@ -22,9 +21,6 @@ export const Toolbar = () => {
     const currentImage = useCurrentImage();
     const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
     const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
-    const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
-    const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
-    const openGenerator = useTemplateStore(state => state.openGenerator)
     const toolbarRef = useRef<HTMLDivElement>(null)
 
     const canUndo = useHistoryStore(state =>
@@ -77,10 +73,6 @@ export const Toolbar = () => {
   }, [currentSelectedBox, selectedRectangleId])
    
 
-  const toggleRectangleGuides = () => {
-    setShowRectangleGuides(!showRectangleGuides)
-  }
-
     const { updateAreaType } = useManageAreas();
 
     if(!currentSelectedBox) {
@@ -102,16 +94,7 @@ export const Toolbar = () => {
                 >
                   <LargeArrowRightIcon />
                 </button>
-                <button 
-                className="base-toolbar__generate-planner-button"
-                onClick={openGenerator}
-                >
-                    Generate Planner
-                </button>
-                <button  className="base-toolbar__show-guides-button" onClick={toggleRectangleGuides}>
-                    {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
-    
-                </button>
+                <EditorPlannerActions variant="toolbar" />
             </div>
         );
     }

@@ -12,6 +12,7 @@ import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/stores/template-store';
 import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
+import { EditorPlannerActions } from '@/components/shared/editor-planner-actions';
 
 export const EditorSidebar: React.FC = () => {
     const template = useCurrentTemplate();
@@ -67,6 +68,10 @@ export const EditorSidebar: React.FC = () => {
             <FieldTypeSelector />
             </div>
         )}
+        <div className='editor-sidebar__main__section'>
+          <p className='editor-sidebar__main__section__title'>Actions</p>
+          <EditorPlannerActions variant="sidebar" />
+        </div>
         {selectedRectangleId && (
             <div className='editor-sidebar__main__section'>
             <p className='editor-sidebar__main__section__title'>Block Settings</p>

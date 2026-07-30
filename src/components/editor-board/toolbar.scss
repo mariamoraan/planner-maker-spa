@@ -34,33 +34,6 @@ $toolbar-padding-x: 24px;
     &__redo:disabled {
         opacity: 0.5;
     }
-    &__generate-planner-button {
-        margin-left: auto;
-        padding: 8px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: #F2F2F2;
-        border-radius: 8px;
-        transition: 200ms ease;
-        cursor: pointer;
-        &:hover {
-            opacity: 0.5;
-        }
-    }
-    &__show-guides-button {
-        padding: 8px 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        background: #F2F2F2;
-        border-radius: 8px;
-        transition: 200ms ease;
-        cursor: pointer;
-        &:hover {
-            opacity: 0.5;
-        }
-    }
 }
 
 .toolbar {
