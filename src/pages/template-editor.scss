@@ -16,4 +16,11 @@
   @media (max-width: $editor-max-unsupported-width), (max-height: $editor-max-unsupported-height) {
     display: none;
   }
+
+  &__inner {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
 }

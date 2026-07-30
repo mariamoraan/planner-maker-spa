@@ -96,10 +96,15 @@
     margin: 0 auto;
     padding: 2rem 1.5rem 3rem;
     overflow-y: auto;
+    scrollbar-gutter: stable;
 
     @media (max-width: 767px) {
       padding: 1.5rem 1.25rem 2.5rem;
     }
+  }
+
+  &__content-inner {
+    min-height: 100%;
   }
 
   &__loading {

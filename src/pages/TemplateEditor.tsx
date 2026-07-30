@@ -62,24 +62,25 @@ const TemplateEditor: React.FC = () => {
   }
 
   return (
-    <motion.div 
-    initial="hidden"
-    whileInView="visible"
-    viewport={{ once: true }}
-    variants={fadeUp}
-    transition={{ duration: 0.6 }}
-    className="template-editor"
-    >
-      {currentImage ? (
-        <EditorBoard />
-      ) : (
-        <EmptyCanvasState />
-      )}
-      
-      {currentTemplate && (
-        <GeneratorDialog />
-      )}
-    </motion.div>
+    <div className="template-editor">
+      <motion.div
+        className="template-editor__inner"
+        initial="hidden"
+        animate="visible"
+        variants={fadeUp}
+        transition={{ duration: 0.6 }}
+      >
+        {currentImage ? (
+          <EditorBoard />
+        ) : (
+          <EmptyCanvasState />
+        )}
+
+        {currentTemplate && (
+          <GeneratorDialog />
+        )}
+      </motion.div>
+    </div>
   );
 };
 

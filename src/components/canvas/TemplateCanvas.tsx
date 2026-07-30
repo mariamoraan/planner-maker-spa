@@ -73,8 +73,15 @@ export const TemplateCanvas: React.FC = () => {
     };
 
     updateSize();
+
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(containerRef.current);
+
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
+    };
   }, [currentImage?.width, currentImage?.height]);
 
   /** TRANSFORMER */

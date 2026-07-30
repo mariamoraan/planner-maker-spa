@@ -48,14 +48,15 @@ export const HomePage = () => {
         </div>
       </aside>
 
-      <motion.main
-        className="home-page__workspace"
-        initial="hidden"
-        animate="visible"
-        variants={fadeUp}
-        transition={{ duration: 0.6 }}
-      >
+      <main className="home-page__workspace">
         <div className="home-page__content">
+          <motion.div
+            className="home-page__content-inner"
+            initial="hidden"
+            animate="visible"
+            variants={fadeUp}
+            transition={{ duration: 0.6 }}
+          >
           {isLoading ? (
             <div className="home-page__loading" aria-live="polite">
               Cargando proyectos…
@@ -103,8 +104,9 @@ export const HomePage = () => {
               </div>
             </div>
           )}
+          </motion.div>
         </div>
-      </motion.main>
+      </main>
     </div>
   );
 };
