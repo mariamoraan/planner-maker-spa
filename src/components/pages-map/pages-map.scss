@@ -5,13 +5,19 @@
 
     width: 100%;
     display: flex;
-    justify-content: flex-start;
     align-items: flex-end;
     gap: 16px;
     padding: 10px 16px;
     overflow-x: auto;
     overflow-y: hidden;
     flex-shrink: 0;
+
+    &::before,
+    &::after {
+        content: '';
+        flex: 1 1 0;
+        min-width: 0;
+    }
 
     &__add {
         display: flex;
