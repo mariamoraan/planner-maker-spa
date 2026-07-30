@@ -7,6 +7,7 @@ import {
   EyeClosedIcon,
 } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
+import { useExportStore } from '@/stores/export-store'
 import { Link } from 'react-router-dom'
 import { PATHS } from '@/core/routes/paths'
 import { useCurrentTemplate } from '@/hooks/use-current-template'
@@ -15,7 +16,9 @@ export const Header = () => {
   const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
   const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
   const openGenerator = useTemplateStore(state => state.openGenerator)
+  const exportStatus = useExportStore(state => state.status)
   const template = useCurrentTemplate();
+  const isExportRunning = exportStatus === 'running'
 
   const toggleRectangleGuides = () => {
     setShowRectangleGuides(!showRectangleGuides)
@@ -32,6 +35,8 @@ export const Header = () => {
             <button 
             className="header__generate-planner-button"
             onClick={openGenerator}
+            disabled={isExportRunning}
+            title={isExportRunning ? 'Export in progress…' : undefined}
           >
             <SparklesIcon className="header__generate-planner-icon" />
             Generate Planner

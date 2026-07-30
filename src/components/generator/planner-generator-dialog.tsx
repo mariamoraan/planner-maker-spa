@@ -1,6 +1,5 @@
-import React, { useCallback, useLayoutEffect } from 'react';
-import { Calendar as CalendarIcon, Download, FileText, Loader2, RotateCcw } from 'lucide-react';
-import { DotIcon } from '@/core/icons';
+import React, { useCallback, useMemo } from 'react';
+import { Download, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -11,8 +10,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { usePlannerGenerator } from '@/hooks/use-planner-generator';
 import { useTemplateStore } from '@/stores/template-store';
+import { useExportStore } from '@/stores/export-store';
+import { estimatePageCount } from '@/lib/planner-export';
 import { DatePicker } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
@@ -27,21 +27,23 @@ export const GeneratorDialog: React.FC = () => {
   const isGeneratorOpen = useTemplateStore(state => state.isGeneratorOpen);
   const setIsGeneratorOpen = useTemplateStore(state => state.setIsGeneratorOpen);
   const closeGenerator = useTemplateStore(state => state.closeGenerator);
+  const startExport = useExportStore(state => state.startExport);
+  const exportStatus = useExportStore(state => state.status);
 
-  const { generating, progress, generatedPages, generatePlanner, downloadPDF, isGeneratingPDF } = usePlannerGenerator();
+  const estimatedPages = useMemo(() => {
+    if (!template) return 0;
+    return estimatePageCount(template, startDate, endDate);
+  }, [template, startDate, endDate]);
 
-  const handleGenerate = useCallback(async () => {
+  const handleDownload = useCallback(() => {
     if (!template) return;
-    await generatePlanner(template, startDate, endDate);
-  }, [template, startDate, endDate, generatePlanner]);
-
-  useLayoutEffect(() => {
-    if (isGeneratorOpen && generatedPages?.length) {
-      handleGenerate();
-    }
-  }, [isGeneratorOpen]);
+    startExport(template, startDate, endDate);
+    closeGenerator();
+  }, [template, startDate, endDate, startExport, closeGenerator]);
 
   if (!template) return null;
+
+  const isExportRunning = exportStatus === 'running';
 
   return (
     <Dialog open={isGeneratorOpen} onOpenChange={setIsGeneratorOpen}>
@@ -49,12 +51,12 @@ export const GeneratorDialog: React.FC = () => {
         <DialogHeader>
           <DialogTitle>
             <span className="dialog-title-row">
-              <CalendarIcon className="planner-generator-dialog__icon planner-generator-dialog__icon--title" />
-              Generate Planner
+              <FileDown className="planner-generator-dialog__icon planner-generator-dialog__icon--title" />
+              Export Planner
             </span>
           </DialogTitle>
           <DialogDescription>
-            Select the date range for your planner. The generator will create pages for each month and week.
+            Choose your date range and download a print-ready PDF.
           </DialogDescription>
         </DialogHeader>
 
@@ -66,8 +68,8 @@ export const GeneratorDialog: React.FC = () => {
                 views={['month', 'year']}
                 value={dayjs(startDate)}
                 onChange={(newValue) => {
-                  const startDate = new Date(newValue.toISOString());
-                  updateTemplate(template.id, { startDate });
+                  if (!newValue) return;
+                  updateTemplate(template.id, { startDate: new Date(newValue.toISOString()) });
                 }}
                 slotProps={{
                   popper: {
@@ -83,8 +85,8 @@ export const GeneratorDialog: React.FC = () => {
                 views={['month', 'year']}
                 value={dayjs(endDate)}
                 onChange={(newValue) => {
-                  const endDate = new Date(newValue.toISOString());
-                  updateTemplate(template.id, { endDate });
+                  if (!newValue) return;
+                  updateTemplate(template.id, { endDate: new Date(newValue.toISOString()) });
                 }}
                 slotProps={{
                   popper: {
@@ -96,100 +98,34 @@ export const GeneratorDialog: React.FC = () => {
           </div>
 
           <div className="planner-generator-dialog__summary">
-            <h4 className="planner-generator-dialog__summary-title">Template: {template.name}</h4>
-            <div className="planner-generator-dialog__summary-text">
-              {template.images.length} template page{template.images.length !== 1 ? 's' : ''} configured
-            </div>
-            <div className="planner-generator-dialog__tags">
-              {template.images.map(img => (
-                <div key={img.id} className="planner-generator-dialog__tag">
-                  <p className="planner-generator-dialog__tag__title">{img.name}</p> 
-                  <DotIcon size={14} />
-                  <p>{img.rectangles.length} fields</p>
-                </div>
-              ))}
+            <div className="planner-generator-dialog__summary-header">
+              <div>
+                <h4 className="planner-generator-dialog__summary-title">{template.name}</h4>
+                <p className="planner-generator-dialog__summary-text">
+                  {template.images.length} template page{template.images.length !== 1 ? 's' : ''} configured
+                </p>
+              </div>
+              <div className="planner-generator-dialog__estimate">
+                <span className="planner-generator-dialog__estimate-value">{estimatedPages}</span>
+                <span className="planner-generator-dialog__estimate-label">pages estimated</span>
+              </div>
             </div>
           </div>
-
-          {generating && (
-            <div className="planner-generator-dialog__progress">
-              <div className="planner-generator-dialog__progress-header">
-                <Loader2 className="planner-generator-dialog__icon planner-generator-dialog__icon--spin" />
-                <span className="planner-generator-dialog__progress-text">Generating pages...</span>
-              </div>
-              <div className="planner-generator-dialog__progress-track">
-                <div
-                  className="planner-generator-dialog__progress-fill"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <p className="planner-generator-dialog__progress-percent">{Math.round(progress)}%</p>
-            </div>
-          )}
-
-          {generatedPages.length > 0 && !generating && (
-            <div className="planner-generator-dialog__preview">
-              <h4 className="planner-generator-dialog__preview-title">
-                Generated {generatedPages.length} pages
-              </h4>
-              <div className="planner-generator-dialog__preview-grid">
-                {generatedPages.slice(0, 12).map((page, i) => (
-                  <div key={i} className="planner-generator-dialog__preview-item">
-                    <img
-                      src={page.imageData}
-                      alt={`Page ${page.pageNumber}`}
-                      className="planner-generator-dialog__preview-image"
-                    />
-                  </div>
-                ))}
-                {generatedPages.length > 12 && (
-                  <div className="planner-generator-dialog__preview-more">
-                    <span className="planner-generator-dialog__preview-more-text">
-                      +{generatedPages.length - 12} more
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
         <DialogFooter className="dialog-footer--gap">
-          {generatedPages.length > 0 && !generating ? (
-            <>
-              <Button type="button" variant="secondary" onClick={handleGenerate} disabled={generating}>
-                <RotateCcw className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right" />
-                Generate
-              </Button>
-              <Button onClick={downloadPDF}>
-                {isGeneratingPDF ? (
-                  <Loader2 className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right planner-generator-dialog__icon--spin" />
-                ) : (
-                  <FileText className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right" />
-                )}
-                Download PDF
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="outline" onClick={closeGenerator}>
-                Cancel
-              </Button>
-              <Button type="button" onClick={handleGenerate} disabled={generating}>
-                {generating ? (
-                  <>
-                    <Loader2 className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right planner-generator-dialog__icon--spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Download className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right" />
-                    Generate Planner
-                  </>
-                )}
-              </Button>
-            </>
-          )}
+          <Button variant="outline" onClick={closeGenerator}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            onClick={handleDownload}
+            disabled={isExportRunning || estimatedPages === 0}
+            title={isExportRunning ? 'Export in progress…' : undefined}
+          >
+            <Download className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right" />
+            Download PDF
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
 import { GeneratorDialog } from '@/components/generator/planner-generator-dialog';
+import { ExportProgressCard } from '@/components/generator/export-progress-card';
 import { useTemplateStore } from '@/stores/template-store';
 import { motion } from 'framer-motion';
 import { EditorBoard } from '@/components/editor-board/editor-board';
@@ -77,7 +78,10 @@ const TemplateEditor: React.FC = () => {
         )}
 
         {currentTemplate && (
-          <GeneratorDialog />
+          <>
+            <GeneratorDialog />
+            <ExportProgressCard />
+          </>
         )}
       </motion.div>
     </div>

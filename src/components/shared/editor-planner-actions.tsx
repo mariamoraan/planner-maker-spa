@@ -2,6 +2,7 @@ import './editor-planner-actions.scss'
 
 import { EyeIcon, EyeClosedIcon, SparklesIcon } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
+import { useExportStore } from '@/stores/export-store'
 
 interface EditorPlannerActionsProps {
   variant: 'toolbar' | 'sidebar'
@@ -11,6 +12,8 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
   const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
   const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
   const openGenerator = useTemplateStore(state => state.openGenerator)
+  const exportStatus = useExportStore(state => state.status)
+  const isExportRunning = exportStatus === 'running'
 
   const toggleRectangleGuides = () => {
     setShowRectangleGuides(!showRectangleGuides)
@@ -23,6 +26,8 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
           className="editor-planner-actions__generate editor-planner-actions__generate--toolbar"
           type="button"
           onClick={openGenerator}
+          disabled={isExportRunning}
+          title={isExportRunning ? 'Export in progress…' : undefined}
         >
           Generate Planner
         </button>
@@ -43,6 +48,8 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         className="editor-planner-actions__generate editor-planner-actions__generate--sidebar"
         type="button"
         onClick={openGenerator}
+        disabled={isExportRunning}
+        title={isExportRunning ? 'Export in progress…' : undefined}
       >
         <SparklesIcon className="editor-planner-actions__icon" />
         Generate Planner
