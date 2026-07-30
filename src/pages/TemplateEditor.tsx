@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { MissingPageImage } from '@/components/canvas/missing-page-image';
 import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
 import { GeneratorDialog } from '@/components/generator/planner-generator-dialog';
 import { ExportProgressCard } from '@/components/generator/export-progress-card';
@@ -72,7 +73,11 @@ const TemplateEditor: React.FC = () => {
         transition={{ duration: 0.6 }}
       >
         {currentImage ? (
-          <EditorBoard />
+          currentImage.missingLocalAsset && !currentImage.src ? (
+            <MissingPageImage pageId={currentImage.id} pageName={currentImage.name} />
+          ) : (
+            <EditorBoard />
+          )
         ) : (
           <EmptyCanvasState />
         )}

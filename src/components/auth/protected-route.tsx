@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/auth-provider';
 import { PATHS } from '@/core/routes/paths';
+import { TemplateSyncGate } from './template-sync-gate';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -31,6 +32,10 @@ export function ProtectedRoute({ children, requireAccess = true }: ProtectedRout
 
   if (requireAccess && !hasAccess) {
     return <Navigate to={PATHS.accessPending} replace />;
+  }
+
+  if (requireAccess) {
+    return <TemplateSyncGate>{children}</TemplateSyncGate>;
   }
 
   return <>{children}</>;

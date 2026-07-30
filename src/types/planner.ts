@@ -43,6 +43,8 @@ export interface Rectangle {
   style?: FieldStyle;
 }
 
+import type { ImageRef } from '@/infrastructure/ports/image-asset.port';
+
 export interface TemplateImage {
   id: string;
   name: string;
@@ -53,6 +55,8 @@ export interface TemplateImage {
   createdAt: Date;
   updatedAt: Date;
   src: string;
+  imageRef?: ImageRef;
+  missingLocalAsset?: boolean;
 }
 
 export type PlannerLocale = 'en' | 'es';

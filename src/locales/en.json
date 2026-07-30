@@ -7,6 +7,12 @@
     "signOut": "Sign out",
     "backToHome": "Back to home"
   },
+  "sync": {
+    "loading": "Loading your planners…",
+    "migrating": "Syncing your local planners…",
+    "error": "Could not load your planners.",
+    "errorHint": "Deploy the latest Firestore rules (firebase deploy --only firestore:rules) or paste firestore.rules in Firebase Console → Firestore → Rules."
+  },
   "landing": {
     "nav": {
       "how": "How it works",
@@ -120,7 +126,10 @@
     "hideGuides": "Hide Guides",
     "exportInProgress": "Export in progress…",
     "plannerLocale": "Planner language",
-    "plannerLocaleHint": "Month and day names in the generated PDF"
+    "plannerLocaleHint": "Month and day names in the generated PDF",
+    "missingImageTitle": "Image not available on this device",
+    "missingImageDescription": "The image for \"{{name}}\" is stored locally on another device. Re-upload it to continue editing.",
+    "reuploadImage": "Re-upload image"
   },
   "generator": {
     "title": "Export Planner",
