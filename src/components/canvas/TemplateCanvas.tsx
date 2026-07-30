@@ -1,14 +1,13 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line, Text, Group } from 'react-konva';
 import useImage from 'use-image';
-import type { FieldType, Rectangle } from '@/types/planner';
+import type { Rectangle } from '@/types/planner';
 import { FIELD_TYPE_CONFIG } from '@/types/planner';
 import Konva from 'konva';
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import './template-canva.scss'
-import { MONTH_NAMES } from '@/lib/planner-utils';
 import { TemplateRectangle } from './template-rectangle';
 
 
@@ -264,6 +263,7 @@ export const TemplateCanvas: React.FC = () => {
 
   return (
     <div 
+    key={currentImage?.id}
     ref={containerRef} 
     className="template-canva"
     >
