@@ -33,7 +33,7 @@ export const Header = () => {
             className="header__generate-planner-button"
             onClick={openGenerator}
           >
-            <SparklesIcon className="w-4 h-4 mr-2" />
+            <SparklesIcon className="header__generate-planner-icon" />
             Generate Planner
           </button>
           <button  className="header__show-guides-button" onClick={toggleRectangleGuides}>

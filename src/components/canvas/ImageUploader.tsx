@@ -26,14 +26,14 @@ import { useTemplateStore } from '@/stores/template-store';
 import { TEMPLATE_TYPE_CONFIG, TemplateType } from '@/types/planner';
 import { useNavigate } from 'react-router-dom';
 import { getEditorPath } from '@/core/routes/paths';
-import './image-uploader.scss'
+import './image-uploader.scss';
 
 interface ImageUploaderProps {
   className?: string;
   customButton?: React.ReactElement;
 }
 
-export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , customButton}) => {
+export const ImageUploader: React.FC<ImageUploaderProps> = ({ className, customButton }) => {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [pendingImage, setPendingImage] = useState<{
     data: string;
@@ -43,13 +43,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
   } | null>(null);
   const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('monthly-calendar');
 
-  const {addImage} = useManageImages();
+  const { addImage } = useManageImages();
 
   const handleImageUpload = useCallback((data: string, width: number, height: number, name: string) => {
     setPendingImage({ data, width, height, name });
     setUploadDialogOpen(true);
   }, []);
-  
+
   const handleConfirmUpload = useCallback(() => {
     if (pendingImage) {
       addImage(
@@ -57,26 +57,24 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
         pendingImage.width,
         pendingImage.height,
         pendingImage.name,
-        selectedTemplateType
+        selectedTemplateType,
       );
       setPendingImage(null);
       setUploadDialogOpen(false);
     }
   }, [pendingImage, selectedTemplateType, addImage]);
-  
+
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
-    // Validate file type
+
     if (!file.type.startsWith('image/')) {
       console.error('Please upload an image file');
       return;
     }
-    
+
     try {
       const imageData = await fileToBase64(file);
-      // Get image dimensions
       const img = new Image();
       img.onload = () => {
         handleImageUpload(imageData, img.width, img.height, file.name);
@@ -86,26 +84,21 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
       console.error('Error loading image:', error);
     }
   }, [handleImageUpload]);
-  
+
   return (
-    <div className={cn("relative", "image-uploader", className)}>
-      {
-        customButton
-        ? customButton
-        : (
-          <Button variant="outline" className="image-uploader__button">
-            <Upload className="w-4 h-4 mr-2" />
-            Upload Image
-          </Button>
-        )
-      }
+    <div className={cn('image-uploader', className)}>
+      {customButton ?? (
+        <Button variant="outline" className="image-uploader__button">
+          <Upload className="image-uploader__icon" />
+          Upload Image
+        </Button>
+      )}
       <input
         type="file"
         accept="image/png,image/jpeg,image/webp"
         onChange={handleFileChange}
         className="image-uploader__input"
       />
-      {/* Upload type dialog */}
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -114,13 +107,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
               Select the type of page this image represents.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 space-y-4">
+          <div className="image-uploader__dialog-body">
             {pendingImage && (
-              <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+              <div className="image-uploader__preview">
                 <img
                   src={pendingImage.data}
                   alt="Preview"
-                  className="w-full h-full object-contain"
+                  className="image-uploader__preview-image"
                 />
               </div>
             )}
@@ -130,7 +123,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
                 value={selectedTemplateType}
                 onValueChange={(v) => setSelectedTemplateType(v as TemplateType)}
               >
-                <SelectTrigger className="mt-2">
+                <SelectTrigger className="select-trigger--spaced-top">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -138,7 +131,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
                     <SelectItem key={type} value={type}>
                       <div>
                         <div>{TEMPLATE_TYPE_CONFIG[type].label}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="select-item-description">
                           {TEMPLATE_TYPE_CONFIG[type].description}
                         </div>
                       </div>
@@ -162,13 +155,10 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className , custom
   );
 };
 
-
-
-
 const EmptyCanvasStateCreateTemplate: React.FC = () => {
- const {createTemplate} = useTemplateStore();
- const navigate = useNavigate();
-const [newTemplateName, setNewTemplateName] = useState('');
+  const { createTemplate } = useTemplateStore();
+  const navigate = useNavigate();
+  const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
 
   const handleCreateTemplate = useCallback(() => {
@@ -179,24 +169,19 @@ const [newTemplateName, setNewTemplateName] = useState('');
       navigate(getEditorPath(templateId));
     }
   }, [newTemplateName, createTemplate, navigate]);
-    
-  
+
   return (
-    <div className="flex-1 flex items-center justify-center canvas-workspace">
-      <div className="text-center animate-fade-in">
-        <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center shadow-soft">
-          <ImageIcon className="w-12 h-12 text-accent" />
+    <div className="image-uploader__empty-state canvas-workspace">
+      <div className="image-uploader__empty-content animate-fade-in">
+        <div className="image-uploader__empty-icon-wrapper">
+          <ImageIcon className="image-uploader__empty-icon" />
         </div>
-        <h3 className="text-xl font-semibold text-foreground mb-2">
-          No templates
-        </h3>
-        <p className="text-muted-foreground mb-6 max-w-sm">
-          Create your first template
-        </p>
+        <h3 className="image-uploader__empty-title">No templates</h3>
+        <p className="image-uploader__empty-description">Create your first template</p>
         <Dialog open={newTemplateDialogOpen} onOpenChange={setNewTemplateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full bg-sidebar-primary hover:bg-sidebar-primary/90 text-sidebar-primary-foreground">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button variant="sidebar-primary" className="button--full-width">
+              <Plus className="image-uploader__icon" />
               New Template
             </Button>
           </DialogTrigger>
@@ -207,14 +192,14 @@ const [newTemplateName, setNewTemplateName] = useState('');
                 Give your planner template a name to get started.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
+            <div className="image-uploader__dialog-body">
               <Label htmlFor="name">Template Name</Label>
               <Input
                 id="name"
                 value={newTemplateName}
                 onChange={(e) => setNewTemplateName(e.target.value)}
                 placeholder="My Planner 2024"
-                className="mt-2"
+                className="input--spaced-top"
               />
             </div>
             <DialogFooter>
@@ -230,41 +215,39 @@ const [newTemplateName, setNewTemplateName] = useState('');
       </div>
     </div>
   );
-}
+};
+
 const EmptyCanvasStateUploadPhoto: React.FC = () => {
   return (
-    <div className="flex-1 flex items-center justify-center canvas-workspace">
-      <div className="text-center animate-fade-in">
-        <div className="w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center shadow-soft">
-          <ImageIcon className="w-12 h-12 text-accent" />
+    <div className="image-uploader__empty-state canvas-workspace">
+      <div className="image-uploader__empty-content animate-fade-in">
+        <div className="image-uploader__empty-icon-wrapper">
+          <ImageIcon className="image-uploader__empty-icon" />
         </div>
-        <h3 className="text-xl font-semibold text-foreground mb-2">
-          No image uploaded
-        </h3>
-        <p className="text-muted-foreground mb-6 max-w-sm">
+        <h3 className="image-uploader__empty-title">No image uploaded</h3>
+        <p className="image-uploader__empty-description">
           Upload a PNG image to start defining dynamic fields for your planner template
         </p>
-        <div className="relative inline-block">
-          <ImageUploader customButton={
-            <Button size="lg" className="pointer-events-none bg-accent hover:bg-accent/90 text-accent-foreground">
-              <Upload className="w-5 h-5 mr-2" />
-              Upload Template Image
-            </Button>
-          } />
-          
+        <div className="image-uploader__upload-wrapper">
+          <ImageUploader
+            customButton={
+              <Button size="lg" variant="accent" className="button--no-pointer-events">
+                <Upload className="image-uploader__icon image-uploader__icon--lg" />
+                Upload Template Image
+              </Button>
+            }
+          />
         </div>
       </div>
     </div>
   );
-}
+};
 
 export const EmptyCanvasState: React.FC = () => {
-  const {templates} = useTemplateStore();
+  const { templates } = useTemplateStore();
   const hasTemplates = templates?.length > 0;
-  if(hasTemplates) {
-    return <EmptyCanvasStateUploadPhoto />
-  } else {
-    return <EmptyCanvasStateCreateTemplate/>
+  if (hasTemplates) {
+    return <EmptyCanvasStateUploadPhoto />;
   }
-  
+  return <EmptyCanvasStateCreateTemplate />;
 };

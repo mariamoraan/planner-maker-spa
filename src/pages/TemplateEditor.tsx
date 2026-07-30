@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { EmptyCanvasState } from '@/components/canvas/ImageUploader';
-import { GeneratorDialog } from '@/components/generator/GeneratorDialog';
+import { GeneratorDialog } from '@/components/generator/planner-generator-dialog';
 import { useTemplateStore } from '@/stores/template-store';
 import { motion } from 'framer-motion';
 import { EditorBoard } from '@/components/editor-board/editor-board';
@@ -9,6 +9,7 @@ import { PATHS } from '@/core/routes/paths';
 import { useTemplateId } from '@/hooks/use-template-id';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { useCurrentImage } from '@/hooks/use-current-image';
+import './template-editor.scss';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -58,7 +59,7 @@ const TemplateEditor: React.FC = () => {
     viewport={{ once: true }}
     variants={fadeUp}
     transition={{ duration: 0.6 }}
-    className="flex h-screen bg-background"
+    className="template-editor"
     >
       {currentImage ? (
         <EditorBoard />

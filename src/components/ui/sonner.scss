@@ -1,0 +1,22 @@
+.sonner-toaster {
+  .toast {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-lg);
+  }
+
+  .description {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .action-button {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
+  .cancel-button {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--muted-foreground));
+  }
+}

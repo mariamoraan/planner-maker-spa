@@ -9,6 +9,7 @@ import {
     Trash2,
     MoveLeft,
     MoveRight,
+    Pencil
 } from 'lucide-react';
 
 
@@ -23,4 +24,5 @@ export {
     Sparkles as SparklesIcon,
     MoveLeft as LargeArrowLeftIcon,
     MoveRight as LargeArrowRightIcon,
+    Pencil as PencilIcon,
 };

@@ -1,24 +1,27 @@
 .add-template-button {
-    
-    &__button {
-        width: 100%;
-        background-color: var(--sidebar-primary);
-        color: var(--sidebar-primary-foreground);
-        &:hover {
-            background-color: color-mix(in srgb, var(--sidebar-primary) 90%, transparent);
-        }
-        &__icon {
-            width: 8px;
-            height: 8px;
-            margin-right: 4px;
-        }
+  &__button {
+    width: 100%;
+    background-color: hsl(var(--sidebar-primary));
+    color: hsl(var(--sidebar-primary-foreground));
+
+    &:hover {
+      background-color: hsl(var(--sidebar-primary) / 0.9);
     }
-    &__dialog {
-        &__content {
-            padding: 8px 0;
-            &__input {
-                margin-top: 8px;
-            }
-        }
+
+    &__icon {
+      width: 8px;
+      height: 8px;
+      margin-right: 4px;
     }
+  }
+
+  &__dialog {
+    &__content {
+      padding: 8px 0;
+
+      &__input {
+        margin-top: 8px;
+      }
+    }
+  }
 }

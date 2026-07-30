@@ -1,0 +1,32 @@
+.not-found {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  background-color: hsl(var(--muted));
+
+  &__content {
+    text-align: center;
+  }
+
+  &__title {
+    margin: 0 0 1rem;
+    font-size: 2.25rem;
+    font-weight: 700;
+  }
+
+  &__message {
+    margin: 0 0 1rem;
+    font-size: 1.25rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &__link {
+    color: hsl(var(--primary));
+    text-decoration: underline;
+
+    &:hover {
+      color: hsl(var(--primary) / 0.9);
+    }
+  }
+}

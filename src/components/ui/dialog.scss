@@ -1,0 +1,148 @@
+@keyframes dialogOverlayShow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialogOverlayHide {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes dialogContentShow {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialogContentHide {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -48%) scale(0.95);
+  }
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background-color: rgb(0 0 0 / 0.8);
+
+  &[data-state="open"] {
+    animation: dialogOverlayShow 0.2s ease-out;
+  }
+
+  &[data-state="closed"] {
+    animation: dialogOverlayHide 0.2s ease-out;
+  }
+}
+
+.dialog-content {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 51;
+  display: grid;
+  width: calc(100% - 2rem);
+  max-width: 32rem;
+  transform: translate(-50%, -50%);
+  gap: 1rem;
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--background));
+  padding: 1.5rem;
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius);
+
+  &[data-state="open"] {
+    animation: dialogContentShow 0.2s ease-out;
+  }
+
+  &[data-state="closed"] {
+    animation: dialogContentHide 0.2s ease-out;
+  }
+
+  &--wide {
+    max-width: 42rem;
+  }
+}
+
+.dialog-close {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  border-radius: calc(var(--radius) - 4px);
+  opacity: 0.7;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0.25rem;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+  }
+
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.dialog-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  text-align: center;
+
+  @media (min-width: 640px) {
+    text-align: left;
+  }
+}
+
+.dialog-footer {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.5rem;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+.dialog-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+
+.dialog-description {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  margin: 0;
+}
+
+.dialog-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dialog-footer--gap {
+  gap: 0.5rem;
+}

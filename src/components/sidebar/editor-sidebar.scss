@@ -14,8 +14,34 @@
         flex-direction: column;
         gap: 8px;
         border-bottom: 1px solid #ECECEC;
-        &__title {
+        &__input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 16px;
             font-weight: bold;
+        }
+        &__input:focus {
+            border: 1px solid #ECECEC;
+            border-radius: 4px;
+            padding: 4px;
+        }
+        &__title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: bold;
+            &__name {
+                font-size: 16px;
+            }
+            &__button {
+                background: none;
+                border: none;
+                cursor: pointer;
+            }
+            &__button:hover {
+                opacity: 0.5;
+            }
         }
     }
 

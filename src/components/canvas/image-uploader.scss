@@ -1,14 +1,95 @@
 .image-uploader {
-    cursor: pointer;
-    &__input {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        opacity: 0;
+  position: relative;
+  cursor: pointer;
+
+  &__input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+  }
+
+  &__button {
+    width: 100%;
+    pointer-events: none;
+  }
+
+  &__dialog-body {
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  &__preview {
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background-color: hsl(var(--muted));
+  }
+
+  &__preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  &__empty-state {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__empty-content {
+    text-align: center;
+  }
+
+  &__empty-icon-wrapper {
+    width: 6rem;
+    height: 6rem;
+    margin: 0 auto 1.5rem;
+    border-radius: 1rem;
+    background: linear-gradient(to bottom right, hsl(var(--accent) / 0.2), hsl(var(--accent) / 0.05));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-md);
+  }
+
+  &__empty-icon {
+    width: 3rem;
+    height: 3rem;
+    color: hsl(var(--accent));
+  }
+
+  &__empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    margin: 0 0 0.5rem;
+  }
+
+  &__empty-description {
+    color: hsl(var(--muted-foreground));
+    margin: 0 0 1.5rem;
+    max-width: 24rem;
+  }
+
+  &__upload-wrapper {
+    position: relative;
+    display: inline-block;
+  }
+
+  &__icon {
+    width: 1rem;
+    height: 1rem;
+    margin-right: 0.5rem;
+
+    &--lg {
+      width: 1.25rem;
+      height: 1.25rem;
     }
-    &__button {
-        width: 100%;
-        pointer-events: none;
-    }
+  }
 }
