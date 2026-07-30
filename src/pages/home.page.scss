@@ -12,13 +12,53 @@
     flex: 1;
     min-width: 0;
     padding: 12px 12px 12px 0;
+    display: flex;
+    flex-direction: column;
 
     @media (max-width: 767px) {
       padding: 0;
     }
   }
 
+  &__topbar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 0.75rem 1.5rem 0;
+  }
+
+  &__user-email {
+    font-size: 0.8125rem;
+    color: hsl(var(--muted-foreground));
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 12rem;
+  }
+
+  &__logout {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid hsl(var(--border));
+    border-radius: 0.625rem;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: hsl(var(--muted) / 0.5);
+    }
+  }
+
   &__content {
+    flex: 1;
+    min-height: 0;
     height: 100%;
     max-width: 72rem;
     margin: 0 auto;

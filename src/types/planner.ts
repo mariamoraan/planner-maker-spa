@@ -55,6 +55,8 @@ export interface TemplateImage {
   src: string;
 }
 
+export type PlannerLocale = 'en' | 'es';
+
 export interface Template {
   id: string;
   name: string;
@@ -64,6 +66,7 @@ export interface Template {
   updatedAt: Date;
   startDate?: Date;
   endDate?: Date;
+  locale?: PlannerLocale;
 }
 
 export interface PlannerConfig {

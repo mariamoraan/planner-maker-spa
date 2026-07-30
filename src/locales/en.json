@@ -1,0 +1,135 @@
+{
+  "common": {
+    "appName": "Dyna",
+    "loading": "Loading…",
+    "cancel": "Cancel",
+    "continueWithGoogle": "Continue with Google",
+    "signOut": "Sign out",
+    "backToHome": "Back to home"
+  },
+  "landing": {
+    "nav": {
+      "how": "How it works",
+      "compare": "Compare",
+      "waitlist": "Waitlist"
+    },
+    "hero": {
+      "title": "From hours duplicating pages to a complete PDF in minutes",
+      "subtitle": "Upload your design, mark where dates go, and generate a fully dated planner automatically — aligned and print-ready.",
+      "cta": "Join the waitlist"
+    },
+    "compare": {
+      "title": "Manual vs Dyna",
+      "subtitle": "See exactly where you save time",
+      "manual": {
+        "title": "Manual (Canva / Photoshop)",
+        "items": [
+          "Duplicate 52+ spreads by hand",
+          "Type every month, day and weekday",
+          "Reorder pages when the calendar shifts",
+          "Export page by page, then merge"
+        ],
+        "time": "8–15 hours for a yearly planner"
+      },
+      "dyna": {
+        "title": "With Dyna",
+        "items": [
+          "Upload your layout once",
+          "Mark dynamic zones on the canvas",
+          "Pick a date range and generate",
+          "Download a print-ready PDF"
+        ],
+        "time": "~15 minutes for the same result"
+      }
+    },
+    "savings": {
+      "title": "Real time saved",
+      "description": "A yearly planner can mean 365+ pages. Dyna generates them with correct calendar logic — weeks, months and day names included.",
+      "stat": "365 pages",
+      "statLabel": "generated from one template design"
+    },
+    "how": {
+      "title": "How it works"
+    },
+    "steps": {
+      "upload": {
+        "title": "Upload your design",
+        "text": "Start from your own images: covers, monthly or weekly layouts."
+      },
+      "zones": {
+        "title": "Define dynamic zones",
+        "text": "Select exactly where months, days or years should appear."
+      },
+      "range": {
+        "title": "Choose a date range",
+        "text": "From a few weeks to a full year — you decide."
+      },
+      "generate": {
+        "title": "Generate automatically",
+        "text": "Pages are duplicated, ordered and filled with correct data."
+      }
+    },
+    "waitlist": {
+      "title": "Get early access",
+      "subtitle": "We're opening gradually. Join the waitlist and we'll notify you when it's your turn.",
+      "emailPlaceholder": "you@email.com",
+      "submit": "Join waitlist",
+      "submitting": "Joining…",
+      "success": "You're on the list! We'll email you when access opens.",
+      "alreadyRegistered": "You're already on the waitlist.",
+      "error": "Something went wrong. Please try again.",
+      "haveAccess": "Already have access?",
+      "signIn": "Sign in"
+    },
+    "footer": {
+      "brand": "Dyna — Planner Builder",
+      "description": "Build fully custom planners using your own designs and dynamic date logic.",
+      "status": "Early access",
+      "statusDetail": "Join the waitlist to get in"
+    }
+  },
+  "login": {
+    "title": "Sign in to Dyna",
+    "subtitle": "Use your Google account to access the planner editor.",
+    "notConfigured": "Firebase is not configured. Add your credentials to .env.local to enable sign-in.",
+    "backToLanding": "Back to landing"
+  },
+  "accessPending": {
+    "title": "You're on the waitlist",
+    "subtitle": "Thanks for signing up! We're granting access gradually. You'll be able to use Dyna once your account is approved.",
+    "signedInAs": "Signed in as",
+    "backToLanding": "Back to landing"
+  },
+  "home": {
+    "loading": "Loading projects…",
+    "projects": "Your projects",
+    "emptyTitle": "Create your first planner",
+    "emptySubtitle": "Upload your designs and generate dated pages automatically.",
+    "startProject": "Start a project",
+    "createFirst": "Create your first planner",
+    "recent": "Recent",
+    "deleteConfirm": "Delete this project?"
+  },
+  "editor": {
+    "currentPage": "Current Page",
+    "dynamicBlocks": "Dynamic Blocks",
+    "actions": "Actions",
+    "blockSettings": "Block Settings",
+    "generatePlanner": "Generate Planner",
+    "showGuides": "Show Guides",
+    "hideGuides": "Hide Guides",
+    "exportInProgress": "Export in progress…",
+    "plannerLocale": "Planner language",
+    "plannerLocaleHint": "Month and day names in the generated PDF"
+  },
+  "generator": {
+    "title": "Export Planner",
+    "description": "Choose your date range and download a print-ready PDF.",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "pagesConfigured": "{{count}} template page configured",
+    "pagesConfigured_other": "{{count}} template pages configured",
+    "pagesEstimated": "pages estimated",
+    "downloadPdf": "Download PDF"
+  }
+}

@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { Download, FileDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -19,6 +20,7 @@ import { useCurrentTemplate } from '@/hooks/use-current-template';
 import './planner-generator-dialog.scss';
 
 export const GeneratorDialog: React.FC = () => {
+  const { t } = useTranslation();
   const { updateTemplate } = useTemplateStore();
   const template = useCurrentTemplate();
   const startDate: Date = template?.startDate ?? new Date();
@@ -52,18 +54,18 @@ export const GeneratorDialog: React.FC = () => {
           <DialogTitle>
             <span className="dialog-title-row">
               <FileDown className="planner-generator-dialog__icon planner-generator-dialog__icon--title" />
-              Export Planner
+              {t('generator.title')}
             </span>
           </DialogTitle>
           <DialogDescription>
-            Choose your date range and download a print-ready PDF.
+            {t('generator.description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="planner-generator-dialog__body">
           <div className="planner-generator-dialog__date-grid">
             <div className="planner-generator-dialog__field">
-              <Label>Start Date</Label>
+              <Label>{t('generator.startDate')}</Label>
               <DatePicker
                 views={['month', 'year']}
                 value={dayjs(startDate)}
@@ -80,7 +82,7 @@ export const GeneratorDialog: React.FC = () => {
             </div>
 
             <div className="planner-generator-dialog__field">
-              <Label>End Date</Label>
+              <Label>{t('generator.endDate')}</Label>
               <DatePicker
                 views={['month', 'year']}
                 value={dayjs(endDate)}
@@ -102,12 +104,12 @@ export const GeneratorDialog: React.FC = () => {
               <div>
                 <h4 className="planner-generator-dialog__summary-title">{template.name}</h4>
                 <p className="planner-generator-dialog__summary-text">
-                  {template.images.length} template page{template.images.length !== 1 ? 's' : ''} configured
+                  {t('generator.pagesConfigured', { count: template.images.length })}
                 </p>
               </div>
               <div className="planner-generator-dialog__estimate">
                 <span className="planner-generator-dialog__estimate-value">{estimatedPages}</span>
-                <span className="planner-generator-dialog__estimate-label">pages estimated</span>
+                <span className="planner-generator-dialog__estimate-label">{t('generator.pagesEstimated')}</span>
               </div>
             </div>
           </div>
@@ -115,16 +117,16 @@ export const GeneratorDialog: React.FC = () => {
 
         <DialogFooter className="dialog-footer--gap">
           <Button variant="outline" onClick={closeGenerator}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
             onClick={handleDownload}
             disabled={isExportRunning || estimatedPages === 0}
-            title={isExportRunning ? 'Export in progress…' : undefined}
+            title={isExportRunning ? t('editor.exportInProgress') : undefined}
           >
             <Download className="planner-generator-dialog__icon planner-generator-dialog__icon--margin-right" />
-            Download PDF
+            {t('generator.downloadPdf')}
           </Button>
         </DialogFooter>
       </DialogContent>

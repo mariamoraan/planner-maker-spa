@@ -2,7 +2,7 @@
 
 **Live demo:** [https://planner-maker-spa.vercel.app/](https://planner-maker-spa.vercel.app/)
 
-Dyna is a local-first web app that lets creators upload their own planner designs, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF — no login, no backend.
+Dyna is a local-first web app that lets creators upload their own planner designs, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF.
 
 Built end-to-end as a **Product Engineer** project: product definition, UX/UI, frontend architecture, and deployment.
 
@@ -179,10 +179,33 @@ TypeScript · React 19 · Vite · Zustand · Konva · react-konva · pdf-lib · 
 
 ---
 
+## Early access & admin
+
+The app uses **Firebase** for Google sign-in, waitlist, and analytics. Planner data stays local (localStorage + IndexedDB).
+
+### Setup
+
+1. Create a Firebase project with **Google Auth**, **Firestore**, and **Analytics**
+2. Copy `.env.example` to `.env.local` and fill in your Firebase credentials
+3. Deploy Firestore rules: `firebase deploy --only firestore:rules` (or paste `firestore.rules` in Firebase Console)
+
+### Granting access
+
+- **Waitlist:** Firebase Console → Firestore → `waitlist` collection
+- **App access:** Firestore → `users/{uid}` → set `isAccessGranted: true`
+- Users can join the waitlist from the landing page, then sign in with Google when access is granted
+
+### Architecture
+
+Backend logic lives in `src/infrastructure/` behind ports (Auth, UserRepository, WaitlistRepository, Analytics). Swap Firebase for another provider by adding a new adapter.
+
+---
+
 ## Getting Started
 
 ```bash
 npm install
+cp .env.example .env.local   # add Firebase credentials
 npm run dev      # http://localhost:8080
 npm run test
 npm run build

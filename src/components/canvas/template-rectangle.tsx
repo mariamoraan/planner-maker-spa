@@ -1,6 +1,7 @@
 import { getEditorPreviewContext, getFieldValue } from "@/lib/planner-utils";
 import { buildKonvaFontStyle, resolveFieldStyle, resolveFontFamily } from "@/lib/field-style-config";
-import { FIELD_TYPE_CONFIG, FieldType, Rectangle, TemplateImage } from "@/types/planner";
+import { resolveLocale } from "@/lib/locale-config";
+import { FIELD_TYPE_CONFIG, FieldType, PlannerLocale, Rectangle, TemplateImage } from "@/types/planner";
 import Konva from "konva";
 import { useMemo, useRef } from "react";
 import { Group, Rect, Text } from "react-konva";
@@ -9,6 +10,7 @@ import { useKonvaFade } from "./use-konva-fade";
 interface TemplateRectangleProps {
     rect: Rectangle;
     templateImage: TemplateImage;
+    plannerLocale?: PlannerLocale;
     scale: number;
     offset: { x: number; y: number };
     config: typeof FIELD_TYPE_CONFIG[FieldType];
@@ -22,6 +24,7 @@ interface TemplateRectangleProps {
 export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     rect,
     templateImage,
+    plannerLocale = 'es',
     scale,
     offset,
     config,
@@ -49,6 +52,8 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
       [templateImage],
     );
 
+    const dateLocale = useMemo(() => resolveLocale(plannerLocale), [plannerLocale]);
+
     const { fieldValue, fieldColor } = useMemo(
       () => getFieldValue({
         fieldType: rect.fieldType,
@@ -57,8 +62,9 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
         rectangle: rect,
         fillIncompleteWeeks: true,
         fillIncompleteMonths: true,
+        locale: dateLocale,
       }),
-      [rect, templateImage, previewContext],
+      [rect, templateImage, previewContext, dateLocale],
     );
 
     const style = useMemo(() => resolveFieldStyle(rect), [rect]);

@@ -1,5 +1,7 @@
 export const PATHS = {
     landing: '/',
+    login: '/login',
+    accessPending: '/access-pending',
     home: '/home',
     editor: '/editor/:templateId',
 } as const;

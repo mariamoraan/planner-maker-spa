@@ -7,6 +7,7 @@ import {
   getDaysOfMonth,
   renderFieldOnCanvas,
 } from '@/lib/planner-utils';
+import { resolveLocale } from '@/lib/locale-config';
 import type { WorkerResponse } from '@/workers/pdf.worker';
 
 const PAGES_WEIGHT = 0.85;
@@ -70,7 +71,8 @@ async function generatePage(
     week?: WeekData;
     days?: Date[];
     date?: Date;
-  }
+  },
+  plannerLocale: Template['locale'] = 'es'
 ): Promise<{ imageData: string }> {
   const img = await loadImage(templateImage.src);
 
@@ -83,6 +85,8 @@ async function generatePage(
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(img, 0, 0);
 
+  const dateLocale = resolveLocale(plannerLocale ?? 'es');
+
   for (const rect of templateImage.rectangles) {
     const { fieldValue, fieldColor } = getFieldValue({
       fieldType: rect.fieldType,
@@ -91,6 +95,7 @@ async function generatePage(
       rectangle: rect,
       fillIncompleteWeeks: true,
       fillIncompleteMonths: true,
+      locale: dateLocale,
     });
 
     if (fieldValue) {
@@ -150,6 +155,7 @@ export async function generatePlannerPages(
   onProgress?: (current: number, total: number) => void
 ): Promise<GeneratedPage[]> {
   const pages: GeneratedPage[] = [];
+  const plannerLocale = template.locale ?? 'es';
   const months = getMonthsBetween({ startDate, endDate });
   const totalSteps = countGenerationSteps(template, startDate, endDate);
 
@@ -164,7 +170,7 @@ export async function generatePlannerPages(
   const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
 
   for (const coverImage of coverImages) {
-    const page = await generatePage(coverImage, {});
+    const page = await generatePage(coverImage, {}, plannerLocale);
     pages.push({ ...page, pageNumber: pages.length + 1, type: 'cover' });
     updateProgress();
   }
@@ -176,7 +182,7 @@ export async function generatePlannerPages(
         year: month.year,
         month: month.month,
         days: month.days,
-      });
+      }, plannerLocale);
       pages.push({ ...page, pageNumber: pages.length + 1, type: 'month-cover' });
     }
     updateProgress();
@@ -187,7 +193,7 @@ export async function generatePlannerPages(
         year: month.year,
         month: month.month,
         days: month.days,
-      });
+      }, plannerLocale);
       pages.push({ ...page, pageNumber: pages.length + 1, type: 'monthly-calendar' });
     }
     updateProgress();
@@ -202,7 +208,7 @@ export async function generatePlannerPages(
         year: date.getFullYear(),
         month: date.getMonth(),
         date,
-      });
+      }, plannerLocale);
       pages.push({
         ...page,
         pageNumber: pages.length + 1,
@@ -222,7 +228,7 @@ export async function generatePlannerPages(
             year: month.year,
             month: month.month,
             week,
-          });
+          }, plannerLocale);
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
@@ -251,7 +257,7 @@ export async function generatePlannerPages(
             year: month.year,
             month: month.month,
             week,
-          });
+          }, plannerLocale);
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
@@ -275,7 +281,7 @@ export async function generatePlannerPages(
 
   const extraPages = template.images.filter(img => img.type === 'extra');
   for (const extra of extraPages) {
-    const page = await generatePage(extra, {});
+    const page = await generatePage(extra, {}, plannerLocale);
     pages.push({ ...page, pageNumber: pages.length + 1, type: 'extra' });
   }
 

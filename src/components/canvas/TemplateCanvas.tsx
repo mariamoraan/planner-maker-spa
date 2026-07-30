@@ -7,6 +7,7 @@ import Konva from 'konva';
 import { useTemplateStore } from '@/stores/template-store';
 import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
+import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
 import './template-canva.scss'
 import { TemplateRectangle } from './template-rectangle';
@@ -30,6 +31,7 @@ export const TemplateCanvas: React.FC = () => {
   const transformerRef = useRef<Konva.Transformer>(null);
 
   const currentImage = useCurrentImage();
+  const template = useCurrentTemplate();
   const {addArea, updateArea, deleteArea} = useManageAreas();
 
   const [image] = useImage(currentImage?.src ?? '');
@@ -312,6 +314,7 @@ export const TemplateCanvas: React.FC = () => {
                   key={`${currentImage.id}-${rect.id}`}
                   rect={rect}
                   templateImage={currentImage}
+                  plannerLocale={template?.locale}
                   scale={scale}
                   offset={offset}
                   config={config}

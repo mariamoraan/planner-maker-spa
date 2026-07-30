@@ -1,0 +1,135 @@
+{
+  "common": {
+    "appName": "Dyna",
+    "loading": "Cargando…",
+    "cancel": "Cancelar",
+    "continueWithGoogle": "Continuar con Google",
+    "signOut": "Cerrar sesión",
+    "backToHome": "Volver al inicio"
+  },
+  "landing": {
+    "nav": {
+      "how": "Cómo funciona",
+      "compare": "Comparativa",
+      "waitlist": "Lista de espera"
+    },
+    "hero": {
+      "title": "De horas duplicando páginas a un PDF completo en minutos",
+      "subtitle": "Sube tu diseño, marca dónde van las fechas y genera un planner fechado automáticamente — alineado y listo para imprimir.",
+      "cta": "Unirme a la lista de espera"
+    },
+    "compare": {
+      "title": "Manual vs Dyna",
+      "subtitle": "Mira exactamente dónde ahorras tiempo",
+      "manual": {
+        "title": "Manual (Canva / Photoshop)",
+        "items": [
+          "Duplicar 52+ spreads a mano",
+          "Teclear cada mes, día y día de la semana",
+          "Reordenar páginas cuando cambia el calendario",
+          "Exportar página a página y unir"
+        ],
+        "time": "8–15 horas para un planner anual"
+      },
+      "dyna": {
+        "title": "Con Dyna",
+        "items": [
+          "Sube tu layout una sola vez",
+          "Marca zonas dinámicas en el canvas",
+          "Elige un rango de fechas y genera",
+          "Descarga un PDF listo para imprimir"
+        ],
+        "time": "~15 minutos para el mismo resultado"
+      }
+    },
+    "savings": {
+      "title": "Tiempo real ahorrado",
+      "description": "Un planner anual pueden ser 365+ páginas. Dyna las genera con lógica de calendario correcta — semanas, meses y nombres de días incluidos.",
+      "stat": "365 páginas",
+      "statLabel": "generadas desde un solo diseño de plantilla"
+    },
+    "how": {
+      "title": "Cómo funciona"
+    },
+    "steps": {
+      "upload": {
+        "title": "Sube tu diseño",
+        "text": "Empieza con tus propias imágenes: portadas, layouts mensuales o semanales."
+      },
+      "zones": {
+        "title": "Define zonas dinámicas",
+        "text": "Selecciona exactamente dónde deben aparecer meses, días o años."
+      },
+      "range": {
+        "title": "Elige un rango de fechas",
+        "text": "Desde unas semanas hasta un año completo — tú decides."
+      },
+      "generate": {
+        "title": "Genera automáticamente",
+        "text": "Las páginas se duplican, ordenan y rellenan con los datos correctos."
+      }
+    },
+    "waitlist": {
+      "title": "Consigue acceso anticipado",
+      "subtitle": "Abrimos de forma gradual. Apúntate a la lista de espera y te avisaremos cuando sea tu turno.",
+      "emailPlaceholder": "tu@email.com",
+      "submit": "Unirme",
+      "submitting": "Apuntando…",
+      "success": "¡Estás en la lista! Te escribiremos cuando abramos el acceso.",
+      "alreadyRegistered": "Ya estás en la lista de espera.",
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "haveAccess": "¿Ya tienes acceso?",
+      "signIn": "Iniciar sesión"
+    },
+    "footer": {
+      "brand": "Dyna — Planner Builder",
+      "description": "Crea planners totalmente personalizados con tus diseños y lógica de fechas dinámica.",
+      "status": "Acceso anticipado",
+      "statusDetail": "Apúntate a la lista de espera para entrar"
+    }
+  },
+  "login": {
+    "title": "Inicia sesión en Dyna",
+    "subtitle": "Usa tu cuenta de Google para acceder al editor de planners.",
+    "notConfigured": "Firebase no está configurado. Añade tus credenciales en .env.local para activar el inicio de sesión.",
+    "backToLanding": "Volver a la landing"
+  },
+  "accessPending": {
+    "title": "Estás en la lista de espera",
+    "subtitle": "¡Gracias por apuntarte! Estamos dando acceso de forma gradual. Podrás usar Dyna cuando tu cuenta sea aprobada.",
+    "signedInAs": "Sesión iniciada como",
+    "backToLanding": "Volver a la landing"
+  },
+  "home": {
+    "loading": "Cargando proyectos…",
+    "projects": "Tus proyectos",
+    "emptyTitle": "Crea tu primer planner",
+    "emptySubtitle": "Sube tus diseños y genera páginas fechadas automáticamente.",
+    "startProject": "Empezar un proyecto",
+    "createFirst": "Crea tu primer planner",
+    "recent": "Recientes",
+    "deleteConfirm": "¿Eliminar este proyecto?"
+  },
+  "editor": {
+    "currentPage": "Página actual",
+    "dynamicBlocks": "Bloques dinámicos",
+    "actions": "Acciones",
+    "blockSettings": "Ajustes del bloque",
+    "generatePlanner": "Generar planner",
+    "showGuides": "Mostrar guías",
+    "hideGuides": "Ocultar guías",
+    "exportInProgress": "Exportación en curso…",
+    "plannerLocale": "Idioma del planner",
+    "plannerLocaleHint": "Nombres de meses y días en el PDF generado"
+  },
+  "generator": {
+    "title": "Exportar planner",
+    "description": "Elige el rango de fechas y descarga un PDF listo para imprimir.",
+    "startDate": "Fecha de inicio",
+    "endDate": "Fecha de fin",
+    "pagesConfigured": "{{count}} página de plantilla configurada",
+    "pagesConfigured_other": "{{count}} páginas de plantilla configuradas",
+    "pagesEstimated": "páginas estimadas",
+    "downloadPdf": "Descargar PDF"
+  }
+}

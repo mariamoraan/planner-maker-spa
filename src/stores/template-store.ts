@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Template, TemplateImage, Rectangle, TemplateType, FieldType } from '@/types/planner';
 import { generateId } from '@/lib/planner-utils';
+import { detectPlannerLocale } from '@/lib/locale-config';
+import { trackEvent } from '@/lib/analytics';
 import {
   getInsertIndexForType,
   imagesOrderChanged,
@@ -20,6 +22,7 @@ const reviveDates = (templates: Template[]): Template[] => {
     updatedAt: new Date(t.updatedAt),
     startDate: t.startDate ? new Date(t.startDate) : today,
     endDate: t.endDate ? new Date(t.endDate) : tomorrow,
+    locale: t.locale ?? detectPlannerLocale(),
     images: t.images.map(img => ({
       ...img,
       createdAt: new Date(img.createdAt),
@@ -92,10 +95,12 @@ export const useTemplateStore = create<TemplateState>()(
           images: [],
           createdAt: now,
           updatedAt: now,
+          locale: detectPlannerLocale(),
         };
         set(state => ({
           templates: [...state.templates, template],
         }));
+        trackEvent('planner_created');
         return id;
       },
 
@@ -335,6 +340,7 @@ export const useTemplateStore = create<TemplateState>()(
               : t
           ),
         }));
+        trackEvent('block_added', { fieldType: rectangleData.fieldType });
         return id;
       },
 

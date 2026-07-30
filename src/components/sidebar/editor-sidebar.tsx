@@ -1,6 +1,7 @@
 import './editor-sidebar.scss'
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FieldTypeSelector } from './FieldTypeSelector';
 import { AreaStylePanel } from './area-style-panel';
 import { BlockSettingsHeader } from './block-settings-header';
@@ -11,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/stores/template-store';
-import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
+import { TEMPLATE_TYPE_CONFIG, type PlannerLocale } from '@/types/planner';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
 import { EditorPlannerActions } from '@/components/shared/editor-planner-actions';
 
@@ -25,6 +26,7 @@ const DEFAULT_SECTION_STATE: Record<SidebarSectionId, boolean> = {
 };
 
 export const EditorSidebar: React.FC = () => {
+    const { t } = useTranslation();
     const template = useCurrentTemplate();
     const currentImage = useCurrentImage();
     const updateTemplate = useTemplateStore(state => state.updateTemplate);
@@ -44,6 +46,11 @@ export const EditorSidebar: React.FC = () => {
       }
       prevSelectedRectangleId.current = selectedRectangleId;
     }, [selectedRectangleId]);
+
+    const handleLocaleChange = (locale: PlannerLocale) => {
+      if (!template) return;
+      updateTemplate(template.id, { locale });
+    };
 
   return (
     <aside className="editor-sidebar" {...blockSelectionZoneProps}>
@@ -80,7 +87,7 @@ export const EditorSidebar: React.FC = () => {
       </div>
       <div className="editor-sidebar__main">
         <EditorSidebarSection
-          title="Current Page"
+          title={t('editor.currentPage')}
           open={sectionOpen.currentPage}
           onOpenChange={(open) => setSectionOpenState('currentPage', open)}
         >
@@ -90,7 +97,7 @@ export const EditorSidebar: React.FC = () => {
         </EditorSidebarSection>
         {template && currentImage && (
           <EditorSidebarSection
-            title="Dynamic Blocks"
+            title={t('editor.dynamicBlocks')}
             open={sectionOpen.dynamicBlocks}
             onOpenChange={(open) => setSectionOpenState('dynamicBlocks', open)}
           >
@@ -98,15 +105,32 @@ export const EditorSidebar: React.FC = () => {
           </EditorSidebarSection>
         )}
         <EditorSidebarSection
-          title="Actions"
+          title={t('editor.actions')}
           open={sectionOpen.actions}
           onOpenChange={(open) => setSectionOpenState('actions', open)}
         >
           <EditorPlannerActions variant="sidebar" />
+          {template && (
+            <div className="editor-sidebar__locale">
+              <label className="editor-sidebar__locale-label" htmlFor="planner-locale">
+                {t('editor.plannerLocale')}
+              </label>
+              <p className="editor-sidebar__locale-hint">{t('editor.plannerLocaleHint')}</p>
+              <select
+                id="planner-locale"
+                className="editor-sidebar__locale-select"
+                value={template.locale ?? 'es'}
+                onChange={(e) => handleLocaleChange(e.target.value as PlannerLocale)}
+              >
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          )}
         </EditorSidebarSection>
         {selectedRectangleId && (
           <EditorSidebarSection
-            title="Block Settings"
+            title={t('editor.blockSettings')}
             open={sectionOpen.blockSettings}
             onOpenChange={(open) => setSectionOpenState('blockSettings', open)}
           >

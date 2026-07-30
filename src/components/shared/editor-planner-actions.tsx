@@ -1,5 +1,6 @@
 import './editor-planner-actions.scss'
 
+import { useTranslation } from 'react-i18next'
 import { EyeIcon, EyeClosedIcon, SparklesIcon } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
 import { useExportStore } from '@/stores/export-store'
@@ -9,11 +10,13 @@ interface EditorPlannerActionsProps {
 }
 
 export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => {
+  const { t } = useTranslation()
   const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
   const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
   const openGenerator = useTemplateStore(state => state.openGenerator)
   const exportStatus = useExportStore(state => state.status)
   const isExportRunning = exportStatus === 'running'
+  const exportTitle = isExportRunning ? t('editor.exportInProgress') : undefined
 
   const toggleRectangleGuides = () => {
     setShowRectangleGuides(!showRectangleGuides)
@@ -27,9 +30,9 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
           type="button"
           onClick={openGenerator}
           disabled={isExportRunning}
-          title={isExportRunning ? 'Export in progress…' : undefined}
+          title={exportTitle}
         >
-          Generate Planner
+          {t('editor.generatePlanner')}
         </button>
         <button
           className="editor-planner-actions__guides editor-planner-actions__guides--toolbar"
@@ -49,10 +52,10 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         type="button"
         onClick={openGenerator}
         disabled={isExportRunning}
-        title={isExportRunning ? 'Export in progress…' : undefined}
+        title={exportTitle}
       >
         <SparklesIcon className="editor-planner-actions__icon" />
-        Generate Planner
+        {t('editor.generatePlanner')}
       </button>
       <button
         className="editor-planner-actions__guides editor-planner-actions__guides--sidebar"
@@ -60,7 +63,7 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         onClick={toggleRectangleGuides}
       >
         {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
-        {showRectangleGuides ? 'Hide Guides' : 'Show Guides'}
+        {showRectangleGuides ? t('editor.hideGuides') : t('editor.showGuides')}
       </button>
     </div>
   )

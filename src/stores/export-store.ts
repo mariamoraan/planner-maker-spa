@@ -5,6 +5,7 @@ import {
   runExport,
   triggerPdfDownload,
 } from '@/lib/planner-export';
+import { trackEvent } from '@/lib/analytics';
 
 export type ExportStatus = 'idle' | 'running' | 'complete' | 'error';
 export type ExportPhase = 'pages' | 'pdf' | null;
@@ -84,6 +85,8 @@ export const useExportStore = create<ExportState>((set, get) => ({
     })
       .then(({ pdfBytes, fileName, pages }) => {
         const blobUrl = triggerPdfDownload(pdfBytes, fileName);
+        trackEvent('planner_downloaded', { templateId: template.id });
+        trackEvent('planner_generated', { templateId: template.id, pageCount: pages.length });
         set({
           status: 'complete',
           progress: 100,
