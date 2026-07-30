@@ -12,7 +12,9 @@ import { Link } from 'react-router-dom';
 import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/stores/template-store';
-import { TEMPLATE_TYPE_CONFIG, type PlannerLocale } from '@/types/planner';
+import { useManageAreas } from '@/hooks/use-manage-areas';
+import { TEMPLATE_TYPE_CONFIG, type PlannerLocale, type WeekStartsOn } from '@/types/planner';
+import { DEFAULT_WEEK_STARTS_ON } from '@/lib/locale-config';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
 import { EditorPlannerActions } from '@/components/shared/editor-planner-actions';
 
@@ -30,26 +32,35 @@ export const EditorSidebar: React.FC = () => {
     const template = useCurrentTemplate();
     const currentImage = useCurrentImage();
     const updateTemplate = useTemplateStore(state => state.updateTemplate);
-    const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId);
+    const selectedRectangleIds = useTemplateStore(state => state.selectedRectangleIds);
+    const { deleteAreas } = useManageAreas();
     const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
     const [templateName, setTemplateName] = useState(template?.name ?? '');
     const [sectionOpen, setSectionOpen] = useState(DEFAULT_SECTION_STATE);
-    const prevSelectedRectangleId = useRef<string | null>(null);
+    const prevSelectionCount = useRef(0);
+
+    const singleSelectedId = selectedRectangleIds.length === 1 ? selectedRectangleIds[0] : null;
+    const multiSelected = selectedRectangleIds.length > 1;
 
     const setSectionOpenState = (id: SidebarSectionId, open: boolean) => {
       setSectionOpen(prev => ({ ...prev, [id]: open }));
     };
 
     useEffect(() => {
-      if (selectedRectangleId && !prevSelectedRectangleId.current) {
+      if (selectedRectangleIds.length > 0 && prevSelectionCount.current === 0) {
         setSectionOpen(prev => ({ ...prev, blockSettings: true }));
       }
-      prevSelectedRectangleId.current = selectedRectangleId;
-    }, [selectedRectangleId]);
+      prevSelectionCount.current = selectedRectangleIds.length;
+    }, [selectedRectangleIds.length]);
 
     const handleLocaleChange = (locale: PlannerLocale) => {
       if (!template) return;
       updateTemplate(template.id, { locale });
+    };
+
+    const handleWeekStartsOnChange = (weekStartsOn: WeekStartsOn) => {
+      if (!template) return;
+      updateTemplate(template.id, { weekStartsOn });
     };
 
   return (
@@ -127,14 +138,49 @@ export const EditorSidebar: React.FC = () => {
               </select>
             </div>
           )}
+          {template && (
+            <div className="editor-sidebar__locale">
+              <label className="editor-sidebar__locale-label" htmlFor="planner-week-starts-on">
+                {t('editor.weekStartsOn')}
+              </label>
+              <p className="editor-sidebar__locale-hint">{t('editor.weekStartsOnHint')}</p>
+              <select
+                id="planner-week-starts-on"
+                className="editor-sidebar__locale-select"
+                value={template.weekStartsOn ?? DEFAULT_WEEK_STARTS_ON}
+                onChange={(e) => handleWeekStartsOnChange(e.target.value as WeekStartsOn)}
+              >
+                <option value="monday">{t('editor.weekStartsOnMonday')}</option>
+                <option value="sunday">{t('editor.weekStartsOnSunday')}</option>
+              </select>
+            </div>
+          )}
         </EditorSidebarSection>
-        {selectedRectangleId && (
+        {multiSelected && (
           <EditorSidebarSection
             title={t('editor.blockSettings')}
             open={sectionOpen.blockSettings}
             onOpenChange={(open) => setSectionOpenState('blockSettings', open)}
           >
-            <BlockSettingsHeader rectangleId={selectedRectangleId} />
+            <p className="editor-sidebar__multi-select-count">
+              {t('editor.blocksSelected', { count: selectedRectangleIds.length })}
+            </p>
+            <button
+              type="button"
+              className="editor-sidebar__delete-selected"
+              onClick={() => deleteAreas([...selectedRectangleIds])}
+            >
+              {t('editor.deleteSelected')}
+            </button>
+          </EditorSidebarSection>
+        )}
+        {singleSelectedId && (
+          <EditorSidebarSection
+            title={t('editor.blockSettings')}
+            open={sectionOpen.blockSettings}
+            onOpenChange={(open) => setSectionOpenState('blockSettings', open)}
+          >
+            <BlockSettingsHeader rectangleId={singleSelectedId} />
             <AreaStylePanel />
           </EditorSidebarSection>
         )}

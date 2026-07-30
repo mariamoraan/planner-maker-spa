@@ -1,5 +1,5 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
-import { Stage, Layer, Image as KonvaImage, Rect, Transformer, Line, Text, Group } from 'react-konva';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { Stage, Layer, Image as KonvaImage, Rect, Transformer } from 'react-konva';
 import useImage from 'use-image';
 import type { Rectangle } from '@/types/planner';
 import { FIELD_TYPE_CONFIG } from '@/types/planner';
@@ -9,9 +9,11 @@ import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
-import './template-canva.scss'
+import { computeSnap, computeGroupSnap, computeGroupBounds, rectsIntersect, GRID_SIZE, normalizeCoord, normalizePoint, normalizeGroupOffset, type SnapGuide } from '@/lib/canvas-snap';
+import { SnapGuidesOverlay } from './snap-guides-overlay';
+import { GridOverlay } from './grid-overlay';
+import './template-canva.scss';
 import { TemplateRectangle } from './template-rectangle';
-
 
 interface DrawingRect {
   x: number;
@@ -20,38 +22,87 @@ interface DrawingRect {
   height: number;
 }
 
-interface GuideLine {
-  x?: number;
-  y?: number;
+interface MarqueeRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface DragStartEntry {
+  id: string;
+  x: number;
+  y: number;
+}
+
+interface DragOverlay {
+  guides: SnapGuide[];
+  previewPositions: Record<string, { x: number; y: number }>;
+}
+
+interface DragState {
+  leaderId: string;
+  movingIds: string[];
 }
 
 export const TemplateCanvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  const dragGroupStartRef = useRef<DragStartEntry[] | null>(null);
+  const dragGroupBoundsRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  const dragDeltaRef = useRef<{ dx: number; dy: number } | null>(null);
+  const marqueeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const [dragState, setDragState] = useState<DragState | null>(null);
 
   const currentImage = useCurrentImage();
   const template = useCurrentTemplate();
-  const {addArea, updateArea, deleteArea} = useManageAreas();
+  const { addArea, addAreas, updateArea, deleteAreas, moveAreas } = useManageAreas();
 
   const [image] = useImage(currentImage?.src ?? '');
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 }); // global offset
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingRect, setDrawingRect] = useState<DrawingRect | null>(null);
-  const [copiedRect, setCopiedRect] = useState<Rectangle | null>(null);
-  const [guides, setGuides] = useState<GuideLine[]>([]);
+  const [copiedRects, setCopiedRects] = useState<Rectangle[]>([]);
+  const [dragOverlay, setDragOverlay] = useState<DragOverlay | null>(null);
+  const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
+  const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
+  const [marqueePreviewIds, setMarqueePreviewIds] = useState<string[]>([]);
 
-  const selectedFieldType = useTemplateStore(state => state.selectedFieldType)
-  const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
-  const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
-  const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
+  const selectedFieldType = useTemplateStore(state => state.selectedFieldType);
+  const selectedRectangleIds = useTemplateStore(state => state.selectedRectangleIds);
+  const setSelectedRectangleIds = useTemplateStore(state => state.setSelectedRectangleIds);
+  const toggleRectangleInSelection = useTemplateStore(state => state.toggleRectangleInSelection);
+  const addToSelection = useTemplateStore(state => state.addToSelection);
+  const clearSelection = useTemplateStore(state => state.clearSelection);
+  const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides);
+  const showGrid = useTemplateStore(state => state.showGrid);
 
-  const SNAP_THRESHOLD = 10;
-  const PADDING = 16; // wrapper padding
+  const PADDING = 16;
 
-  /** ADJUST IMAGE TO CONTAINER */
+  const groupSelectionBounds = useMemo(() => {
+    if (selectedRectangleIds.length < 2) return null;
+
+    const selectedRects =
+      currentImage?.rectangles?.filter(rect => selectedRectangleIds.includes(rect.id)) ?? [];
+    if (selectedRects.length < 2) return null;
+
+    const minX = Math.min(...selectedRects.map(rect => rect.x));
+    const minY = Math.min(...selectedRects.map(rect => rect.y));
+    const maxX = Math.max(...selectedRects.map(rect => rect.x + rect.width));
+    const maxY = Math.max(...selectedRects.map(rect => rect.y + rect.height));
+    const padding = 6;
+
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: maxX - minX + padding * 2,
+      height: maxY - minY + padding * 2,
+    };
+  }, [selectedRectangleIds, currentImage?.rectangles]);
+
   useEffect(() => {
     if (!containerRef?.current || !currentImage?.width || !currentImage?.height) return;
 
@@ -60,14 +111,11 @@ export const TemplateCanvas: React.FC = () => {
       const containerWidth = containerRect.width - PADDING * 2;
       const containerHeight = containerRect.height - PADDING * 2;
 
-      // Scale - fit-to-contain
       const newScale = Math.min(containerWidth / currentImage?.width, containerHeight / currentImage?.height);
       setScale(newScale);
 
-      // Stage - fill container
       setStageSize({ width: containerRect.width, height: containerRect.height });
 
-      // Offset - center image
       setOffset({
         x: PADDING + (containerWidth - currentImage?.width * newScale) / 2,
         y: PADDING + (containerHeight - currentImage?.height * newScale) / 2,
@@ -86,105 +134,248 @@ export const TemplateCanvas: React.FC = () => {
     };
   }, [currentImage?.width, currentImage?.height]);
 
-  /** TRANSFORMER */
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
-      const selectedNode = stage.findOne(`#rect-${selectedRectangleId}`);
-      transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
+      if (selectedRectangleIds.length === 1) {
+        const selectedNode = stage.findOne(`#rect-${selectedRectangleIds[0]}`);
+        transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
+      } else {
+        transformerRef.current.nodes([]);
+      }
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedRectangleId, currentImage?.rectangles]);
+  }, [selectedRectangleIds, currentImage?.rectangles]);
 
-  /** MOUSE DRAW */
+  const pointerToImage = useCallback(
+    (pos: { x: number; y: number }) => ({
+      x: (pos.x - offset.x) / scale,
+      y: (pos.y - offset.y) / scale,
+    }),
+    [offset, scale],
+  );
+
+  const getMarqueeHitIds = useCallback(
+    (marqueeRect: MarqueeRect) =>
+      currentImage?.rectangles
+        ?.filter(rect => rectsIntersect(marqueeRect, rect))
+        .map(rect => rect.id) ?? [],
+    [currentImage?.rectangles],
+  );
+
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
       if (!clickedOnEmpty) return;
 
-      setSelectedRectangleId(null);
-      if (!selectedFieldType) return;
-
       const stage = stageRef.current;
       if (!stage) return;
       const pos = stage.getPointerPosition();
       if (!pos) return;
+
+      const imagePos = pointerToImage(pos);
+      marqueeStartRef.current = imagePos;
+      setIsMarqueeSelecting(true);
+      setMarquee({ x: imagePos.x, y: imagePos.y, width: 0, height: 0 });
+      setMarqueePreviewIds([]);
+
+      if (!e.evt.shiftKey && !e.evt.metaKey && !e.evt.ctrlKey) {
+        clearSelection();
+      }
     },
-    [setSelectedRectangleId, selectedFieldType]
+    [clearSelection, pointerToImage],
   );
 
   const handleMouseMove = useCallback(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (!isDrawing || !drawingRect) return;
+    () => {
+      if (!isMarqueeSelecting || !marqueeStartRef.current) return;
+
       const stage = stageRef.current;
       if (!stage) return;
       const pos = stage.getPointerPosition();
       if (!pos) return;
 
-      setDrawingRect({
-        ...drawingRect,
-        width: (pos.x - offset.x) / scale - drawingRect.x,
-        height: (pos.y - offset.y) / scale - drawingRect.y,
-      });
+      const imagePos = pointerToImage(pos);
+      const start = marqueeStartRef.current;
+      const nextMarquee: MarqueeRect = {
+        x: Math.min(start.x, imagePos.x),
+        y: Math.min(start.y, imagePos.y),
+        width: Math.abs(imagePos.x - start.x),
+        height: Math.abs(imagePos.y - start.y),
+      };
+
+      setMarquee(nextMarquee);
+      setMarqueePreviewIds(getMarqueeHitIds(nextMarquee));
     },
-    [isDrawing, drawingRect, scale, offset]
+    [isMarqueeSelecting, pointerToImage, getMarqueeHitIds],
   );
 
-  const handleMouseUp = useCallback(() => {
-    if (!isDrawing || !drawingRect) return;
-    setIsDrawing(false);
+  const handleMouseUp = useCallback(
+    (e?: Konva.KonvaEventObject<MouseEvent>) => {
+      if (isMarqueeSelecting) {
+        const minSize = 4;
+        if (marquee && marquee.width > minSize && marquee.height > minSize) {
+          const hitIds = marqueePreviewIds.length > 0
+            ? marqueePreviewIds
+            : getMarqueeHitIds(marquee);
 
-    const minSize = 20;
-    if (Math.abs(drawingRect.width) > minSize && Math.abs(drawingRect.height) > minSize) {
-      const rect: Omit<Rectangle, 'id'> & { order: number } = {
-        x: drawingRect.width < 0 ? drawingRect.x + drawingRect.width : drawingRect.x,
-        y: drawingRect.height < 0 ? drawingRect.y + drawingRect.height : drawingRect.y,
-        width: Math.abs(drawingRect.width),
-        height: Math.abs(drawingRect.height),
-        fieldType: selectedFieldType,
-        order: currentImage?.rectangles?.length ?? 0,
-      };
-      addArea(rect);
-    }
+          if (hitIds.length > 0) {
+            if (e?.evt.shiftKey || e?.evt.metaKey || e?.evt.ctrlKey) {
+              const merged = new Set([...selectedRectangleIds, ...hitIds]);
+              setSelectedRectangleIds([...merged]);
+            } else {
+              setSelectedRectangleIds(hitIds);
+            }
+          }
+        }
 
-    setDrawingRect(null);
-  }, [isDrawing, drawingRect, selectedFieldType, addArea, currentImage?.rectangles?.length ?? 0]);
+        setIsMarqueeSelecting(false);
+        setMarquee(null);
+        setMarqueePreviewIds([]);
+        marqueeStartRef.current = null;
+        return;
+      }
 
-  /** RECT CLICK */
-  const handleRectClick = useCallback((rectId: string) => {
-    setSelectedRectangleId(rectId);
-  }, [setSelectedRectangleId]);
+      if (!isDrawing || !drawingRect) return;
+      setIsDrawing(false);
 
-  /** TRANSFORM & DRAG */
+      const minSize = 20;
+      if (Math.abs(drawingRect.width) > minSize && Math.abs(drawingRect.height) > minSize) {
+        const rect: Omit<Rectangle, 'id'> & { order: number } = {
+          x: Math.round(drawingRect.width < 0 ? drawingRect.x + drawingRect.width : drawingRect.x),
+          y: Math.round(drawingRect.height < 0 ? drawingRect.y + drawingRect.height : drawingRect.y),
+          width: Math.round(Math.abs(drawingRect.width)),
+          height: Math.round(Math.abs(drawingRect.height)),
+          fieldType: selectedFieldType,
+          order: currentImage?.rectangles?.length ?? 0,
+        };
+        addArea(rect);
+      }
+
+      setDrawingRect(null);
+    },
+    [
+      isMarqueeSelecting,
+      marquee,
+      marqueePreviewIds,
+      getMarqueeHitIds,
+      selectedRectangleIds,
+      setSelectedRectangleIds,
+      isDrawing,
+      drawingRect,
+      selectedFieldType,
+      addArea,
+      currentImage?.rectangles?.length,
+    ],
+  );
+
+  const handleRectClick = useCallback(
+    (rectId: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      e.cancelBubble = true;
+      const nativeEvent = e.evt;
+
+      if (nativeEvent.shiftKey) {
+        toggleRectangleInSelection(rectId);
+      } else if (nativeEvent.metaKey || nativeEvent.ctrlKey) {
+        addToSelection(rectId);
+      } else {
+        setSelectedRectangleIds([rectId]);
+      }
+    },
+    [toggleRectangleInSelection, addToSelection, setSelectedRectangleIds],
+  );
+
+  const handleDragStart = useCallback(
+    (rectId: string) => {
+      const rects = currentImage?.rectangles ?? [];
+      const movingIds =
+        selectedRectangleIds.includes(rectId) && selectedRectangleIds.length > 1
+          ? selectedRectangleIds
+          : [rectId];
+
+      dragGroupStartRef.current = movingIds.map(id => {
+        const rect = rects.find(r => r.id === id)!;
+        return { id, x: rect.x, y: rect.y };
+      });
+      dragGroupBoundsRef.current =
+        movingIds.length > 1
+          ? computeGroupBounds(
+              rects.map(r => ({
+                id: r.id,
+                x: r.x,
+                y: r.y,
+                width: r.width,
+                height: r.height,
+              })),
+              movingIds,
+            )
+          : null;
+      dragDeltaRef.current = { dx: 0, dy: 0 };
+      setDragState({ leaderId: rectId, movingIds });
+      setDragOverlay({
+        guides: [],
+        previewPositions: Object.fromEntries(
+          movingIds.map(id => {
+            const rect = rects.find(r => r.id === id)!;
+            return [id, { x: rect.x, y: rect.y }];
+          }),
+        ),
+      });
+    },
+    [currentImage?.rectangles, selectedRectangleIds],
+  );
+
   const handleTransformEnd = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<Event>) => {
       const node = e.target;
-  
+
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
-  
+
       node.scaleX(1);
       node.scaleY(1);
-  
+
       updateArea(rectId, {
-        x: (node.x() - offset.x) / scale,
-        y: (node.y() - offset.y) / scale,
-        width: (node.width() * scaleX) / scale,
-        height: (node.height() * scaleY) / scale,
+        x: normalizeCoord((node.x() - offset.x) / scale, showGrid ? GRID_SIZE : undefined),
+        y: normalizeCoord((node.y() - offset.y) / scale, showGrid ? GRID_SIZE : undefined),
+        width: Math.round((node.width() * scaleX) / scale),
+        height: Math.round((node.height() * scaleY) / scale),
       });
     },
-    [scale, offset, updateArea]
+    [scale, offset, updateArea, showGrid],
   );
 
   const handleDragEnd = useCallback(
-    (rectId: string, e: Konva.KonvaEventObject<DragEvent>) => {
-      updateArea(rectId, {
-        x: (e.target.x() - offset.x) / scale,
-        y: (e.target.y() - offset.y) / scale,
-      });
-      setGuides([]);
+    (_rectId: string) => {
+      const startEntries = dragGroupStartRef.current;
+      const delta = dragDeltaRef.current;
+      if (!startEntries || !delta) return;
+
+      if (delta.dx !== 0 || delta.dy !== 0) {
+        const positionGrid = showGrid ? GRID_SIZE : undefined;
+        const leaderId = dragState?.leaderId ?? startEntries[0].id;
+        const leaderStart = startEntries.find(entry => entry.id === leaderId) ?? startEntries[0];
+        const leaderRawX = leaderStart.x + delta.dx;
+        const leaderRawY = leaderStart.y + delta.dy;
+        const snappedLeader = normalizePoint(leaderRawX, leaderRawY, positionGrid);
+        const fixX = snappedLeader.x - leaderRawX;
+        const fixY = snappedLeader.y - leaderRawY;
+
+        const moves = startEntries.map(entry => ({
+          id: entry.id,
+          x: entry.x + delta.dx + fixX,
+          y: entry.y + delta.dy + fixY,
+        }));
+        moveAreas(moves);
+      }
+
+      dragGroupStartRef.current = null;
+      dragGroupBoundsRef.current = null;
+      dragDeltaRef.current = null;
+      setDragState(null);
+      setDragOverlay(null);
     },
-    [scale, offset, updateArea]
+    [moveAreas, showGrid, dragState],
   );
 
   const handleDragMove = useCallback(
@@ -193,179 +384,315 @@ export const TemplateCanvas: React.FC = () => {
       const movingRect = currentImage?.rectangles?.find(r => r.id === rectId);
       if (!movingRect) return;
 
-      let newX = (node.x() - offset.x) / scale;
-      let newY = (node.y() - offset.y) / scale;
-      const newGuides: GuideLine[] = [];
+      const startEntries = dragGroupStartRef.current ?? [{ id: rectId, x: movingRect.x, y: movingRect.y }];
+      const leaderStart = startEntries.find(entry => entry.id === rectId) ?? startEntries[0];
+      const groupBounds = dragGroupBoundsRef.current;
 
-      currentImage?.rectangles?.forEach(r => {
-        if (r.id === rectId) return;
+      const newX = (node.x() - offset.x) / scale;
+      const newY = (node.y() - offset.y) / scale;
+      const leaderDx = newX - leaderStart.x;
+      const leaderDy = newY - leaderStart.y;
 
-        // SNAP horizontal
-        if (Math.abs(r.x - newX) < SNAP_THRESHOLD) {
-          newX = r.x;
-          newGuides.push({ x: r.x });
-        }
-        if (Math.abs(r.x + r.width - (newX + movingRect.width)) < SNAP_THRESHOLD) {
-          newX = r.x + r.width - movingRect.width;
-          newGuides.push({ x: r.x + r.width });
-        }
-        if (Math.abs(r.x + r.width / 2 - (newX + movingRect.width / 2)) < SNAP_THRESHOLD) {
-          newX = r.x + r.width / 2 - movingRect.width / 2;
-          newGuides.push({ x: r.x + r.width / 2 });
-        }
+      const excludeIds = new Set(startEntries.map(entry => entry.id));
+      const allBounds = (currentImage?.rectangles ?? []).map(r => ({
+        id: r.id,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+      }));
 
-        // SNAP vertical
-        if (Math.abs(r.y - newY) < SNAP_THRESHOLD) {
-          newY = r.y;
-          newGuides.push({ y: r.y });
-        }
-        if (Math.abs(r.y + r.height - (newY + movingRect.height)) < SNAP_THRESHOLD) {
-          newY = r.y + r.height - movingRect.height;
-          newGuides.push({ y: r.y + r.height });
-        }
-        if (Math.abs(r.y + r.height / 2 - (newY + movingRect.height / 2)) < SNAP_THRESHOLD) {
-          newY = r.y + r.height / 2 - movingRect.height / 2;
-          newGuides.push({ y: r.y + r.height / 2 });
-        }
+      const snapOptions = {
+        enabled: !e.evt.shiftKey,
+        canvasBounds: currentImage
+          ? { width: currentImage.width, height: currentImage.height }
+          : undefined,
+        snapToGrid: showGrid,
+        gridSize: showGrid ? GRID_SIZE : undefined,
+      };
+
+      let snapResult;
+      if (groupBounds && startEntries.length > 1) {
+        const members = startEntries.map(entry => {
+          const rect = allBounds.find(r => r.id === entry.id)!;
+          return {
+            id: entry.id,
+            startX: entry.x,
+            startY: entry.y,
+            width: rect.width,
+            height: rect.height,
+          };
+        });
+        snapResult = computeGroupSnap(
+          members,
+          leaderDx,
+          leaderDy,
+          allBounds,
+          excludeIds,
+          scale,
+          snapOptions,
+        );
+      } else {
+        const movingBounds = {
+          id: movingRect.id,
+          x: movingRect.x,
+          y: movingRect.y,
+          width: movingRect.width,
+          height: movingRect.height,
+        };
+        snapResult = computeSnap(
+          movingBounds,
+          newX,
+          newY,
+          allBounds,
+          excludeIds,
+          scale,
+          snapOptions,
+        );
+      }
+
+      const deltaX = groupBounds ? snapResult.x - groupBounds.x : snapResult.x - leaderStart.x;
+      const deltaY = groupBounds ? snapResult.y - groupBounds.y : snapResult.y - leaderStart.y;
+      dragDeltaRef.current = { dx: deltaX, dy: deltaY };
+
+      const leaderSnappedX = leaderStart.x + deltaX;
+      const leaderSnappedY = leaderStart.y + deltaY;
+      node.position({
+        x: offset.x + leaderSnappedX * scale,
+        y: offset.y + leaderSnappedY * scale,
       });
 
-      node.x(offset.x + newX * scale);
-      node.y(offset.y + newY * scale);
-      setGuides(newGuides);
+      const previewPositions: Record<string, { x: number; y: number }> = {};
+      for (const entry of startEntries) {
+        previewPositions[entry.id] = {
+          x: entry.x + deltaX,
+          y: entry.y + deltaY,
+        };
+      }
+
+      setDragOverlay({
+        guides: snapResult.guides,
+        previewPositions,
+      });
     },
-    [currentImage?.rectangles, scale, offset]
+    [currentImage, scale, offset, showGrid],
   );
 
-  /** KEYBOARD: DELETE / COPY / PASTE */
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!stageRef.current) return;
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
 
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleId) {
-        deleteArea(selectedRectangleId);
+      if (e.key === 'Escape') {
+        clearSelection();
+        return;
       }
 
-      if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleId) {
-        const rect = currentImage?.rectangles?.find(r => r.id === selectedRectangleId);
-        if (rect) setCopiedRect({ ...rect });
+      if (ctrlKey && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        const allIds = currentImage?.rectangles?.map(r => r.id) ?? [];
+        setSelectedRectangleIds(allIds);
+        return;
       }
 
-      if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRect) {
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedRectangleIds.length > 0) {
+        e.preventDefault();
+        deleteAreas([...selectedRectangleIds]);
+        return;
+      }
+
+      if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedRectangleIds.length > 0) {
+        const rects =
+          currentImage?.rectangles?.filter(r => selectedRectangleIds.includes(r.id)) ?? [];
+        if (rects.length > 0) setCopiedRects(rects.map(r => ({ ...r })));
+        return;
+      }
+
+      if (ctrlKey && (e.key === 'v' || e.key === 'V') && copiedRects.length > 0) {
         e.preventDefault();
         const stage = stageRef.current;
         const pos = stage.getPointerPosition();
-        const { id: _ignored, ...rectData } = copiedRect;
-        addArea({
-          ...rectData,
-          x: pos ? (pos.x - offset.x) / scale : copiedRect.x + 20,
-          y: pos ? (pos.y - offset.y) / scale : copiedRect.y + 20,
-          order: currentImage?.rectangles?.length ?? 0,
+
+        const minX = Math.min(...copiedRects.map(r => r.x));
+        const minY = Math.min(...copiedRects.map(r => r.y));
+
+        const pasteOriginX = pos ? (pos.x - offset.x) / scale : minX + 20;
+        const pasteOriginY = pos ? (pos.y - offset.y) / scale : minY + 20;
+        const offsetX = pasteOriginX - minX;
+        const offsetY = pasteOriginY - minY;
+
+        const positionGrid = showGrid ? GRID_SIZE : undefined;
+        const normalizedPositions = normalizeGroupOffset(
+          copiedRects.map(rect => ({ x: rect.x, y: rect.y })),
+          offsetX,
+          offsetY,
+          positionGrid,
+        );
+        const newRects = copiedRects.map((rect, index) => {
+          const { id: _ignored, ...rectData } = rect;
+          return {
+            ...rectData,
+            x: normalizedPositions[index].x,
+            y: normalizedPositions[index].y,
+            order: (currentImage?.rectangles?.length ?? 0) + index,
+          };
         });
+
+        addAreas(newRects);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedRectangleId, currentImage?.rectangles, copiedRect, addArea, deleteArea, setSelectedRectangleId, scale, offset]);
+  }, [
+    selectedRectangleIds,
+    currentImage?.rectangles,
+    copiedRects,
+    addAreas,
+    deleteAreas,
+    clearSelection,
+    setSelectedRectangleIds,
+    scale,
+    offset,
+    showGrid,
+  ]);
 
   return (
-    <div 
-    key={currentImage?.id}
-    ref={containerRef} 
-    className="template-canva"
-    {...blockSelectionZoneProps}
+    <div
+      key={currentImage?.id}
+      ref={containerRef}
+      className="template-canva"
+      {...blockSelectionZoneProps}
     >
-        <Stage
-          ref={stageRef}
-          width={stageSize.width}
-          height={stageSize.height}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-          className='template-canva__stage'
-        >
-          <Layer>
-            {image && (
-              <KonvaImage
-                image={image}
-                width={currentImage?.width}
-                height={currentImage?.height}
-                scaleX={scale}
-                scaleY={scale}
-                x={offset.x}
-                y={offset.y}
-                shadowColor='rgba(0, 0, 0, 0.1)'
-                shadowOffsetX={0}
-                shadowOffsetY={4}
-                shadowBlur={12}
-                name='background'
-              />
-            )}
-
-            {currentImage?.rectangles?.map((rect, index) => {
-              const config = FIELD_TYPE_CONFIG[rect.fieldType];
-              return (
-                <TemplateRectangle
-                  key={`${currentImage.id}-${rect.id}`}
-                  rect={rect}
-                  templateImage={currentImage}
-                  plannerLocale={template?.locale}
-                  scale={scale}
-                  offset={offset}
-                  config={config}
-                  showRectangleGuides={showRectangleGuides}
-                  onClick={() => handleRectClick(rect.id)}
-                  onDragMove={e => handleDragMove(rect.id, e)}
-                  onDragEnd={e => handleDragEnd(rect.id, e)}
-                  onTransformEnd={e => handleTransformEnd(rect.id, e)}
-                />
-              );
-            })}
-
-            {drawingRect && (
-              <Rect
-                x={offset.x + drawingRect.x * scale}
-                y={offset.y + drawingRect.y * scale}
-                width={drawingRect.width * scale}
-                height={drawingRect.height * scale}
-                fill={FIELD_TYPE_CONFIG[selectedFieldType].bgColor}
-                stroke={FIELD_TYPE_CONFIG[selectedFieldType].color}
-                strokeWidth={2}
-                dash={[5, 5]}
-                cornerRadius={4}
-              />
-            )}
-
-            {guides.map((g, i) => (
-              <Line
-                key={i}
-                points={
-                  g.x
-                    ? [offset.x + g.x * scale, 0, offset.x + g.x * scale, stageSize.height]
-                    : [0, offset.y + g.y! * scale, stageSize.width, offset.y + g.y! * scale]
-                }
-                stroke="rgba(0, 200, 255, 0.6)"
-                strokeWidth={1}
-                dash={[4, 4]}
-              />
-            ))}
-
-            <Transformer
-              ref={transformerRef}
-              boundBoxFunc={(oldBox, newBox) =>
-                newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
-              }
-              rotateEnabled={false}
-              anchorSize={8}
-              borderStroke="hsl(168, 76%, 42%)"
-              anchorFill="hsl(168, 76%, 42%)"
-              anchorStroke="white"
+      <Stage
+        ref={stageRef}
+        width={stageSize.width}
+        height={stageSize.height}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={() => handleMouseUp()}
+        className="template-canva__stage"
+      >
+        <Layer>
+          {image && (
+            <KonvaImage
+              image={image}
+              width={currentImage?.width}
+              height={currentImage?.height}
+              scaleX={scale}
+              scaleY={scale}
+              x={offset.x}
+              y={offset.y}
+              opacity={showGrid ? 1 : 1}
+              shadowColor="rgba(0, 0, 0, 0.1)"
+              shadowOffsetX={0}
+              shadowOffsetY={4}
+              shadowBlur={12}
+              name="background"
             />
-          </Layer>
-        </Stage>
+          )}
+
+          {currentImage?.rectangles?.map(rect => {
+            const config = FIELD_TYPE_CONFIG[rect.fieldType];
+            const isSelected = selectedRectangleIds.includes(rect.id);
+            const isMarqueePreview = marqueePreviewIds.includes(rect.id);
+            const isGroupDragging = dragState !== null && dragState.movingIds.length > 1;
+            const isDragLeader = dragState?.leaderId === rect.id;
+            const draggable = !isGroupDragging || isDragLeader;
+            return (
+              <TemplateRectangle
+                key={`${currentImage.id}-${rect.id}`}
+                rect={rect}
+                templateImage={currentImage}
+                plannerLocale={template?.locale}
+                weekStartsOn={template?.weekStartsOn}
+                scale={scale}
+                offset={offset}
+                config={config}
+                showRectangleGuides={showRectangleGuides}
+                isSelected={isSelected}
+                isMarqueePreview={isMarqueePreview}
+                previewPosition={dragOverlay?.previewPositions[rect.id]}
+                draggable={draggable}
+                onClick={e => handleRectClick(rect.id, e)}
+                onDragStart={() => handleDragStart(rect.id)}
+                onDragMove={e => handleDragMove(rect.id, e)}
+                onDragEnd={() => handleDragEnd(rect.id)}
+                onTransformEnd={e => handleTransformEnd(rect.id, e)}
+              />
+            );
+          })}
+
+          {drawingRect && (
+            <Rect
+              x={offset.x + drawingRect.x * scale}
+              y={offset.y + drawingRect.y * scale}
+              width={drawingRect.width * scale}
+              height={drawingRect.height * scale}
+              fill={FIELD_TYPE_CONFIG[selectedFieldType!].bgColor}
+              stroke={FIELD_TYPE_CONFIG[selectedFieldType!].color}
+              strokeWidth={2}
+              dash={[5, 5]}
+              cornerRadius={4}
+            />
+          )}
+
+          {marquee && (
+            <Rect
+              x={offset.x + marquee.x * scale}
+              y={offset.y + marquee.y * scale}
+              width={marquee.width * scale}
+              height={marquee.height * scale}
+              fill="rgba(0, 200, 255, 0.1)"
+              stroke="rgba(0, 200, 255, 0.6)"
+              strokeWidth={1}
+              dash={[4, 4]}
+            />
+          )}
+
+          {groupSelectionBounds && (
+            <Rect
+              x={offset.x + groupSelectionBounds.x * scale}
+              y={offset.y + groupSelectionBounds.y * scale}
+              width={groupSelectionBounds.width * scale}
+              height={groupSelectionBounds.height * scale}
+              stroke="hsl(168, 76%, 42%)"
+              strokeWidth={1.5}
+              dash={[6, 4]}
+              cornerRadius={6}
+              listening={false}
+            />
+          )}
+
+          {showGrid && currentImage && (
+            <GridOverlay
+              width={currentImage.width}
+              height={currentImage.height}
+              gridSize={GRID_SIZE}
+              scale={scale}
+              offset={offset}
+            />
+          )}
+
+          <SnapGuidesOverlay guides={dragOverlay?.guides ?? []} scale={scale} offset={offset} />
+
+          <Transformer
+            ref={transformerRef}
+            boundBoxFunc={(oldBox, newBox) =>
+              newBox.width < 20 || newBox.height < 20 ? oldBox : newBox
+            }
+            rotateEnabled={false}
+            anchorSize={8}
+            borderStroke="hsl(168, 76%, 42%)"
+            anchorFill="hsl(168, 76%, 42%)"
+            anchorStroke="white"
+          />
+        </Layer>
+      </Stage>
     </div>
   );
 };

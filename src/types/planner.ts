@@ -61,6 +61,8 @@ export interface TemplateImage {
 
 export type PlannerLocale = 'en' | 'es';
 
+export type WeekStartsOn = 'monday' | 'sunday';
+
 export interface Template {
   id: string;
   name: string;
@@ -71,6 +73,7 @@ export interface Template {
   startDate?: Date;
   endDate?: Date;
   locale?: PlannerLocale;
+  weekStartsOn?: WeekStartsOn;
 }
 
 export interface PlannerConfig {

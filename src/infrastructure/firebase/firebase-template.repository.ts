@@ -76,6 +76,7 @@ function mapTemplate(
     startDate: data.startDate ? toDate(data.startDate) : undefined,
     endDate: data.endDate ? toDate(data.endDate) : undefined,
     locale: data.locale as Template['locale'],
+    weekStartsOn: data.weekStartsOn as Template['weekStartsOn'],
   };
 }
 
@@ -156,6 +157,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       startDate: template.startDate ?? null,
       endDate: template.endDate ?? null,
       locale: template.locale ?? null,
+      weekStartsOn: template.weekStartsOn ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -173,6 +175,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     if (updates.startDate !== undefined) payload.startDate = updates.startDate ?? null;
     if (updates.endDate !== undefined) payload.endDate = updates.endDate ?? null;
     if (updates.locale !== undefined) payload.locale = updates.locale ?? null;
+    if (updates.weekStartsOn !== undefined) payload.weekStartsOn = updates.weekStartsOn ?? null;
     await updateDoc(templateRef(uid, templateId), payload);
   }
 

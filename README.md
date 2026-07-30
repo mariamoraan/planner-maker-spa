@@ -53,7 +53,7 @@ flowchart LR
 - **Block styling** — per-field font, color, format variants (e.g. numeric vs. name), and text case
 - **Pages map** — thumbnail navigation grouped by page type, with drag-to-reorder within each group
 - **Undo / redo** — full editor history for block and page operations
-- **Planner generation** — real calendar logic (Monday week start, ISO weeks) fills every page for a chosen date range
+- **Planner generation** — real calendar logic (configurable week start: Monday or Sunday) fills every page for a chosen date range
 - **PDF export** — A5 landscape output generated off the main thread via a Web Worker
 - **Local persistence** — template metadata in localStorage, image blobs in IndexedDB; no server required
 - **Desktop editor** — optimized for viewports ≥ 900 × 560 px
@@ -129,7 +129,7 @@ flowchart TB
 | **Canvas** | Konva + react-konva | Interactive drag / resize / snap guides, decoupled from DOM layout |
 | **Dual render pipeline** | Konva for editor preview, HTML Canvas for generation | Editor stays responsive; PDF output is pixel-accurate |
 | **PDF** | pdf-lib in a Web Worker | Keeps the UI thread free during large exports |
-| **Calendar logic** | date-fns, Monday week start, ISO week numbers | Predictable, unit-tested (`src/test/daily-page.test.ts`) |
+| **Calendar logic** | date-fns, configurable week start (Monday/Sunday), ISO or US week numbers | Predictable, unit-tested (`src/lib/planner-week.test.ts`) |
 | **Undo / redo** | Command pattern in a separate history store | Clean separation; in-memory only (acceptable for v1) |
 | **Future-ready** | React Query wired in App, no queries yet | Reserved for cloud sync without premature complexity |
 | **Deploy** | Vercel with SPA rewrites | Zero-config static hosting |

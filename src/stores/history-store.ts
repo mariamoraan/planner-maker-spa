@@ -4,7 +4,10 @@ import { useTemplateStore } from './template-store';
 
 export type HistoryAction =
   | { type: 'addRectangle'; imageId: string; rectangle: Rectangle }
+  | { type: 'addRectangles'; imageId: string; rectangles: Rectangle[]; indices: number[] }
   | { type: 'deleteRectangle'; imageId: string; rectangle: Rectangle; index: number }
+  | { type: 'deleteRectangles'; imageId: string; rectangles: Rectangle[]; indices: number[] }
+  | { type: 'moveRectangles'; imageId: string; moves: { id: string; before: { x: number; y: number }; after: { x: number; y: number } }[] }
   | {
       type: 'updateRectangle';
       imageId: string;
@@ -54,6 +57,14 @@ const getHistory = (
   templateId: string
 ): TemplateHistory => histories[templateId] ?? emptyHistory();
 
+const removeFromSelection = (ids: string[]) => {
+  const store = useTemplateStore.getState();
+  const remaining = store.selectedRectangleIds.filter(id => !ids.includes(id));
+  if (remaining.length !== store.selectedRectangleIds.length) {
+    store.setSelectedRectangleIds(remaining);
+  }
+};
+
 const applyAction = async (templateId: string, action: HistoryAction, direction: 'undo' | 'redo') => {
   const store = useTemplateStore.getState();
 
@@ -61,9 +72,7 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
     case 'addRectangle': {
       if (direction === 'undo') {
         store.deleteRectangle(templateId, action.imageId, action.rectangle.id);
-        if (store.selectedRectangleId === action.rectangle.id) {
-          store.setSelectedRectangleId(null);
-        }
+        removeFromSelection([action.rectangle.id]);
       } else {
         const template = store.getTemplate(templateId);
         const image = template?.images.find(img => img.id === action.imageId);
@@ -76,15 +85,56 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
       }
       break;
     }
+    case 'addRectangles': {
+      if (direction === 'undo') {
+        for (const rectangle of action.rectangles) {
+          store.deleteRectangle(templateId, action.imageId, rectangle.id);
+        }
+        removeFromSelection(action.rectangles.map(r => r.id));
+      } else {
+        const sorted = action.rectangles
+          .map((rectangle, i) => ({ rectangle, index: action.indices[i] }))
+          .sort((a, b) => a.index - b.index);
+        for (const entry of sorted) {
+          store.insertRectangle(templateId, action.imageId, entry.rectangle, entry.index);
+        }
+      }
+      break;
+    }
     case 'deleteRectangle': {
       if (direction === 'undo') {
         store.insertRectangle(templateId, action.imageId, action.rectangle, action.index);
       } else {
         store.deleteRectangle(templateId, action.imageId, action.rectangle.id);
-        if (store.selectedRectangleId === action.rectangle.id) {
-          store.setSelectedRectangleId(null);
-        }
+        removeFromSelection([action.rectangle.id]);
       }
+      break;
+    }
+    case 'deleteRectangles': {
+      if (direction === 'undo') {
+        const sorted = action.rectangles
+          .map((rectangle, i) => ({ rectangle, index: action.indices[i] }))
+          .sort((a, b) => a.index - b.index);
+        for (const entry of sorted) {
+          store.insertRectangle(templateId, action.imageId, entry.rectangle, entry.index);
+        }
+      } else {
+        for (const rectangle of action.rectangles) {
+          store.deleteRectangle(templateId, action.imageId, rectangle.id);
+        }
+        removeFromSelection(action.rectangles.map(r => r.id));
+      }
+      break;
+    }
+    case 'moveRectangles': {
+      store.updateRectangles(
+        templateId,
+        action.imageId,
+        action.moves.map(move => ({
+          rectangleId: move.id,
+          changes: direction === 'undo' ? move.before : move.after,
+        })),
+      );
       break;
     }
     case 'updateRectangle': {

@@ -1,15 +1,17 @@
-.editor-planner-actions {
+.canvas-view-toggles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
   &--toolbar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
     margin-left: auto;
   }
 
   &--sidebar {
-    display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 8px;
+    width: 100%;
   }
 
   button {
@@ -25,18 +27,23 @@
     transition: 200ms ease;
 
     &:hover {
-      opacity: 0.5;
+      opacity: 0.75;
     }
   }
 
-  &__generate--toolbar {
+  &--toolbar button {
     padding: 8px 16px;
   }
 
-  &__generate--sidebar {
+  &--sidebar button {
     width: 100%;
     padding: 10px 16px;
     font-size: 14px;
+  }
+
+  &__grid--active {
+    background-color: hsl(168, 76%, 42%);
+    color: white;
   }
 
   &__icon {

@@ -1,9 +1,10 @@
 import './editor-planner-actions.scss'
 
 import { useTranslation } from 'react-i18next'
-import { EyeIcon, EyeClosedIcon, SparklesIcon } from '@/core/icons'
+import { SparklesIcon } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
 import { useExportStore } from '@/stores/export-store'
+import { CanvasViewToggles } from '@/components/shared/canvas-view-toggles'
 
 interface EditorPlannerActionsProps {
   variant: 'toolbar' | 'sidebar'
@@ -11,16 +12,10 @@ interface EditorPlannerActionsProps {
 
 export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => {
   const { t } = useTranslation()
-  const showRectangleGuides = useTemplateStore(state => state.showRectangleGuides)
-  const setShowRectangleGuides = useTemplateStore(state => state.setShowRectangleGuides)
   const openGenerator = useTemplateStore(state => state.openGenerator)
   const exportStatus = useExportStore(state => state.status)
   const isExportRunning = exportStatus === 'running'
   const exportTitle = isExportRunning ? t('editor.exportInProgress') : undefined
-
-  const toggleRectangleGuides = () => {
-    setShowRectangleGuides(!showRectangleGuides)
-  }
 
   if (variant === 'toolbar') {
     return (
@@ -34,13 +29,7 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         >
           {t('editor.generatePlanner')}
         </button>
-        <button
-          className="editor-planner-actions__guides editor-planner-actions__guides--toolbar"
-          type="button"
-          onClick={toggleRectangleGuides}
-        >
-          {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
-        </button>
+        <CanvasViewToggles variant="toolbar" />
       </div>
     )
   }
@@ -57,14 +46,7 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         <SparklesIcon className="editor-planner-actions__icon" />
         {t('editor.generatePlanner')}
       </button>
-      <button
-        className="editor-planner-actions__guides editor-planner-actions__guides--sidebar"
-        type="button"
-        onClick={toggleRectangleGuides}
-      >
-        {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
-        {showRectangleGuides ? t('editor.hideGuides') : t('editor.showGuides')}
-      </button>
+      <CanvasViewToggles variant="sidebar" />
     </div>
   )
 }

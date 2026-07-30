@@ -18,7 +18,7 @@ export const PageThumbnail = ({image}: Props) => {
     const contextMenuRef = useRef<HTMLUListElement>(null);
     const thumbnailRef = useRef<HTMLDivElement>(null);
     const { setCurrentImage } = useTemplateStore();
-    const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId)
+    const clearSelection = useTemplateStore(state => state.clearSelection)
     const {deleteImage} = useManageImages();
 
     const closeContextMenu = useCallback(() => {
@@ -32,7 +32,7 @@ export const PageThumbnail = ({image}: Props) => {
     });
 
     const selectPage = () => {
-        setSelectedRectangleId(null)
+        clearSelection()
         setCurrentImage(image.id)
     }
 

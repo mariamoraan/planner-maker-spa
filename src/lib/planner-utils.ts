@@ -1,8 +1,13 @@
-import { 
-  format, 
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
+  addDays,
+  getISOWeek,
+  getWeek,
 } from 'date-fns';
 import type { Locale } from 'date-fns';
-import type { Rectangle, FieldType, TemplateImage } from '@/types/planner';
+import type { Rectangle, FieldType, TemplateImage, WeekStartsOn } from '@/types/planner';
 import {
   SECONDARY_COLOR,
   getFormatVariant,
@@ -13,7 +18,13 @@ import {
   isMonthFormatVariant,
   isDayFormatVariant,
 } from '@/lib/field-style-config';
-import { DEFAULT_LOCALE, formatMonthName, formatWeekdayName } from '@/lib/locale-config';
+import {
+  DEFAULT_LOCALE,
+  DEFAULT_WEEK_STARTS_ON,
+  formatMonthName,
+  formatWeekdayName,
+  resolveWeekStartsOn,
+} from '@/lib/locale-config';
 
 /** @deprecated Use formatMonthName with locale instead */
 export const MONTH_NAMES = [
@@ -41,37 +52,36 @@ export interface WeekData {
   days: Date[];
 }
 
-export function getMonthDatesStartingOnMonday({
-  year, 
-  month
+export function getMonthDatesForGrid({
+  year,
+  month,
+  weekStartsOn = DEFAULT_WEEK_STARTS_ON,
 }: {
-  year: number,
-  month: number
+  year: number;
+  month: number;
+  weekStartsOn?: WeekStartsOn;
 }): Date[] {
-  const dates:Date[] = [];
-
-  // Día 1 del mes actual
   const firstDayOfMonth = new Date(year, month, 1);
-
-  // Convertimos getDay() para que lunes = 0, domingo = 6
-  const weekday = (firstDayOfMonth.getDay() + 6) % 7;
-
-  // Calculamos la fecha del lunes inicial (puede ser del mes anterior)
-  const startDate = new Date(year, month, 1 - weekday);
-
-  // Número de días del mes actual
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const weekStartOption = resolveWeekStartsOn(weekStartsOn);
+  const gridStart = startOfWeek(firstDayOfMonth, { weekStartsOn: weekStartOption });
+  const leadingDays = Math.round(
+    (firstDayOfMonth.getTime() - gridStart.getTime()) / 86400000
+  );
+  const totalDays = leadingDays + daysInMonth;
 
-  // Total de días a generar (días previos del mes anterior + días del mes actual)
-  const totalDays = weekday + daysInMonth;
+  return Array.from({ length: totalDays }, (_, i) => addDays(gridStart, i));
+}
 
-  for (let i = 0; i < totalDays; i++) {
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
-    dates.push(date);
-  }
-
-  return dates;
+/** @deprecated Use getMonthDatesForGrid with weekStartsOn: 'monday' instead */
+export function getMonthDatesStartingOnMonday({
+  year,
+  month,
+}: {
+  year: number;
+  month: number;
+}): Date[] {
+  return getMonthDatesForGrid({ year, month, weekStartsOn: 'monday' });
 }
 
 export function getDaysOfMonth({ year, month }: { year: number; month: number }): Date[] {
@@ -85,64 +95,56 @@ export function getDaysOfMonth({ year, month }: { year: number; month: number })
   return dates;
 }
 
-function getISOWeekNumber(date: Date): number {
-  const d = new Date(Date.UTC(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate()
-  ));
-
-  // Jueves de esta semana decide el año
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNumber = Math.ceil(
-    (((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7
-  );
-
-  return weekNumber;
+function getWeekNumber(date: Date, weekStartsOn: WeekStartsOn): number {
+  if (weekStartsOn === 'monday') {
+    return getISOWeek(date);
+  }
+  return getWeek(date, { weekStartsOn: 0 });
 }
 
-
-function getCalendarWeeks({year, month}: {year: number, month: number}): WeekData[] {
-  const weeks: WeekData[] = [];
-
+function getCalendarWeeks({
+  year,
+  month,
+  weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+}: {
+  year: number;
+  month: number;
+  weekStartsOn?: WeekStartsOn;
+}): WeekData[] {
   const firstDayOfMonth = new Date(year, month, 1);
   const lastDayOfMonth = new Date(year, month + 1, 0);
+  const weekStartOption = resolveWeekStartsOn(weekStartsOn);
 
-  // Ajustar al lunes anterior (o el mismo)
-  const start = new Date(firstDayOfMonth);
-  const startDay = start.getDay() === 0 ? 7 : start.getDay();
-  start.setDate(start.getDate() - (startDay - 1));
+  const rangeStart = startOfWeek(firstDayOfMonth, { weekStartsOn: weekStartOption });
+  const rangeEnd = endOfWeek(lastDayOfMonth, { weekStartsOn: weekStartOption });
 
-  // Ajustar al domingo posterior (o el mismo)
-  const end = new Date(lastDayOfMonth);
-  const endDay = end.getDay() === 0 ? 7 : end.getDay();
-  end.setDate(end.getDate() + (7 - endDay));
+  const weeks: WeekData[] = [];
+  let current = rangeStart;
 
-  let current = new Date(start);
-
-  while (current <= end) {
-    const days: Date[] = [];
-
-    for (let i = 0; i < 7; i++) {
-      days.push(new Date(current));
-      current.setDate(current.getDate() + 1);
-    }
-
+  while (current <= rangeEnd) {
+    const days = Array.from({ length: 7 }, (_, i) => addDays(current, i));
     weeks.push({
-      weekNumber: getISOWeekNumber(days[0]),
+      weekNumber: getWeekNumber(days[0], weekStartsOn),
       startDate: days[0],
       endDate: days[6],
       days,
     });
+    current = addDays(current, 7);
   }
 
   return weeks;
 }
 
 
-export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate: Date}): MonthData[] {
+export function getMonthsBetween({
+  startDate,
+  endDate,
+  weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+}: {
+  startDate: Date;
+  endDate: Date;
+  weekStartsOn?: WeekStartsOn;
+}): MonthData[] {
   const months: MonthData[] = [];
   let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
 
@@ -152,39 +154,26 @@ export function getMonthsBetween({startDate, endDate}: {startDate: Date, endDate
     const year = current.getFullYear();
     const month = current.getMonth();
 
-    const monthDates = getMonthDatesStartingOnMonday({year, month});
-    const weeks = getCalendarWeeks({year, month});
+    const monthDates = getMonthDatesForGrid({ year, month, weekStartsOn });
+    const weeks = getCalendarWeeks({ year, month, weekStartsOn });
 
     months.push({
       year,
       month,
-      name: current.toLocaleString("default", { month: "long" }),
+      name: current.toLocaleString('default', { month: 'long' }),
       weeks,
-      days: monthDates
+      days: monthDates,
     });
 
-    // Avanzamos un mes
     current.setMonth(current.getMonth() + 1);
   }
 
   return months;
 }
-
-function getWeekRange(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const normalizedDay = day === 0 ? 7 : day;
-
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - (normalizedDay - 1));
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  return { monday, sunday };
-}
-
-export function getEditorPreviewContext(templateImage: TemplateImage): {
+export function getEditorPreviewContext(
+  templateImage: TemplateImage,
+  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON
+): {
   year?: number;
   month?: number;
   week?: WeekData;
@@ -202,18 +191,16 @@ export function getEditorPreviewContext(templateImage: TemplateImage): {
     case 'month-cover':
       return { year, month };
     case 'monthly-calendar':
-      return { year, month, days: getMonthDatesStartingOnMonday({ year, month }) };
+      return { year, month, days: getMonthDatesForGrid({ year, month, weekStartsOn }) };
     case 'weekly-calendar': {
-      const days = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(firstOfMonth);
-        d.setDate(firstOfMonth.getDate() + i);
-        return d;
-      });
+      const weekStartOption = resolveWeekStartsOn(weekStartsOn);
+      const weekStart = startOfWeek(firstOfMonth, { weekStartsOn: weekStartOption });
+      const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
       return {
         year,
         month,
         week: {
-          weekNumber: 1,
+          weekNumber: getWeekNumber(days[0], weekStartsOn),
           startDate: days[0],
           endDate: days[6],
           days,

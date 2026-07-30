@@ -1,19 +1,18 @@
 import { useEffect } from 'react';
-import { isInsideBlockSelectionZone } from '@/lib/block-selection';
 import { useTemplateStore } from '@/stores/template-store';
 
-export function useClearBlockSelectionOnOutsideClick() {
-  const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId);
-  const setSelectedRectangleId = useTemplateStore(state => state.setSelectedRectangleId);
+export const useClearBlockSelectionOnOutsideClick = () => {
+  const selectedRectangleIds = useTemplateStore(state => state.selectedRectangleIds);
+  const clearSelection = useTemplateStore(state => state.clearSelection);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (!selectedRectangleId) return;
-      if (isInsideBlockSelectionZone(e.target)) return;
-      setSelectedRectangleId(null);
+    const handleMouseDown = (event: MouseEvent) => {
+      if (selectedRectangleIds.length === 0) return;
+      if ((event.target as Element).closest('[data-block-selection-zone]')) return;
+      clearSelection();
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [selectedRectangleId, setSelectedRectangleId]);
-}
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [selectedRectangleIds, clearSelection]);
+};

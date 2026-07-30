@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Template, TemplateImage, Rectangle, TemplateType, FieldType } from '@/types/planner';
 import { generateId } from '@/lib/planner-utils';
-import { detectPlannerLocale } from '@/lib/locale-config';
+import { detectPlannerLocale, DEFAULT_WEEK_STARTS_ON } from '@/lib/locale-config';
 import { trackEvent } from '@/lib/analytics';
 import {
   getInsertIndexForType,
@@ -12,6 +12,7 @@ import {
 import { getInfra, buildLocalImageRef, buildLegacyImageKey } from '@/infrastructure';
 import type { ImageRef } from '@/infrastructure/ports/image-asset.port';
 import type { TemplatePageRecord } from '@/infrastructure/ports/template.port';
+import { sanitizeRectangleGeometry } from '@/lib/canvas-snap';
 
 const RECTANGLE_SYNC_DELAY_MS = 500;
 const rectangleSyncTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -82,9 +83,10 @@ interface TemplateState {
   setCurrentImage: (id: string | null) => Promise<void>;
   getCurrentImage: (templateId: string) => TemplateImage | null;
 
-  selectedRectangleId: string | null;
+  selectedRectangleIds: string[];
   selectedFieldType?: FieldType;
   showRectangleGuides: boolean;
+  showGrid: boolean;
   addRectangle: (templateId: string, imageId: string, rectangle: Omit<Rectangle, 'id'>) => string;
   insertRectangle: (templateId: string, imageId: string, rectangle: Rectangle, index: number) => void;
   updateRectangle: (
@@ -93,10 +95,19 @@ interface TemplateState {
     rectangleId: string,
     updates: Partial<Rectangle>
   ) => void;
+  updateRectangles: (
+    templateId: string,
+    imageId: string,
+    updates: { rectangleId: string; changes: Partial<Rectangle> }[]
+  ) => void;
   deleteRectangle: (templateId: string, imageId: string, rectangleId: string) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
-  setSelectedRectangleId: (selectedRectangleId: string | null) => void;
+  setSelectedRectangleIds: (selectedRectangleIds: string[]) => void;
+  toggleRectangleInSelection: (id: string) => void;
+  addToSelection: (id: string) => void;
+  clearSelection: () => void;
   setShowRectangleGuides: (showRectangleGuides: boolean) => void;
+  setShowGrid: (showGrid: boolean) => void;
 
   insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
   normalizeImageOrder: (templateId: string) => void;
@@ -195,6 +206,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
       createdAt: now,
       updatedAt: now,
       locale: detectPlannerLocale(),
+      weekStartsOn: DEFAULT_WEEK_STARTS_ON,
     };
     set(state => ({ templates: [...state.templates, template] }));
     trackEvent('planner_created');
@@ -222,6 +234,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
         startDate: updates.startDate,
         endDate: updates.endDate,
         locale: updates.locale,
+        weekStartsOn: updates.weekStartsOn,
       });
     }
   },
@@ -485,13 +498,15 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
     return template?.images.find(img => img.id === state.currentImageId) ?? null;
   },
 
-  selectedRectangleId: null,
+  selectedRectangleIds: [],
   selectedFieldType: undefined,
   showRectangleGuides: true,
+  showGrid: false,
 
   addRectangle: (templateId, imageId, rectangleData) => {
     const id = generateId();
-    const rectangle: Rectangle = { ...rectangleData, id };
+    const sanitized = sanitizeRectangleGeometry(rectangleData);
+    const rectangle: Rectangle = { ...rectangleData, ...sanitized, id };
     let rectangles: Rectangle[] = [];
 
     set(state => ({
@@ -522,6 +537,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
   insertRectangle: (templateId, imageId, rectangle, index) => {
     let rectangles: Rectangle[] = [];
+    const sanitizedRectangle = { ...rectangle, ...sanitizeRectangleGeometry(rectangle) };
 
     set(state => ({
       templates: state.templates.map(t =>
@@ -531,7 +547,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
               images: t.images.map(img => {
                 if (img.id !== imageId) return img;
                 rectangles = [...img.rectangles];
-                rectangles.splice(index, 0, rectangle);
+                rectangles.splice(index, 0, sanitizedRectangle);
                 return { ...img, rectangles, updatedAt: new Date() };
               }),
               updatedAt: new Date(),
@@ -557,8 +573,53 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
               images: t.images.map(img => {
                 if (img.id !== imageId) return img;
                 rectangles = img.rectangles.map(r =>
-                  r.id === rectangleId ? { ...r, ...updates } : r
+                  r.id === rectangleId
+                    ? { ...r, ...sanitizeRectangleGeometry(updates) }
+                    : r
                 );
+                return { ...img, rectangles, updatedAt: new Date() };
+              }),
+              updatedAt: new Date(),
+            }
+          : t
+      ),
+    }));
+
+    const uid = get().syncUid;
+    if (!uid) return;
+
+    const key = `${templateId}-${imageId}`;
+    const existing = rectangleSyncTimers.get(key);
+    if (existing) clearTimeout(existing);
+
+    rectangleSyncTimers.set(
+      key,
+      setTimeout(() => {
+        rectangleSyncTimers.delete(key);
+        void getInfra().templates.updatePageRectangles(uid, templateId, imageId, rectangles);
+      }, RECTANGLE_SYNC_DELAY_MS)
+    );
+  },
+
+  updateRectangles: (templateId, imageId, updates) => {
+    if (updates.length === 0) return;
+
+    let rectangles: Rectangle[] = [];
+
+    set(state => ({
+      templates: state.templates.map(t =>
+        t.id === templateId
+          ? {
+              ...t,
+              images: t.images.map(img => {
+                if (img.id !== imageId) return img;
+                const changesById = new Map(
+                  updates.map(update => [update.rectangleId, update.changes]),
+                );
+                rectangles = img.rectangles.map(rect => {
+                  const changes = changesById.get(rect.id);
+                  return changes ? { ...rect, ...sanitizeRectangleGeometry(changes) } : rect;
+                });
                 return { ...img, rectangles, updatedAt: new Date() };
               }),
               updatedAt: new Date(),
@@ -609,8 +670,25 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
   },
 
   setSelectedFieldType: selectedFieldType => set({ selectedFieldType }),
-  setSelectedRectangleId: selectedRectangleId => set({ selectedRectangleId }),
+  setSelectedRectangleIds: selectedRectangleIds => set({ selectedRectangleIds }),
+
+  toggleRectangleInSelection: id =>
+    set(state => ({
+      selectedRectangleIds: state.selectedRectangleIds.includes(id)
+        ? state.selectedRectangleIds.filter(selectedId => selectedId !== id)
+        : [...state.selectedRectangleIds, id],
+    })),
+
+  addToSelection: id =>
+    set(state => ({
+      selectedRectangleIds: state.selectedRectangleIds.includes(id)
+        ? state.selectedRectangleIds
+        : [...state.selectedRectangleIds, id],
+    })),
+
+  clearSelection: () => set({ selectedRectangleIds: [] }),
   setShowRectangleGuides: showRectangleGuides => set({ showRectangleGuides }),
+  setShowGrid: showGrid => set({ showGrid }),
 
   isGeneratorOpen: false,
   closeGenerator: () => set({ isGeneratorOpen: false }),

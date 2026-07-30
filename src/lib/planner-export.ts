@@ -7,11 +7,15 @@ import {
   getDaysOfMonth,
   renderFieldOnCanvas,
 } from '@/lib/planner-utils';
-import { resolveLocale } from '@/lib/locale-config';
+import { resolveLocale, DEFAULT_WEEK_STARTS_ON } from '@/lib/locale-config';
 import type { WorkerResponse } from '@/workers/pdf.worker';
 
 const PAGES_WEIGHT = 0.85;
 const PDF_WEIGHT = 0.15;
+
+function resolveTemplateWeekStartsOn(template: Template) {
+  return template.weekStartsOn ?? DEFAULT_WEEK_STARTS_ON;
+}
 
 export function buildExportKey(
   templateId: string,
@@ -28,7 +32,11 @@ export function estimatePageCount(
   endDate: Date
 ): number {
   let total = 0;
-  const months = getMonthsBetween({ startDate, endDate });
+  const months = getMonthsBetween({
+    startDate,
+    endDate,
+    weekStartsOn: resolveTemplateWeekStartsOn(template),
+  });
   const coverImages = template.images.filter(img => img.type === 'cover');
   const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
   const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
@@ -114,7 +122,11 @@ function countGenerationSteps(
   endDate: Date
 ): number {
   let totalSteps = 0;
-  const months = getMonthsBetween({ startDate, endDate });
+  const months = getMonthsBetween({
+    startDate,
+    endDate,
+    weekStartsOn: resolveTemplateWeekStartsOn(template),
+  });
   const coverImages = template.images.filter(img => img.type === 'cover');
   const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
   const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
@@ -156,7 +168,8 @@ export async function generatePlannerPages(
 ): Promise<GeneratedPage[]> {
   const pages: GeneratedPage[] = [];
   const plannerLocale = template.locale ?? 'es';
-  const months = getMonthsBetween({ startDate, endDate });
+  const weekStartsOn = resolveTemplateWeekStartsOn(template);
+  const months = getMonthsBetween({ startDate, endDate, weekStartsOn });
   const totalSteps = countGenerationSteps(template, startDate, endDate);
 
   let currentStep = 0;

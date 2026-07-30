@@ -4,6 +4,7 @@ import {
     LargeArrowLeftIcon,
     LargeArrowRightIcon,
 } from '@/core/icons'
+import { useTranslation } from 'react-i18next'
 import { useTemplateStore } from '@/stores/template-store'
 import { useHistoryStore } from '@/stores/history-store'
 import { FIELD_TYPE_CONFIG } from '@/types/planner'
@@ -13,13 +14,18 @@ import { useTemplateId } from '@/hooks/use-template-id'
 import { AreaStyleControls } from '@/components/shared/area-style-controls'
 import { BlockDeleteButton } from '@/components/shared/block-delete-button'
 import { BlockTypeSelector } from '@/components/shared/block-type-selector'
+import { CanvasViewToggles } from '@/components/shared/canvas-view-toggles'
 import { EditorPlannerActions } from '@/components/shared/editor-planner-actions'
 
 export const Toolbar = () => {
+    const { t } = useTranslation();
     const templateId = useTemplateId();
     const currentImage = useCurrentImage();
-    const selectedRectangleId = useTemplateStore(state => state.selectedRectangleId)
-    const currentSelectedBox = selectedRectangleId ? currentImage?.rectangles?.find(rectangle => selectedRectangleId === rectangle.id) : null
+    const selectedRectangleIds = useTemplateStore(state => state.selectedRectangleIds)
+    const currentSelectedBox =
+      selectedRectangleIds.length === 1
+        ? currentImage?.rectangles?.find(rectangle => selectedRectangleIds[0] === rectangle.id)
+        : null
 
     const canUndo = useHistoryStore(state =>
       templateId ? (state.histories[templateId]?.past.length ?? 0) > 0 : false
@@ -30,7 +36,26 @@ export const Toolbar = () => {
     const undo = useHistoryStore(state => state.undo)
     const redo = useHistoryStore(state => state.redo)
 
-    const { updateAreaType } = useManageAreas();
+    const { updateAreaType, deleteAreas } = useManageAreas();
+
+    if (selectedRectangleIds.length > 1) {
+        return (
+            <div className="toolbar toolbar--multi">
+                <p className="toolbar__name">
+                    {t('editor.blocksSelected', { count: selectedRectangleIds.length })}
+                </p>
+                <div className="toolbar__divider" />
+                <button
+                    type="button"
+                    className="toolbar__delete-button toolbar__delete-selected"
+                    onClick={() => deleteAreas([...selectedRectangleIds])}
+                >
+                    {t('editor.deleteSelected')}
+                </button>
+                <CanvasViewToggles variant="toolbar" />
+            </div>
+        );
+    }
 
     if(!currentSelectedBox) {
         return (
@@ -57,7 +82,7 @@ export const Toolbar = () => {
     }
 
     const config = FIELD_TYPE_CONFIG[currentSelectedBox.fieldType];
-    const order = currentImage.rectangles.filter(({fieldType}) => fieldType === currentSelectedBox.fieldType).findIndex(({id}) => id === currentSelectedBox.id)
+    const order = currentImage!.rectangles.filter(({fieldType}) => fieldType === currentSelectedBox.fieldType).findIndex(({id}) => id === currentSelectedBox.id)
 
     return (
         <div className="toolbar">
@@ -74,6 +99,7 @@ export const Toolbar = () => {
                 rectangleId={currentSelectedBox.id}
                 className="toolbar__delete-button"
              />
+             <CanvasViewToggles variant="toolbar" />
         </div>
     )
 }

@@ -1,7 +1,8 @@
 import { getEditorPreviewContext, getFieldValue } from "@/lib/planner-utils";
 import { buildKonvaFontStyle, resolveFieldStyle, resolveFontFamily } from "@/lib/field-style-config";
 import { resolveLocale } from "@/lib/locale-config";
-import { FIELD_TYPE_CONFIG, FieldType, PlannerLocale, Rectangle, TemplateImage } from "@/types/planner";
+import { FIELD_TYPE_CONFIG, FieldType, PlannerLocale, Rectangle, TemplateImage, WeekStartsOn } from "@/types/planner";
+import { DEFAULT_WEEK_STARTS_ON } from "@/lib/locale-config";
 import Konva from "konva";
 import { useMemo, useRef } from "react";
 import { Group, Rect, Text } from "react-konva";
@@ -11,11 +12,17 @@ interface TemplateRectangleProps {
     rect: Rectangle;
     templateImage: TemplateImage;
     plannerLocale?: PlannerLocale;
+    weekStartsOn?: WeekStartsOn;
     scale: number;
     offset: { x: number; y: number };
     config: typeof FIELD_TYPE_CONFIG[FieldType];
     showRectangleGuides: boolean;
-    onClick: () => void;
+    isSelected?: boolean;
+    isMarqueePreview?: boolean;
+    previewPosition?: { x: number; y: number };
+    draggable?: boolean;
+    onClick: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
+    onDragStart?: () => void;
     onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
     onDragEnd: (e: Konva.KonvaEventObject<DragEvent>) => void;
     onTransformEnd: (e: Konva.KonvaEventObject<Event>) => void;
@@ -25,11 +32,17 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     rect,
     templateImage,
     plannerLocale = 'es',
+    weekStartsOn = DEFAULT_WEEK_STARTS_ON,
     scale,
     offset,
     config,
     showRectangleGuides,
+    isSelected = false,
+    isMarqueePreview = false,
+    previewPosition,
+    draggable = true,
     onClick,
+    onDragStart,
     onDragMove,
     onDragEnd,
     onTransformEnd,
@@ -48,8 +61,8 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     );
 
     const previewContext = useMemo(
-      () => getEditorPreviewContext(templateImage),
-      [templateImage],
+      () => getEditorPreviewContext(templateImage, weekStartsOn),
+      [templateImage, weekStartsOn],
     );
 
     const dateLocale = useMemo(() => resolveLocale(plannerLocale), [plannerLocale]);
@@ -73,17 +86,20 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
   
     const width = rect.width * scale;
     const height = rect.height * scale;
+    const displayX = previewPosition?.x ?? rect.x;
+    const displayY = previewPosition?.y ?? rect.y;
   
     return (
       <Group
         id={`rect-${rect.id}`}
-        x={offset.x + rect.x * scale}
-        y={offset.y + rect.y * scale}
+        x={offset.x + displayX * scale}
+        y={offset.y + displayY * scale}
         width={width}
         height={height}
-        draggable
+        draggable={draggable}
         onClick={onClick}
         onTap={onClick}
+        onDragStart={onDragStart}
         onDragMove={onDragMove}
         onDragEnd={onDragEnd}
         onTransformEnd={onTransformEnd}
@@ -127,6 +143,30 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
           fontStyle={fontStyle}
           listening={false}
         />
+
+        {isMarqueePreview && !isSelected && (
+          <Rect
+            width={width}
+            height={height}
+            stroke="rgba(0, 200, 255, 0.9)"
+            strokeWidth={2}
+            dash={[6, 4]}
+            cornerRadius={4}
+            listening={false}
+          />
+        )}
+
+        {isSelected && (
+          <Rect
+            width={width}
+            height={height}
+            fill="rgba(22, 163, 136, 0.12)"
+            stroke="hsl(168, 76%, 42%)"
+            strokeWidth={2}
+            cornerRadius={4}
+            listening={false}
+          />
+        )}
       </Group>
     );
   };

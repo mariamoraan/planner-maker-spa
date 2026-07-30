@@ -1,4 +1,4 @@
-import type { Template, TemplateImage, Rectangle, PlannerLocale } from '@/types/planner';
+import type { Template, TemplateImage, Rectangle, PlannerLocale, WeekStartsOn } from '@/types/planner';
 import type { ImageRef } from './image-asset.port';
 
 export type TemplatePageRecord = Omit<TemplateImage, 'src'> & {
@@ -15,6 +15,7 @@ export type TemplateRecord = {
   startDate?: Date;
   endDate?: Date;
   locale?: PlannerLocale;
+  weekStartsOn?: WeekStartsOn;
 };
 
 export type Unsubscribe = () => void;
