@@ -18,10 +18,10 @@ import { EditorPlannerActions } from '@/components/shared/editor-planner-actions
 type SidebarSectionId = 'currentPage' | 'dynamicBlocks' | 'actions' | 'blockSettings';
 
 const DEFAULT_SECTION_STATE: Record<SidebarSectionId, boolean> = {
-  currentPage: true,
+  currentPage: false,
   dynamicBlocks: true,
-  actions: true,
-  blockSettings: true,
+  actions: false,
+  blockSettings: false,
 };
 
 export const EditorSidebar: React.FC = () => {
