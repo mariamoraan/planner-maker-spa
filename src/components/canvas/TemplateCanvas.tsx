@@ -10,11 +10,13 @@ import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { blockSelectionZoneProps } from '@/lib/block-selection';
-import type { Point } from '@/lib/measure-utils';
+import type { MeasureAnchor } from '@/lib/measure-utils';
+import { createMeasureAnchor, getMovingAnchor } from '@/lib/measure-utils';
 import { computeSnap, computeGroupSnap, computeGroupBounds, rectsIntersect, normalizeCoord, type SnapGuide } from '@/lib/canvas-snap';
+import { canPanCanvas, clampCanvasPan, type CanvasPanContext } from '@/lib/canvas-pan';
 import { SnapGuidesOverlay } from './snap-guides-overlay';
 import { MeasureOverlay } from './measure-overlay';
-import { CanvasZoomControls } from './canvas-zoom-controls';
+import { CanvasFloatingControls } from './canvas-floating-controls';
 import './template-canva.scss';
 import { TemplateRectangle } from './template-rectangle';
 
@@ -50,8 +52,20 @@ interface DragState {
 
 type MeasureState =
   | { phase: 'idle' }
-  | { phase: 'first'; p1: Point }
-  | { phase: 'done'; p1: Point; p2: Point };
+  | { phase: 'first'; p1: MeasureAnchor }
+  | { phase: 'done'; p1: MeasureAnchor; p2: MeasureAnchor };
+
+function getBlockIdFromTarget(target: Konva.Node): string | undefined {
+  let node: Konva.Node | null = target;
+  while (node) {
+    const id = node.id();
+    if (id?.startsWith('rect-')) {
+      return id.replace(/^rect-/, '');
+    }
+    node = node.getParent();
+  }
+  return undefined;
+}
 
 const PADDING = 16;
 const MIN_ZOOM = 0.25;
@@ -89,7 +103,7 @@ export const TemplateCanvas: React.FC = () => {
   const [isPanning, setIsPanning] = useState(false);
   const [spacePressed, setSpacePressed] = useState(false);
   const [measureState, setMeasureState] = useState<MeasureState>({ phase: 'idle' });
-  const [measurePreview, setMeasurePreview] = useState<Point | null>(null);
+  const [measurePreview, setMeasurePreview] = useState<MeasureAnchor | null>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawingRect, setDrawingRect] = useState<DrawingRect | null>(null);
   const [copiedRects, setCopiedRects] = useState<Rectangle[]>([]);
@@ -108,11 +122,37 @@ export const TemplateCanvas: React.FC = () => {
   const canvasTool = useTemplateStore(state => state.canvasTool);
   const setCanvasTool = useTemplateStore(state => state.setCanvasTool);
 
+  const isSelectMode = canvasTool === 'select';
+  const isPanMode = canvasTool === 'pan';
   const isMeasureMode = canvasTool === 'measure';
   const scale = fitScale * zoom;
   const offset = useMemo(
     () => ({ x: fitOffset.x + pan.x, y: fitOffset.y + pan.y }),
     [fitOffset, pan],
+  );
+
+  const panContext = useMemo<CanvasPanContext>(
+    () => ({
+      zoom,
+      fitOffset,
+      fitScale,
+      imageWidth: currentImage?.width ?? 0,
+      imageHeight: currentImage?.height ?? 0,
+      stageWidth: stageSize.width,
+      stageHeight: stageSize.height,
+      padding: PADDING,
+    }),
+    [zoom, fitOffset, fitScale, currentImage?.width, currentImage?.height, stageSize.width, stageSize.height],
+  );
+
+  const applyPan = useCallback(
+    (next: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
+      setPan(prev => {
+        const raw = typeof next === 'function' ? next(prev) : next;
+        return clampCanvasPan(raw, panContext);
+      });
+    },
+    [panContext],
   );
 
   const groupSelectionBounds = useMemo(() => {
@@ -176,16 +216,26 @@ export const TemplateCanvas: React.FC = () => {
   }, [currentImage?.id]);
 
   useEffect(() => {
+    setPan(prev => clampCanvasPan(prev, panContext));
+  }, [panContext]);
+
+  useEffect(() => {
     if (canvasTool !== 'measure') {
       setMeasureState({ phase: 'idle' });
       setMeasurePreview(null);
+    }
+    if (canvasTool !== 'select') {
+      setIsMarqueeSelecting(false);
+      setMarquee(null);
+      setMarqueePreviewIds([]);
+      marqueeStartRef.current = null;
     }
   }, [canvasTool]);
 
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
-      if (!isMeasureMode && selectedRectangleIds.length === 1) {
+      if (isSelectMode && selectedRectangleIds.length === 1) {
         const selectedNode = stage.findOne(`#rect-${selectedRectangleIds[0]}`);
         transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
       } else {
@@ -193,7 +243,7 @@ export const TemplateCanvas: React.FC = () => {
       }
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedRectangleIds, currentImage?.rectangles, isMeasureMode]);
+  }, [selectedRectangleIds, currentImage?.rectangles, isSelectMode]);
 
   const pointerToImage = useCallback(
     (pos: { x: number; y: number }) => ({
@@ -215,12 +265,26 @@ export const TemplateCanvas: React.FC = () => {
       const newOffsetX = pointer.x - imageX * newScale;
       const newOffsetY = pointer.y - imageY * newScale;
       setZoom(clampedZoom);
-      setPan({
-        x: newOffsetX - fitOffset.x,
-        y: newOffsetY - fitOffset.y,
-      });
+      setPan(
+        clampCanvasPan(
+          {
+            x: newOffsetX - fitOffset.x,
+            y: newOffsetY - fitOffset.y,
+          },
+          {
+            zoom: clampedZoom,
+            fitOffset,
+            fitScale,
+            imageWidth: currentImage?.width ?? 0,
+            imageHeight: currentImage?.height ?? 0,
+            stageWidth: stageSize.width,
+            stageHeight: stageSize.height,
+            padding: PADDING,
+          },
+        ),
+      );
     },
-    [fitScale, fitOffset, pan, zoom],
+    [fitScale, fitOffset, pan, zoom, currentImage?.width, currentImage?.height, stageSize.width, stageSize.height],
   );
 
   const handleZoomIn = useCallback(() => {
@@ -252,7 +316,8 @@ export const TemplateCanvas: React.FC = () => {
 
       if (e.deltaX !== 0 || e.deltaY !== 0) {
         e.preventDefault();
-        setPan(prev => ({
+        if (!canPanCanvas(panContext)) return;
+        applyPan(prev => ({
           x: prev.x - e.deltaX,
           y: prev.y - e.deltaY,
         }));
@@ -269,7 +334,7 @@ export const TemplateCanvas: React.FC = () => {
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('mousedown', preventMiddleClick);
     };
-  }, [zoom, zoomToPoint]);
+  }, [zoom, zoomToPoint, panContext, applyPan]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -304,16 +369,18 @@ export const TemplateCanvas: React.FC = () => {
   );
 
   const handleMeasureClick = useCallback(
-    (imagePos: Point) => {
+    (imagePos: { x: number; y: number }, blockId?: string) => {
+      const rectangles = currentImage?.rectangles ?? [];
+      const anchor = createMeasureAnchor(imagePos, blockId, rectangles);
       setMeasureState(prev => {
         if (prev.phase === 'first') {
-          return { phase: 'done', p1: prev.p1, p2: imagePos };
+          return { phase: 'done', p1: prev.p1, p2: anchor };
         }
-        return { phase: 'first', p1: imagePos };
+        return { phase: 'first', p1: anchor };
       });
-      setMeasurePreview(imagePos);
+      setMeasurePreview(anchor);
     },
-    [],
+    [currentImage?.rectangles],
   );
 
   const handleMouseDown = useCallback(
@@ -326,7 +393,7 @@ export const TemplateCanvas: React.FC = () => {
       const isMiddleButton = e.evt.button === 1;
       const isSpacePan = spacePressedRef.current && e.evt.button === 0;
 
-      if (isMiddleButton || isSpacePan) {
+      if ((isMiddleButton || isSpacePan) && canPanCanvas(panContext)) {
         e.evt.preventDefault();
         setIsPanning(true);
         panStartRef.current = { x: pos.x, y: pos.y, panX: pan.x, panY: pan.y };
@@ -334,20 +401,20 @@ export const TemplateCanvas: React.FC = () => {
       }
 
       if (isMeasureMode) {
-        handleMeasureClick(pointerToImage(pos));
+        handleMeasureClick(pointerToImage(pos), getBlockIdFromTarget(e.target));
         return;
       }
 
-      const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
-
-      if (clickedOnEmpty && zoom > 1 && e.evt.button === 0 && !e.evt.shiftKey) {
+      if (isPanMode && e.evt.button === 0 && canPanCanvas(panContext)) {
         e.evt.preventDefault();
         setIsPanning(true);
         panStartRef.current = { x: pos.x, y: pos.y, panX: pan.x, panY: pan.y };
         return;
       }
 
-      if (!clickedOnEmpty) return;
+      const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
+
+      if (!clickedOnEmpty || !isSelectMode) return;
 
       const imagePos = pointerToImage(pos);
       marqueeStartRef.current = imagePos;
@@ -359,7 +426,7 @@ export const TemplateCanvas: React.FC = () => {
         clearSelection();
       }
     },
-    [isMeasureMode, handleMeasureClick, pointerToImage, pan, zoom, clearSelection],
+    [isMeasureMode, isPanMode, isSelectMode, handleMeasureClick, pointerToImage, pan, panContext, clearSelection],
   );
 
   const handleMouseMove = useCallback(() => {
@@ -370,7 +437,7 @@ export const TemplateCanvas: React.FC = () => {
 
     if (isPanning && panStartRef.current) {
       const start = panStartRef.current;
-      setPan({
+      applyPan({
         x: start.panX + (pos.x - start.x),
         y: start.panY + (pos.y - start.y),
       });
@@ -378,7 +445,8 @@ export const TemplateCanvas: React.FC = () => {
     }
 
     if (isMeasureMode && measureState.phase !== 'idle') {
-      setMeasurePreview(pointerToImage(pos));
+      const imagePos = pointerToImage(pos);
+      setMeasurePreview({ x: imagePos.x, y: imagePos.y });
       return;
     }
 
@@ -402,6 +470,7 @@ export const TemplateCanvas: React.FC = () => {
     isMarqueeSelecting,
     pointerToImage,
     getMarqueeHitIds,
+    applyPan,
   ]);
 
   const handleMouseUp = useCallback(
@@ -472,7 +541,7 @@ export const TemplateCanvas: React.FC = () => {
 
   const handleRectClick = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-      if (isMeasureMode) return;
+      if (!isSelectMode) return;
       e.cancelBubble = true;
       const nativeEvent = e.evt;
 
@@ -484,12 +553,12 @@ export const TemplateCanvas: React.FC = () => {
         setSelectedRectangleIds([rectId]);
       }
     },
-    [isMeasureMode, toggleRectangleInSelection, addToSelection, setSelectedRectangleIds],
+    [isSelectMode, toggleRectangleInSelection, addToSelection, setSelectedRectangleIds],
   );
 
   const handleDragStart = useCallback(
     (rectId: string) => {
-      if (isMeasureMode) return;
+      if (!isSelectMode) return;
       const rects = currentImage?.rectangles ?? [];
       const movingIds =
         selectedRectangleIds.includes(rectId) && selectedRectangleIds.length > 1
@@ -525,7 +594,7 @@ export const TemplateCanvas: React.FC = () => {
         ),
       });
     },
-    [isMeasureMode, currentImage?.rectangles, selectedRectangleIds],
+    [isSelectMode, currentImage?.rectangles, selectedRectangleIds],
   );
 
   const handleTransformEnd = useCallback(
@@ -678,6 +747,10 @@ export const TemplateCanvas: React.FC = () => {
       if (isEditableTarget(e.target)) return;
 
       if (e.key === 'Escape') {
+        if (isPanMode) {
+          setCanvasTool('select');
+          return;
+        }
         if (isMeasureMode) {
           if (measureState.phase !== 'idle') {
             setMeasureState({ phase: 'idle' });
@@ -741,6 +814,7 @@ export const TemplateCanvas: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    isPanMode,
     isMeasureMode,
     measureState.phase,
     setCanvasTool,
@@ -759,14 +833,29 @@ export const TemplateCanvas: React.FC = () => {
   const measureP2 =
     measureState.phase === 'done'
       ? measureState.p2
-      : measureState.phase === 'first'
+      : measureState.phase === 'first' && measurePreview
         ? measurePreview
         : null;
+  const measureRects = useMemo(
+    () => currentImage?.rectangles?.map(({ id, x, y }) => ({ id, x, y })) ?? [],
+    [currentImage?.rectangles],
+  );
+  const movingBlockId =
+    measureState.phase === 'done'
+      ? getMovingAnchor(measureState.p1, measureState.p2)?.blockId
+      : undefined;
+
+  const handleMeasureAdjustApply = useCallback(
+    (moves: { id: string; x: number; y: number }[]) => {
+      moveAreas(moves);
+    },
+    [moveAreas],
+  );
 
   const containerClassName = [
     'template-canva',
     isMeasureMode && 'template-canva--measure',
-    zoom > 1 && !isMeasureMode && 'template-canva--zoomed',
+    isPanMode && 'template-canva--pan-tool',
     isPanning && 'template-canva--panning',
     spacePressed && 'template-canva--space-pan',
   ]
@@ -814,7 +903,7 @@ export const TemplateCanvas: React.FC = () => {
             const isMarqueePreview = marqueePreviewIds.includes(rect.id);
             const isGroupDragging = dragState !== null && dragState.movingIds.length > 1;
             const isDragLeader = dragState?.leaderId === rect.id;
-            const draggable = !isMeasureMode && (!isGroupDragging || isDragLeader);
+            const draggable = isSelectMode && (!isGroupDragging || isDragLeader);
             return (
               <TemplateRectangle
                 key={`${currentImage.id}-${rect.id}`}
@@ -866,7 +955,7 @@ export const TemplateCanvas: React.FC = () => {
             />
           )}
 
-          {groupSelectionBounds && !isMeasureMode && (
+          {groupSelectionBounds && isSelectMode && (
             <Rect
               x={offset.x + groupSelectionBounds.x * scale}
               y={offset.y + groupSelectionBounds.y * scale}
@@ -883,7 +972,14 @@ export const TemplateCanvas: React.FC = () => {
           <SnapGuidesOverlay guides={dragOverlay?.guides ?? []} scale={scale} offset={offset} />
 
           {measureP1 && measureP2 && (
-            <MeasureOverlay p1={measureP1} p2={measureP2} scale={scale} offset={offset} />
+            <MeasureOverlay
+              p1={measureP1}
+              p2={measureP2}
+              rectangles={measureRects}
+              movingBlockId={movingBlockId}
+              scale={scale}
+              offset={offset}
+            />
           )}
 
           <Transformer
@@ -900,19 +996,32 @@ export const TemplateCanvas: React.FC = () => {
         </Layer>
       </Stage>
 
-      <CanvasZoomControls
-        zoom={zoom}
-        onZoomIn={handleZoomIn}
-        onZoomOut={handleZoomOut}
-        onZoomReset={handleZoomReset}
-        measureHint={
-          isMeasureMode
-            ? t('editor.measureHint')
-            : zoom > 1
-              ? t('editor.panHint')
+      <div className="template-canva__controls">
+        <CanvasFloatingControls
+          zoom={zoom}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
+          hint={
+            isMeasureMode
+              ? t('editor.measureHint')
+              : isPanMode
+                ? t('editor.panHint')
+                : undefined
+          }
+          measureAdjust={
+            measureState.phase === 'done'
+              ? {
+                  p1: measureState.p1,
+                  p2: measureState.p2,
+                  rectangles: measureRects,
+                  selectedRectangleIds,
+                  onApply: handleMeasureAdjustApply,
+                }
               : undefined
-        }
-      />
+          }
+        />
+      </div>
     </div>
   );
 };

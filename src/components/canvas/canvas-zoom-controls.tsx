@@ -8,6 +8,7 @@ interface CanvasZoomControlsProps {
   onZoomOut: () => void;
   onZoomReset: () => void;
   measureHint?: string;
+  variant?: 'default' | 'floating';
 }
 
 export const CanvasZoomControls = ({
@@ -16,20 +17,22 @@ export const CanvasZoomControls = ({
   onZoomOut,
   onZoomReset,
   measureHint,
+  variant = 'default',
 }: CanvasZoomControlsProps) => {
   const { t } = useTranslation();
+  const isFloating = variant === 'floating';
 
   return (
-    <div className="canvas-zoom-controls">
+    <div className={`canvas-zoom-controls${isFloating ? ' canvas-zoom-controls--floating' : ''}`}>
       <div className="canvas-zoom-controls__buttons">
         <button
           type="button"
           className="canvas-zoom-controls__button"
-          onClick={onZoomOut}
-          title={t('editor.zoomOut')}
-          aria-label={t('editor.zoomOut')}
+          onClick={onZoomIn}
+          title={t('editor.zoomIn')}
+          aria-label={t('editor.zoomIn')}
         >
-          −
+          +
         </button>
         <button
           type="button"
@@ -43,14 +46,14 @@ export const CanvasZoomControls = ({
         <button
           type="button"
           className="canvas-zoom-controls__button"
-          onClick={onZoomIn}
-          title={t('editor.zoomIn')}
-          aria-label={t('editor.zoomIn')}
+          onClick={onZoomOut}
+          title={t('editor.zoomOut')}
+          aria-label={t('editor.zoomOut')}
         >
-          +
+          −
         </button>
       </div>
-      {measureHint && <p className="canvas-zoom-controls__hint">{measureHint}</p>}
+      {!isFloating && measureHint && <p className="canvas-zoom-controls__hint">{measureHint}</p>}
     </div>
   );
 };

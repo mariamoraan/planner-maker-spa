@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import { SparklesIcon } from '@/core/icons'
 import { useTemplateStore } from '@/stores/template-store'
 import { useExportStore } from '@/stores/export-store'
-import { CanvasViewToggles } from '@/components/shared/canvas-view-toggles'
 
 interface EditorPlannerActionsProps {
   variant: 'toolbar' | 'sidebar'
@@ -29,7 +28,6 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         >
           {t('editor.generatePlanner')}
         </button>
-        <CanvasViewToggles variant="toolbar" />
       </div>
     )
   }
@@ -46,7 +44,6 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         <SparklesIcon className="editor-planner-actions__icon" />
         {t('editor.generatePlanner')}
       </button>
-      <CanvasViewToggles variant="sidebar" />
     </div>
   )
 }

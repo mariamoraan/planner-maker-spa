@@ -1,0 +1,38 @@
+.canvas-floating-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+
+  &__hint {
+    margin: 0;
+    padding: 6px 10px;
+    font-size: 11px;
+    color: hsl(220, 10%, 40%);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    max-width: 200px;
+    text-align: right;
+  }
+
+  &__dock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &__divider {
+    width: 32px;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.1);
+    margin: 2px 0;
+  }
+}

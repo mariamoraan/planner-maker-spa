@@ -14,7 +14,6 @@ import { useTemplateId } from '@/hooks/use-template-id'
 import { AreaStyleControls } from '@/components/shared/area-style-controls'
 import { BlockDeleteButton } from '@/components/shared/block-delete-button'
 import { BlockTypeSelector } from '@/components/shared/block-type-selector'
-import { CanvasViewToggles } from '@/components/shared/canvas-view-toggles'
 import { EditorPlannerActions } from '@/components/shared/editor-planner-actions'
 
 export const Toolbar = () => {
@@ -52,7 +51,6 @@ export const Toolbar = () => {
                 >
                     {t('editor.deleteSelected')}
                 </button>
-                <CanvasViewToggles variant="toolbar" />
             </div>
         );
     }
@@ -99,7 +97,6 @@ export const Toolbar = () => {
                 rectangleId={currentSelectedBox.id}
                 className="toolbar__delete-button"
              />
-             <CanvasViewToggles variant="toolbar" />
         </div>
     )
 }

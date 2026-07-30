@@ -1,24 +1,54 @@
 .canvas-zoom-controls {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 10;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  pointer-events: none;
 
   &__buttons {
     display: flex;
     align-items: center;
     gap: 4px;
-    pointer-events: auto;
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 8px;
     padding: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  &--floating {
+    align-items: center;
+
+    .canvas-zoom-controls__buttons {
+      flex-direction: column;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
+      gap: 4px;
+    }
+
+    .canvas-zoom-controls__button,
+    .canvas-zoom-controls__reset {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      padding: 0;
+      background: transparent;
+      border-radius: 8px;
+
+      &:hover {
+        background: #f2f2f2;
+      }
+    }
+
+    .canvas-zoom-controls__button {
+      font-size: 18px;
+    }
+
+    .canvas-zoom-controls__reset {
+      font-size: 12px;
+    }
   }
 
   &__button,
@@ -64,7 +94,6 @@
     border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    pointer-events: auto;
     max-width: 200px;
     text-align: right;
   }

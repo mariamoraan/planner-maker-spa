@@ -1,16 +1,24 @@
 import React from 'react';
 import { Group, Line, Text, Rect, Circle } from 'react-konva';
-import { computeMeasureMetrics, type Point } from '@/lib/measure-utils';
+import {
+  computeMeasureMetrics,
+  resolveAnchorPoint,
+  type MeasureAnchor,
+  type MeasureRect,
+} from '@/lib/measure-utils';
 
 interface MeasureOverlayProps {
-  p1: Point;
-  p2: Point;
+  p1: MeasureAnchor;
+  p2: MeasureAnchor;
+  rectangles: MeasureRect[];
+  movingBlockId?: string;
   scale: number;
   offset: { x: number; y: number };
 }
 
 const MEASURE_COLOR = 'rgba(255, 80, 150, 0.9)';
 const DIAGONAL_COLOR = 'rgba(0, 200, 255, 0.8)';
+const MOVING_COLOR = 'rgba(255, 160, 0, 0.95)';
 
 function toStage(value: number, scale: number, offset: number): number {
   return offset + value * scale;
@@ -45,10 +53,19 @@ function MeasureLabel({ x, y, text }: { x: number; y: number; text: string }) {
   );
 }
 
-function PointMarker({ x, y }: { x: number; y: number }) {
+function PointMarker({
+  x,
+  y,
+  isMoving,
+}: {
+  x: number;
+  y: number;
+  isMoving?: boolean;
+}) {
+  const color = isMoving ? MOVING_COLOR : MEASURE_COLOR;
   return (
     <>
-      <Circle x={x} y={y} radius={5} fill={MEASURE_COLOR} stroke="white" strokeWidth={1.5} />
+      <Circle x={x} y={y} radius={5} fill={color} stroke="white" strokeWidth={1.5} />
       <Line
         points={[x - 8, y, x + 8, y, x, y - 8, x, y + 8]}
         stroke="white"
@@ -58,18 +75,27 @@ function PointMarker({ x, y }: { x: number; y: number }) {
   );
 }
 
-export const MeasureOverlay: React.FC<MeasureOverlayProps> = ({ p1, p2, scale, offset }) => {
-  const metrics = computeMeasureMetrics(p1, p2);
+export const MeasureOverlay: React.FC<MeasureOverlayProps> = ({
+  p1,
+  p2,
+  rectangles,
+  movingBlockId,
+  scale,
+  offset,
+}) => {
+  const resolvedP1 = resolveAnchorPoint(p1, rectangles);
+  const resolvedP2 = resolveAnchorPoint(p2, rectangles);
+  const metrics = computeMeasureMetrics(resolvedP1, resolvedP2);
   const absDx = Math.abs(metrics.dx);
   const absDy = Math.abs(metrics.dy);
 
   const stageP1 = {
-    x: toStage(p1.x, scale, offset.x),
-    y: toStage(p1.y, scale, offset.y),
+    x: toStage(resolvedP1.x, scale, offset.x),
+    y: toStage(resolvedP1.y, scale, offset.y),
   };
   const stageP2 = {
-    x: toStage(p2.x, scale, offset.x),
-    y: toStage(p2.y, scale, offset.y),
+    x: toStage(resolvedP2.x, scale, offset.x),
+    y: toStage(resolvedP2.y, scale, offset.y),
   };
   const corner = { x: stageP2.x, y: stageP1.y };
 
@@ -78,10 +104,13 @@ export const MeasureOverlay: React.FC<MeasureOverlayProps> = ({ p1, p2, scale, o
     y: (stageP1.y + stageP2.y) / 2,
   };
 
+  const p1IsMoving = p1.blockId !== undefined && p1.blockId === movingBlockId;
+  const p2IsMoving = p2.blockId !== undefined && p2.blockId === movingBlockId;
+
   return (
     <Group listening={false}>
-      <PointMarker x={stageP1.x} y={stageP1.y} />
-      <PointMarker x={stageP2.x} y={stageP2.y} />
+      <PointMarker x={stageP1.x} y={stageP1.y} isMoving={p1IsMoving} />
+      <PointMarker x={stageP2.x} y={stageP2.y} isMoving={p2IsMoving} />
 
       <Line
         points={[stageP1.x, stageP1.y, stageP2.x, stageP2.y]}

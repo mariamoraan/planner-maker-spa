@@ -50,7 +50,7 @@ function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
   };
 }
 
-export type CanvasTool = 'select' | 'measure';
+export type CanvasTool = 'select' | 'pan' | 'measure';
 
 interface TemplateState {
   templates: Template[];
