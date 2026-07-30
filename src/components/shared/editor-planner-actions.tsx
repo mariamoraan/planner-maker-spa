@@ -18,7 +18,7 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
 
   if (variant === 'toolbar') {
     return (
-      <>
+      <div className="editor-planner-actions editor-planner-actions--toolbar">
         <button
           className="editor-planner-actions__generate editor-planner-actions__generate--toolbar"
           type="button"
@@ -33,7 +33,7 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
         >
           {showRectangleGuides ? <EyeIcon /> : <EyeClosedIcon />}
         </button>
-      </>
+      </div>
     )
   }
 
