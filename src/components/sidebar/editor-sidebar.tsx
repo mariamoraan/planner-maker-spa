@@ -19,7 +19,7 @@ export const EditorSidebar: React.FC = () => {
   return (
     <aside className="editor-sidebar">
       <div className='editor-sidebar__header'>
-        <div>
+        <div className='editor-sidebar__header__home-icon'>
           <Link to={PATHS.home}><HomeIcon /></Link>
         </div>
         {isEditingTemplateName ? (

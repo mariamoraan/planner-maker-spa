@@ -48,10 +48,16 @@
 
   &__tag {
     padding: 0.25rem 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 2px;
     border-radius: calc(var(--radius) - 4px);
     font-size: 0.75rem;
     background-color: hsl(var(--background));
     border: 1px solid hsl(var(--border));
+    &__title {
+      font-weight: bold;
+    }
   }
 
   &__progress {

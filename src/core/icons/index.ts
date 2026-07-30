@@ -9,7 +9,8 @@ import {
     Trash2,
     MoveLeft,
     MoveRight,
-    Pencil
+    Pencil,
+    Dot,
 } from 'lucide-react';
 
 
@@ -25,4 +26,5 @@ export {
     MoveLeft as LargeArrowLeftIcon,
     MoveRight as LargeArrowRightIcon,
     Pencil as PencilIcon,
+    Dot as DotIcon,
 };

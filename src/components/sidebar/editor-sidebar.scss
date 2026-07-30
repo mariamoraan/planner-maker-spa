@@ -12,8 +12,11 @@
         padding: 24px 16px;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 12px;
         border-bottom: 1px solid #ECECEC;
+        &__home-icon {
+            margin-bottom: 12px;
+        }
         &__input {
             width: 100%;
             border: none;

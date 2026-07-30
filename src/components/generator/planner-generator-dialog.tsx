@@ -1,5 +1,6 @@
 import React, { useCallback, useLayoutEffect } from 'react';
 import { Calendar as CalendarIcon, Download, FileText, Loader2, RotateCcw } from 'lucide-react';
+import { DotIcon } from '@/core/icons';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -102,7 +103,9 @@ export const GeneratorDialog: React.FC = () => {
             <div className="planner-generator-dialog__tags">
               {template.images.map(img => (
                 <div key={img.id} className="planner-generator-dialog__tag">
-                  {img.name} ({img.rectangles.length} fields)
+                  <p className="planner-generator-dialog__tag__title">{img.name}</p> 
+                  <DotIcon size={14} />
+                  <p>{img.rectangles.length} fields</p>
                 </div>
               ))}
             </div>
