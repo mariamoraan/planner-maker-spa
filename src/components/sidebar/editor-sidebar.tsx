@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/stores/template-store';
+import { TEMPLATE_TYPE_CONFIG } from '@/types/planner';
 
 export const EditorSidebar: React.FC = () => {
     const template = useCurrentTemplate();
@@ -50,11 +51,17 @@ export const EditorSidebar: React.FC = () => {
         )}
       </div>
       <div className="editor-sidebar__main">
+        <div className='editor-sidebar__main__section'>
+          <p className='editor-sidebar__main__section__title'>Current Page</p>
+          <div className='editor-sidebar__main__section__content'>
+            <p className='editor-sidebar__main__section__content__title'>{TEMPLATE_TYPE_CONFIG[currentImage.type].label}</p>
+          </div>
+        </div>
         {template && currentImage &&  (
-            <>
-            <p className='editor-sidebar__main__title'>Dynamic Blocks</p>
+            <div className='editor-sidebar__main__section'>
+            <p className='editor-sidebar__main__section__title'>Dynamic Blocks</p>
             <FieldTypeSelector />
-            </>
+            </div>
         )}
       </div>
     </aside>
