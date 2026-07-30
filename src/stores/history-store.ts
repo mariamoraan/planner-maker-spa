@@ -23,6 +23,13 @@ export type HistoryAction =
       image: Omit<TemplateImage, 'src'>;
       imageData: string;
       index: number;
+    }
+  | {
+      type: 'reorderImages';
+      activeId: string;
+      overId: string;
+      fromIndex: number;
+      toIndex: number;
     };
 
 type TemplateHistory = {
@@ -108,6 +115,19 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
         );
       } else {
         await store.deleteImage(templateId, action.image.id);
+      }
+      break;
+    }
+    case 'reorderImages': {
+      const fromIndex = direction === 'undo' ? action.toIndex : action.fromIndex;
+      const toIndex = direction === 'undo' ? action.fromIndex : action.toIndex;
+      const template = store.getTemplate(templateId);
+      if (!template) break;
+
+      const activeId = template.images[fromIndex]?.id;
+      const overId = template.images[toIndex]?.id;
+      if (activeId && overId) {
+        store.reorderImages(templateId, activeId, overId);
       }
       break;
     }

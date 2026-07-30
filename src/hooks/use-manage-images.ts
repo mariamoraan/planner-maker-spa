@@ -3,6 +3,7 @@ import { useHistoryStore } from "@/stores/history-store";
 import { TemplateType } from "@/types/planner";
 import { useCallback } from "react";
 import { useTemplateId } from "./use-template-id";
+import { getInsertIndexForType } from "@/lib/template-image-order";
 
 const toImageMeta = (image: {
   id: string;
@@ -31,6 +32,7 @@ export const useManageImages = () => {
         deleteImage: deleteImageStore,
         getImageData,
         getTemplate,
+        reorderImages: reorderImagesStore,
     } = useTemplateStore();
     const pushHistory = useHistoryStore(state => state.push);
 
@@ -64,7 +66,7 @@ export const useManageImages = () => {
         if (!templateId) return;
 
         const template = getTemplate(templateId);
-        const index = template?.images.length ?? 0;
+        const index = getInsertIndexForType(template?.images ?? [], type);
         const id = await addImageToStore({ templateId, imageData, width, height, name, type });
 
         const updated = getTemplate(templateId);
@@ -110,9 +112,32 @@ export const useManageImages = () => {
     });
     }, [templateId, addImageToStore, getTemplate, pushHistory]);
 
+    const reorderImages = useCallback((activeId: string, overId: string) => {
+        if (!templateId) return;
+
+        const template = getTemplate(templateId);
+        if (!template) return;
+
+        const fromIndex = template.images.findIndex(img => img.id === activeId);
+        const toIndex = template.images.findIndex(img => img.id === overId);
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+
+        const didReorder = reorderImagesStore(templateId, activeId, overId);
+        if (!didReorder) return;
+
+        pushHistory(templateId, {
+          type: 'reorderImages',
+          activeId,
+          overId,
+          fromIndex,
+          toIndex,
+        });
+    }, [templateId, getTemplate, reorderImagesStore, pushHistory]);
+
     return {
         addImage,
         deleteImage,
-        uploadImageToEmptyCanvas
+        uploadImageToEmptyCanvas,
+        reorderImages,
     }
 }

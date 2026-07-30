@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Template, TemplateImage, Rectangle, TemplateType, FieldType } from '@/types/planner';
 import { generateId } from '@/lib/planner-utils';
+import {
+  getInsertIndexForType,
+  imagesOrderChanged,
+  normalizeImageOrder,
+  reorderWithinType,
+} from '@/lib/template-image-order';
 import { set as idbSet, get as idbGet, del as idbDel } from 'idb-keyval';
 
 const reviveDates = (templates: Template[]): Template[] => {
@@ -58,6 +64,8 @@ interface TemplateState {
 
   // Image history helpers
   insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
+  normalizeImageOrder: (templateId: string) => void;
+  reorderImages: (templateId: string, activeId: string, overId: string) => boolean;
 
   // Generator Actions
   isGeneratorOpen: boolean;
@@ -163,11 +171,13 @@ export const useTemplateStore = create<TemplateState>()(
           src: imageData, // temporal para la UI
         };
         set(state => ({
-          templates: state.templates.map(t =>
-            t.id === templateId
-              ? { ...t, images: [...t.images, image], updatedAt: new Date() }
-              : t
-          ),
+          templates: state.templates.map(t => {
+            if (t.id !== templateId) return t;
+            const images = [...t.images];
+            const insertIndex = getInsertIndexForType(images, type);
+            images.splice(insertIndex, 0, image);
+            return { ...t, images, updatedAt: new Date() };
+          }),
           currentImageId: id,
         }));
         await idbSet(`image-${id}`, imageData);
@@ -220,6 +230,35 @@ export const useTemplateStore = create<TemplateState>()(
           currentImageId: image.id,
         }));
         await idbSet(`image-${image.id}`, imageData);
+      },
+
+      normalizeImageOrder: (templateId) => {
+        set(state => ({
+          templates: state.templates.map(t => {
+            if (t.id !== templateId) return t;
+            const normalized = normalizeImageOrder(t.images);
+            if (!imagesOrderChanged(t.images, normalized)) return t;
+            return { ...t, images: normalized, updatedAt: new Date() };
+          }),
+        }));
+      },
+
+      reorderImages: (templateId, activeId, overId) => {
+        const template = get().templates.find(t => t.id === templateId);
+        if (!template) return false;
+
+        const reordered = reorderWithinType(template.images, activeId, overId);
+        if (!reordered) return false;
+
+        set(state => ({
+          templates: state.templates.map(t =>
+            t.id === templateId
+              ? { ...t, images: reordered, updatedAt: new Date() }
+              : t
+          ),
+        }));
+
+        return true;
       },
 
       setCurrentImage: async (id) => {

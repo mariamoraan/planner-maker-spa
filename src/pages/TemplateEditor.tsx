@@ -21,6 +21,7 @@ const TemplateEditor: React.FC = () => {
   const currentTemplate = useCurrentTemplate();
   const currentImage = useCurrentImage();
   const loadTemplateImages = useTemplateStore(state => state.loadTemplateImages);
+  const normalizeImageOrder = useTemplateStore(state => state.normalizeImageOrder);
   const setCurrentImage = useTemplateStore(state => state.setCurrentImage);
   const currentImageId = useTemplateStore(state => state.currentImageId);
   const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
@@ -30,10 +31,11 @@ const TemplateEditor: React.FC = () => {
       if (!templateId) return;
       setIsLoadingImages(true)
       await loadTemplateImages(templateId)
+      normalizeImageOrder(templateId)
       setIsLoadingImages(false)
     }
     handleLoadImages();
-  }, [templateId, loadTemplateImages]);
+  }, [templateId, loadTemplateImages, normalizeImageOrder]);
 
   useEffect(() => {
     if (!templateId || !currentTemplate) return;
