@@ -13,15 +13,31 @@ import { useManageAreas } from '@/hooks/use-manage-areas';
 import { useCurrentImage } from '@/hooks/use-current-image';
 import { getDefaultFieldStyle, getDefaultFormatVariant } from '@/lib/field-style-config';
 
-const ICON_HEIGHT = 50;
-const ICON_WIDTH = 50;
+const DEFAULT_ICON_SIZE = 50;
+
+export function getFieldIcon(type: FieldType, size = DEFAULT_ICON_SIZE): React.ReactNode {
+  const iconProps = { showActiveStyle: false as const, width: size, height: size };
+
+  switch (type) {
+    case 'year':
+      return <YearIcon {...iconProps} />;
+    case 'month':
+      return <MonthIcon {...iconProps} />;
+    case 'day':
+      return <DayIcon {...iconProps} />;
+    case 'startDay':
+      return <StartWeekDayIcon {...iconProps} />;
+    case 'endDay':
+      return <EndWeekDayIcon {...iconProps} />;
+  }
+}
 
 export const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
-  year: <YearIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  month:  <MonthIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  day:  <DayIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  startDay: <StartWeekDayIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
-  endDay: <EndWeekDayIcon showActiveStyle={false} width={ICON_WIDTH} height={ICON_HEIGHT} />,
+  year: getFieldIcon('year'),
+  month: getFieldIcon('month'),
+  day: getFieldIcon('day'),
+  startDay: getFieldIcon('startDay'),
+  endDay: getFieldIcon('endDay'),
 };
 
 export const FieldTypeSelector = () => {

@@ -31,12 +31,14 @@ export const BlockSettingsHeader = ({ rectangleId }: BlockSettingsHeaderProps) =
         <p className="block-settings-header__name">
           {config.label} {order + 1}
         </p>
-        <BlockDeleteButton rectangleId={rectangleId} />
+        <div className="block-settings-header__actions">
+          <BlockDeleteButton rectangleId={rectangleId} />
+        </div>
       </div>
       <BlockTypeSelector
         currentType={rectangle.fieldType}
         onSelect={type => updateAreaType(rectangleId, type)}
-        variant="grid"
+        variant="sidebar"
       />
     </div>
   );
