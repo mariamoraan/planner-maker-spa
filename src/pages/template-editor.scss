@@ -1,4 +1,4 @@
-@import '../styles/breakpoints';
+@use '../styles/breakpoints' as *;
 
 .template-editor {
   --editor-sidebar-width: #{$editor-sidebar-width};

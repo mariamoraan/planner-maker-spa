@@ -1,4 +1,4 @@
-@import '../../styles/breakpoints';
+@use '../../styles/breakpoints' as *;
 
 .editor-sidebar {
     margin: 12px;
