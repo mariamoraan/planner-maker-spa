@@ -9,6 +9,8 @@ import { PATHS } from '@/core/routes/paths';
 import { useTemplateId } from '@/hooks/use-template-id';
 import { useCurrentTemplate } from '@/hooks/use-current-template';
 import { useCurrentImage } from '@/hooks/use-current-image';
+import { useEditorViewportSupport } from '@/hooks/use-editor-viewport-support';
+import { UnsupportedViewport } from '@/components/editor-board/unsupported-viewport';
 import './template-editor.scss';
 
 const fadeUp = {
@@ -25,6 +27,7 @@ const TemplateEditor: React.FC = () => {
   const setCurrentImage = useTemplateStore(state => state.setCurrentImage);
   const currentImageId = useTemplateStore(state => state.currentImageId);
   const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
+  const { isSupported } = useEditorViewportSupport();
   
   useEffect(() => {
     const handleLoadImages = async() => {
@@ -52,6 +55,10 @@ const TemplateEditor: React.FC = () => {
 
   if (!templateId || !currentTemplate) {
     return <Navigate to={PATHS.home} replace />;
+  }
+
+  if (!isSupported) {
+    return <UnsupportedViewport />;
   }
 
   return (

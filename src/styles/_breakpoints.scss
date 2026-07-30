@@ -1,0 +1,9 @@
+$editor-min-width: 900px;
+$editor-min-height: 560px;
+$editor-sidebar-width: 240px;
+$editor-sidebar-width-compact: 220px;
+$editor-content-padding: 20px;
+$editor-content-padding-compact: 12px;
+$editor-compact-max-width: 1100px;
+$editor-max-unsupported-width: $editor-min-width - 1px;
+$editor-max-unsupported-height: $editor-min-height - 1px;

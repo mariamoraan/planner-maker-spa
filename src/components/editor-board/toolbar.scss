@@ -1,10 +1,13 @@
+@import '../../styles/breakpoints';
+
 $toolbar-height: 52px;
 $toolbar-padding-x: 24px;
+$toolbar-padding-x-compact: 16px;
 
 %editor-toolbar-shell {
     box-sizing: border-box;
     height: $toolbar-height;
-    min-width: min(600px, 40dvw);
+    min-width: min(600px, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
     min-height: $toolbar-height;
     max-height: $toolbar-height;
     padding: 0 $toolbar-padding-x;
@@ -14,6 +17,11 @@ $toolbar-padding-x: 24px;
     border-radius: 16px;
     box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
     overflow: visible;
+    flex-shrink: 0;
+
+    @media (max-width: $editor-compact-max-width) {
+        padding: 0 $toolbar-padding-x-compact;
+    }
 }
 
 .base-toolbar {

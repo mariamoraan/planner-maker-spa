@@ -1,6 +1,9 @@
+@import '../../styles/breakpoints';
+
 .editor-sidebar {
     margin: 12px;
-    width: 240px;
+    width: var(--editor-sidebar-width, #{$editor-sidebar-width});
+    flex-shrink: 0;
     height: 100%;
     max-height: calc(100% - 24px);
     overflow: hidden;
@@ -11,6 +14,12 @@
     border-radius: 16px;
     box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 0px 1px;
 
+    @media (max-width: $editor-compact-max-width) {
+        margin: 8px;
+        max-height: calc(100% - 16px);
+        gap: 12px;
+    }
+
     &__header {
         flex-shrink: 0;
         padding: 24px 16px;
@@ -18,6 +27,11 @@
         flex-direction: column;
         gap: 12px;
         border-bottom: 1px solid #ECECEC;
+
+        @media (max-width: $editor-compact-max-width) {
+            padding: 16px 12px;
+        }
+
         &__home-icon {
             margin-bottom: 12px;
         }
@@ -62,6 +76,11 @@
         gap: 24px;
         scrollbar-width: thin;
         scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+
+        @media (max-width: $editor-compact-max-width) {
+            padding: 0 12px;
+            gap: 16px;
+        }
 
         &::-webkit-scrollbar {
             width: 4px;
