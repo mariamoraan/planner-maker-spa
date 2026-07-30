@@ -37,6 +37,7 @@ interface TemplateState {
   updateTemplate: (id: string, updates: Partial<Template>) => void;
   deleteTemplate: (id: string) => Promise<void>;
   loadTemplateImages: (id: string) => Promise<void>;
+  loadAllTemplateImages: () => Promise<void>;
   getTemplate: (id: string) => Template | null;
 
 
@@ -133,6 +134,25 @@ export const useTemplateStore = create<TemplateState>()(
             ),
           }));
         }
+      },
+
+      loadAllTemplateImages: async () => {
+        const templates = get().templates;
+        if (templates.length === 0) return;
+
+        const updatedTemplates = await Promise.all(
+          templates.map(async (template) => {
+            const imagesWithSrc = await Promise.all(
+              template.images.map(async (img) => ({
+                ...img,
+                src: await idbGet(`image-${img.id}`),
+              }))
+            );
+            return { ...template, images: imagesWithSrc };
+          })
+        );
+
+        set({ templates: updatedTemplates });
       },
 
       getTemplate: (id) => {

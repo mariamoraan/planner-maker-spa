@@ -19,9 +19,10 @@ import { getEditorPath } from '@/core/routes/paths';
 
 interface Props {
     customButton?: React.ReactElement;
+    label?: string;
 }
 
-export const AddTemplateButton = ({customButton}: Props) => {
+export const AddTemplateButton = ({ customButton, label = 'Nuevo proyecto' }: Props) => {
   const navigate = useNavigate();
   const setCurrentImage = useTemplateStore(state => state.setCurrentImage)
 
@@ -49,7 +50,7 @@ export const AddTemplateButton = ({customButton}: Props) => {
                 : (
                     <Button className="add-template-button__button">
                         <Plus className="add-template-button__button__icon" />
-                        New Template
+                        {label}
                     </Button>
                 )
               }
