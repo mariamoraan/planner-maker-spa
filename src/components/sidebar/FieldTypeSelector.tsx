@@ -59,7 +59,17 @@ export const FieldTypeSelector = () => {
       order: currentImage.rectangles.length,
     });
   };
-  
+
+  const hasAvailableDynamicAreas = (Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).filter(type => TEMPLATE_FIELD_TYPES[currentImage.type].includes(type)).length > 0
+
+  if (!hasAvailableDynamicAreas) {
+    return (
+      <div className='field-type-selector__no-available-dynamic-areas'>
+        <p className='field-type-selector__no-available-dynamic-areas__title'>No available dynamic areas for this page type</p>
+      </div>
+    );
+  }
+
   return (
     <div className="field-type-selector">
          {(Object.keys(FIELD_TYPE_CONFIG) as FieldType[])

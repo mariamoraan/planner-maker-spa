@@ -3,6 +3,16 @@
   flex-wrap: wrap;
   gap: 8px;
   z-index: 1;
+  &__no-available-dynamic-areas {
+    &__title {
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+        width: 100%;
+        margin-top: 12px;
+        font-weight: bold;
+    }
+  }
   &__button {
     display: flex;
     gap: 12px;
