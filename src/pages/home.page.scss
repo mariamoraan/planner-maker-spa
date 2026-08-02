@@ -3,6 +3,7 @@
   min-height: 100dvh;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  
 
   @media (max-width: 767px) {
     flex-direction: column;
@@ -60,7 +61,7 @@
     flex: 1;
     min-height: 0;
     height: 100%;
-    max-width: 72rem;
+    width: 100%;
     margin: 0 auto;
     padding: 2rem 1.5rem 3rem;
     overflow-y: auto;
