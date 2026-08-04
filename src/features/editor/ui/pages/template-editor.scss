@@ -1,0 +1,26 @@
+@use '../../../../styles/breakpoints' as *;
+
+.template-editor {
+  --editor-sidebar-width: #{$editor-sidebar-width};
+
+  display: flex;
+  height: 100dvh;
+  min-width: 0;
+  overflow: hidden;
+  background-color: hsl(var(--background));
+
+  @media (max-width: $editor-compact-max-width) {
+    --editor-sidebar-width: #{$editor-sidebar-width-compact};
+  }
+
+  @media (max-width: $editor-max-unsupported-width), (max-height: $editor-max-unsupported-height) {
+    display: none;
+  }
+
+  &__inner {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+  }
+}

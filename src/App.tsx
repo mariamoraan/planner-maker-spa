@@ -1,12 +1,12 @@
-import '@/lib/i18n';
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import '@/core/i18n/setup';
+import { Toaster } from "@/core/components/ui/toaster";
+import { Toaster as Sonner } from "@/core/components/ui/sonner";
+import { TooltipProvider } from "@/core/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LocalizationProvider } from '@mui/x-date-pickers'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { AppRouter } from "./core/routes/app-router";
-import { AuthProvider } from "@/contexts/auth-provider";
+import { AuthProvider } from "@/features/auth/ui/contexts/auth-provider";
 
 const queryClient = new QueryClient();
 

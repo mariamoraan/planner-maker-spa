@@ -3,7 +3,7 @@ import {
   getDaysOfMonth,
   getFieldValue,
   getMonthsBetween,
-} from '@/lib/planner-utils';
+} from '@/features/editor/domain/services/planner-utils';
 import {
   getDefaultFieldStyle,
   getDefaultFormatVariant,
@@ -12,10 +12,10 @@ import {
   isValidHexColor,
   resolveCanvasTextX,
   resolveFieldStyle,
-} from '@/lib/field-style-config';
-import type { Rectangle, TemplateImage } from '@/types/planner';
+} from '@/features/editor/domain/services/field-style-config';
+import type { Rectangle, TemplatePage } from '@/features/template';
 
-const dailyTemplate: TemplateImage = {
+const dailyTemplate: TemplatePage = {
   id: 'daily-1',
   name: 'Daily',
   type: 'daily-page',

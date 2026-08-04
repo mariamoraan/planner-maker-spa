@@ -1,12 +1,12 @@
-import NotFound from "@/pages/NotFound";
-import TemplateEditor from "@/pages/TemplateEditor";
+import NotFound from "@/features/landing/ui/pages/NotFound";
+import TemplateEditor from "@/features/editor/ui/pages/TemplateEditor";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { PATHS } from "./paths";
-import LandingPage from "@/pages/LandingPage";
-import { HomePage } from "@/pages/home.page";
-import { LoginPage } from "@/pages/login.page";
-import { AccessPendingPage } from "@/pages/access-pending.page";
-import { ProtectedRoute, AuthRequiredRoute } from "@/components/auth/protected-route";
+import LandingPage from "@/features/landing/ui/pages/LandingPage";
+import { HomePage } from "@/features/template/ui/pages/home.page";
+import { LoginPage } from "@/features/auth/ui/pages/login.page";
+import { AccessPendingPage } from "@/features/auth/ui/pages/access-pending.page";
+import { ProtectedRoute, AuthRequiredRoute } from "@/features/auth/ui/components/protected-route";
 
 export const AppRouter = () => {
     return (

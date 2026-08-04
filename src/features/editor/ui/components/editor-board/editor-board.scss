@@ -1,0 +1,58 @@
+@use '../../../../../styles/breakpoints' as *;
+
+.editor-board {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: hsl(0, 0%, 97%);
+    padding-block: 8px;
+    box-sizing: border-box;
+
+    &__main {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        min-width: 0;
+        align-items: flex-start;
+
+        &__content {
+            padding-inline: $editor-content-padding;
+            padding-block: 24px;
+            padding-top: 16px;
+            flex: 1;
+            align-self: stretch;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 16px;
+            min-height: 0;
+            min-width: 0;
+
+            @media (max-width: $editor-compact-max-width) {
+                padding-inline: $editor-content-padding-compact;
+                padding-block: 18px;
+                padding-top: 14px;
+                gap: 12px;
+            }
+        }
+
+        &__toolbar-slot {
+            position: relative;
+            z-index: 10;
+            height: 52px;
+            flex-shrink: 0;
+            width: 100%;
+            min-width: 0;
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            overflow-y: visible;
+
+            @media (max-width: $editor-compact-max-width) {
+                justify-content: flex-start;
+            }
+        }
+    }
+}

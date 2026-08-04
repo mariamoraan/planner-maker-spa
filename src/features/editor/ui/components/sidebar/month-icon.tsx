@@ -1,0 +1,35 @@
+import { FIELD_TYPE_CONFIG } from '@/features/template';
+import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
+import './month-icon.scss'
+import { useTemplateStore } from '@/features/template/ui/stores/template-store';
+
+const CONFIG = FIELD_TYPE_CONFIG.month;
+
+interface Props {
+    width: number;
+    height: number;
+    showActiveStyle?: boolean;
+}
+
+export const MonthIcon: React.FC<Props> = ({width, height, showActiveStyle = true}) => {
+    const currentMonth = new Date().toLocaleString('default', { month: 'short' })
+    const selectedFieldType = useEditorStore(state => state.selectedFieldType)
+    const isSelected = selectedFieldType === 'month'
+    return (
+        <div 
+        className='month-icon' 
+        style={{
+            width, 
+            height, 
+            background: CONFIG.bgColor, 
+            color: CONFIG.color,
+            borderColor: showActiveStyle && isSelected ? CONFIG.color : 'transparent'
+        }}
+        >
+            <p>{currentMonth}</p>
+            <div className='month-icon__grid'>
+               {Array.from({ length: 30 }, (_, i) => i + 1).map(day => <div key={day} style={{background: CONFIG.color}} className='month-icon__grid__item' />)}
+            </div>
+        </div>
+    )
+}
