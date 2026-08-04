@@ -38,6 +38,8 @@ function normalizeImageRef(value: unknown): ImageRef | undefined {
   return {
     provider: typeof ref.provider === 'string' ? ref.provider : 'local',
     key: ref.key,
+    url: typeof ref.url === 'string' ? ref.url : undefined,
+    fileKey: typeof ref.fileKey === 'string' ? ref.fileKey : undefined,
   };
 }
 

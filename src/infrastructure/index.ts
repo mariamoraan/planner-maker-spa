@@ -10,6 +10,9 @@ import { FirebaseWaitlistRepository } from './firebase/firebase-waitlist.reposit
 import { FirebaseAnalyticsAdapter } from './firebase/firebase-analytics.adapter';
 import { FirebaseTemplateRepository } from './firebase/firebase-template.repository';
 import { IndexedDBImageAdapter } from './local/indexeddb-image.adapter';
+import { CachingImageAdapter } from './local/caching-image.adapter';
+import { UploadthingImageAdapter } from './uploadthing/uploadthing-image.adapter';
+import { isCloudImageStorageEnabled } from './ports/image-asset.port';
 import { isFirebaseConfigured } from './firebase/firebase-config';
 
 export type InfraServices = {
@@ -22,6 +25,14 @@ export type InfraServices = {
 };
 
 let services: InfraServices | null = null;
+
+function createImageAdapter(): ImageAssetPort {
+  const cache = new IndexedDBImageAdapter();
+  if (isCloudImageStorageEnabled()) {
+    return new CachingImageAdapter(new UploadthingImageAdapter(), cache);
+  }
+  return cache;
+}
 
 export function getInfra(): InfraServices {
   if (!services) {
@@ -36,16 +47,21 @@ export function getInfra(): InfraServices {
       waitlist: new FirebaseWaitlistRepository(),
       analytics: new FirebaseAnalyticsAdapter(),
       templates: new FirebaseTemplateRepository(),
-      images: new IndexedDBImageAdapter(),
+      images: createImageAdapter(),
     };
   }
   return services;
 }
 
-export { isFirebaseConfigured };
+export { isFirebaseConfigured, isCloudImageStorageEnabled };
 export type { AuthUser } from './ports/auth.port';
 export type { UserProfile } from './ports/user.port';
 export type { JoinWaitlistInput, WaitlistSource } from './ports/waitlist.port';
 export type { AnalyticsEvent } from './ports/analytics.port';
 export type { ImageRef } from './ports/image-asset.port';
-export { buildLocalImageRef, buildLegacyImageKey } from './ports/image-asset.port';
+export {
+  buildLocalImageRef,
+  buildUploadthingImageRef,
+  buildLegacyImageKey,
+  pageIdFromImageRefKey,
+} from './ports/image-asset.port';

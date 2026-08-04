@@ -197,7 +197,22 @@ The app uses **Firebase** for Google sign-in, waitlist, and analytics. Planner d
 
 ### Architecture
 
-Backend logic lives in `src/infrastructure/` behind ports (Auth, UserRepository, WaitlistRepository, Analytics). Swap Firebase for another provider by adding a new adapter.
+Backend logic lives in `src/infrastructure/` behind ports (Auth, UserRepository, WaitlistRepository, Analytics, ImageAsset). Swap Firebase for another provider by adding a new adapter.
+
+### Cloud image storage (Uploadthing)
+
+Images can be stored in **Uploadthing** (2 GB free tier, no credit card) instead of device-only IndexedDB. This enables cross-device sync of page artwork when combined with Firestore metadata.
+
+1. Create a free app at [uploadthing.com](https://uploadthing.com) (GitHub sign-in, no card required)
+2. In Firebase Console → Project settings → Service accounts → Generate new private key
+3. Copy `.env.example` to `.env.local` and set:
+   - `VITE_IMAGE_STORAGE=cloud`
+   - `UPLOADTHING_TOKEN` — from the Uploadthing dashboard
+   - `FIREBASE_SERVICE_ACCOUNT` — paste the service account JSON (or base64-encode it)
+4. In **Vercel** → Project → Settings → Environment Variables, add the same server-only vars (`UPLOADTHING_TOKEN`, `FIREBASE_SERVICE_ACCOUNT`) for Production and Preview
+5. For local cloud uploads, use `npm run dev` — the dev server serves `/api/uploadthing` and `/api/images/delete` on the same port (8080).
+
+Existing local images are migrated to Uploadthing automatically on the next login after enabling cloud storage.
 
 ---
 

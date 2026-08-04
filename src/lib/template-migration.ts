@@ -1,11 +1,16 @@
-import { collection, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { get as idbGet } from 'idb-keyval';
-import { getInfra } from '@/infrastructure';
+import { collection, doc, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { get as idbGet, del as idbDel } from 'idb-keyval';
+import {
+  getInfra,
+  isCloudImageStorageEnabled,
+  buildUploadthingImageRef,
+} from '@/infrastructure';
 import { getFirebaseDb } from '@/infrastructure/firebase/firebase-config';
 import {
   buildLegacyImageKey,
   buildLocalImageRef,
 } from '@/infrastructure/ports/image-asset.port';
+import type { ImageRef } from '@/infrastructure/ports/image-asset.port';
 import type { Template, TemplateImage } from '@/types/planner';
 import type { TemplatePageRecord } from '@/infrastructure/ports/template.port';
 
@@ -13,6 +18,10 @@ const LEGACY_STORAGE_KEY = 'planner-templates';
 
 function migrationKey(uid: string): string {
   return `planner-migrated-${uid}`;
+}
+
+function cloudMigrationKey(uid: string): string {
+  return `planner-cloud-images-migrated-${uid}`;
 }
 
 type LegacyPersistedState = {
@@ -74,9 +83,29 @@ function markMigrated(uid: string): void {
   localStorage.setItem(migrationKey(uid), '1');
 }
 
+function hasCloudMigrated(uid: string): boolean {
+  return localStorage.getItem(cloudMigrationKey(uid)) === '1';
+}
+
+function markCloudMigrated(uid: string): void {
+  localStorage.setItem(cloudMigrationKey(uid), '1');
+}
+
 async function hasRemoteTemplates(uid: string): Promise<boolean> {
   const snap = await getDocs(collection(getFirebaseDb(), 'users', uid, 'templates'));
   return !snap.empty;
+}
+
+function normalizeImageRef(value: unknown): ImageRef | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const ref = value as Record<string, unknown>;
+  if (typeof ref.key !== 'string' || !ref.key) return undefined;
+  return {
+    provider: typeof ref.provider === 'string' ? ref.provider : 'local',
+    key: ref.key,
+    url: typeof ref.url === 'string' ? ref.url : undefined,
+    fileKey: typeof ref.fileKey === 'string' ? ref.fileKey : undefined,
+  };
 }
 
 export async function migrateLocalTemplatesToFirebase(uid: string): Promise<boolean> {
@@ -103,6 +132,9 @@ export async function migrateLocalTemplatesToFirebase(uid: string): Promise<bool
       const legacyData = await loadLegacyImageData(image.id);
       if (legacyData) {
         await images.save(page.imageRef, legacyData);
+        if (page.imageRef.url) {
+          await repo.updatePage(uid, template.id, image.id, { imageRef: page.imageRef });
+        }
       }
     }
   }
@@ -110,6 +142,64 @@ export async function migrateLocalTemplatesToFirebase(uid: string): Promise<bool
   localStorage.removeItem(LEGACY_STORAGE_KEY);
   markMigrated(uid);
   return true;
+}
+
+export async function migrateLocalImagesToCloud(uid: string): Promise<boolean> {
+  if (!isCloudImageStorageEnabled() || hasCloudMigrated(uid)) return false;
+
+  const db = getFirebaseDb();
+  const { images, templates: repo } = getInfra();
+  let migratedAny = false;
+
+  const templatesSnap = await getDocs(collection(db, 'users', uid, 'templates'));
+
+  for (const templateDoc of templatesSnap.docs) {
+    const templateId = templateDoc.id;
+    const pagesSnap = await getDocs(
+      collection(db, 'users', uid, 'templates', templateId, 'pages')
+    );
+
+    for (const pageDoc of pagesSnap.docs) {
+      const data = pageDoc.data();
+      const pageId = pageDoc.id;
+      const imageRef = normalizeImageRef(data.imageRef);
+
+      if (!imageRef || imageRef.provider === 'uploadthing') continue;
+      if (imageRef.url) continue;
+
+      const candidates = [
+        imageRef,
+        buildLocalImageRef(uid, pageId),
+        { provider: 'local', key: buildLegacyImageKey(pageId) },
+      ];
+
+      let localData: string | null = null;
+      for (const candidate of candidates) {
+        localData = (await idbGet<string>(candidate.key)) ?? null;
+        if (localData) break;
+      }
+
+      if (!localData) continue;
+
+      const cloudRef = buildUploadthingImageRef(uid, pageId);
+      await images.save(cloudRef, localData);
+
+      if (!cloudRef.url) continue;
+
+      await repo.updatePage(uid, templateId, pageId, { imageRef: cloudRef });
+
+      for (const candidate of candidates) {
+        if (candidate.provider === 'local') {
+          await idbDel(candidate.key).catch(() => undefined);
+        }
+      }
+
+      migratedAny = true;
+    }
+  }
+
+  markCloudMigrated(uid);
+  return migratedAny;
 }
 
 /** One-time repair: persist deduped pageOrder if duplicates exist in Firestore. */

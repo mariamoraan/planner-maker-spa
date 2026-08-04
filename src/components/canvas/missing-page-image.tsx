@@ -33,12 +33,21 @@ export const MissingPageImage: React.FC<MissingPageImageProps> = ({ pageId, page
           if (!page?.imageRef) return;
 
           await getInfra().images.save(page.imageRef, imageData);
+          const resolvedSrc = (await getInfra().images.load(page.imageRef)) ?? imageData;
+
           updateImage(templateId, pageId, {
-            src: imageData,
+            src: resolvedSrc,
             width: img.width,
             height: img.height,
+            imageRef: page.imageRef,
             missingLocalAsset: false,
           });
+
+          if (page.imageRef.url) {
+            await getInfra().templates.updatePage(syncUid, templateId, pageId, {
+              imageRef: page.imageRef,
+            });
+          }
         };
         img.src = imageData;
       } catch (error) {

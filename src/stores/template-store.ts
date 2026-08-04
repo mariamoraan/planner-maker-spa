@@ -9,7 +9,7 @@ import {
   normalizeImageOrder,
   reorderWithinType,
 } from '@/lib/template-image-order';
-import { getInfra, buildLocalImageRef, buildLegacyImageKey } from '@/infrastructure';
+import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImageRef, isCloudImageStorageEnabled } from '@/infrastructure';
 import type { ImageRef } from '@/infrastructure/ports/image-asset.port';
 import type { TemplatePageRecord } from '@/infrastructure/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/lib/canvas-snap';
@@ -19,6 +19,7 @@ const rectangleSyncTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function resolveImageRef(uid: string | null, pageId: string, existing?: ImageRef): ImageRef {
   if (existing) return existing;
+  if (uid && isCloudImageStorageEnabled()) return buildUploadthingImageRef(uid, pageId);
   if (uid) return buildLocalImageRef(uid, pageId);
   return { provider: 'local', key: buildLegacyImageKey(pageId) };
 }
@@ -32,16 +33,30 @@ function buildImageRefCandidates(
   const seen = new Set<string>();
 
   const add = (ref: ImageRef) => {
-    if (!ref.key || seen.has(ref.key)) return;
-    seen.add(ref.key);
+    const identity = `${ref.provider}:${ref.key}`;
+    if (!ref.key || seen.has(identity)) return;
+    seen.add(identity);
     candidates.push(ref);
   };
 
   if (existing?.key) add(existing);
+  if (uid && isCloudImageStorageEnabled()) {
+    add(buildUploadthingImageRef(uid, pageId, existing?.url, existing?.fileKey));
+  }
   if (uid) add(buildLocalImageRef(uid, pageId));
   add({ provider: 'local', key: buildLegacyImageKey(pageId) });
 
   return candidates;
+}
+
+async function persistCloudImageRef(
+  uid: string,
+  templateId: string,
+  pageId: string,
+  imageRef: ImageRef
+): Promise<void> {
+  if (!isCloudImageStorageEnabled() || !imageRef.url) return;
+  await getInfra().templates.updatePage(uid, templateId, pageId, { imageRef });
 }
 
 async function loadImageFromCandidates(
@@ -382,9 +397,25 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
     }));
 
     await getInfra().images.save(imageRef, imageData);
+    const resolvedSrc = (await getInfra().images.load(imageRef)) ?? imageData;
+
+    set(state => ({
+      templates: state.templates.map(t => {
+        if (t.id !== templateId) return t;
+        return {
+          ...t,
+          images: t.images.map(img =>
+            img.id === id ? { ...img, src: resolvedSrc, imageRef, missingLocalAsset: false } : img
+          ),
+          updatedAt: new Date(),
+        };
+      }),
+    }));
 
     if (uid) {
-      await getInfra().templates.createPage(uid, templateId, toPageRecord(uid, image), insertIndex);
+      const page = toPageRecord(uid, { ...image, src: resolvedSrc, imageRef });
+      await getInfra().templates.createPage(uid, templateId, page, insertIndex);
+      await persistCloudImageRef(uid, templateId, id, imageRef);
     }
 
     return id;
@@ -473,9 +504,23 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
     }));
 
     await getInfra().images.save(imageRef, imageData);
+    const resolvedSrc = (await getInfra().images.load(imageRef)) ?? imageData;
+    const savedImage: TemplateImage = { ...imageWithSrc, src: resolvedSrc, imageRef };
+
+    set(state => ({
+      templates: state.templates.map(t => {
+        if (t.id !== templateId) return t;
+        return {
+          ...t,
+          images: t.images.map(img => (img.id === image.id ? savedImage : img)),
+          updatedAt: new Date(),
+        };
+      }),
+    }));
 
     if (uid) {
-      await getInfra().templates.createPage(uid, templateId, toPageRecord(uid, imageWithSrc), index);
+      await getInfra().templates.createPage(uid, templateId, toPageRecord(uid, savedImage), index);
+      await persistCloudImageRef(uid, templateId, image.id, imageRef);
     }
   },
 

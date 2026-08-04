@@ -25,3 +25,6 @@ dist-ssr
 
 .env
 firestore.rules
+.vercel
+.env*
+firebase-admin-key.json

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-provider';
 import { getInfra } from '@/infrastructure';
-import { migrateLocalTemplatesToFirebase, repairDuplicatePageOrder } from '@/lib/template-migration';
+import { migrateLocalTemplatesToFirebase, migrateLocalImagesToCloud, repairDuplicatePageOrder } from '@/lib/template-migration';
 import { useTemplateStore } from '@/stores/template-store';
 
 export function useTemplateSync() {
@@ -30,6 +30,13 @@ export function useTemplateSync() {
       setMigrating(true);
       try {
         await migrateLocalTemplatesToFirebase(uid);
+        if (cancelled) return;
+
+        try {
+          await migrateLocalImagesToCloud(uid);
+        } catch (error) {
+          console.warn('[template-sync] cloud image migration skipped:', error);
+        }
         if (cancelled) return;
 
         await repairDuplicatePageOrder(uid);

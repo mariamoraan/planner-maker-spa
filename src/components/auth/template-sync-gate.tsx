@@ -5,12 +5,14 @@ import { useTemplateSync } from '@/hooks/use-template-sync';
 export function TemplateSyncGate({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { isSyncReady, isMigrating, syncError } = useTemplateSync();
+  const isPermissionError = syncError?.toLowerCase().includes('permission') ?? false;
 
   if (syncError) {
     return (
       <div className="auth-gate">
         <p>{t('sync.error')}</p>
-        <p className="auth-gate__hint">{t('sync.errorHint')}</p>
+        <p className="auth-gate__hint">{syncError}</p>
+        {isPermissionError ? <p className="auth-gate__hint">{t('sync.errorHint')}</p> : null}
       </div>
     );
   }
