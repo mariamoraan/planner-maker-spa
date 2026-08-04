@@ -2,11 +2,13 @@
 
 **Live demo:** [https://planner-maker-spa.vercel.app/](https://planner-maker-spa.vercel.app/)
 
-Dyna is a local-first web app that lets creators upload their own planner designs, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF.
+Dyna is a design-first web app that lets creators upload their own planner artwork, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF.
 
-Built end-to-end as a **Product Engineer** project: product definition, UX/UI, frontend architecture, and deployment.
+Built end-to-end as a **Product Engineer** project: product definition, UX/UI, frontend architecture, and production deployment.
 
-`React` · `TypeScript` · `Vite` · `Zustand` · `Konva` · `pdf-lib` · `SCSS`
+`React 19` · `TypeScript` · `Vite` · `Zustand` · `Konva` · `pdf-lib` · `Firebase` · `SCSS`
+
+> **Architecture deep dive:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ---
 
@@ -15,16 +17,6 @@ Built end-to-end as a **Product Engineer** project: product definition, UX/UI, f
 Most planner tools force you into fixed templates. Creators who already have custom artwork — covers, monthly spreads, weekly layouts — need a way to add **real calendar logic** on top of their designs without rebuilding everything in a rigid grid.
 
 Dyna bridges that gap: you bring the visuals, the app handles the dates.
-
-### Product thesis
-
-| Decision | Rationale |
-|----------|-----------|
-| **Design-first, not template-first** | Creators already have artwork; the tool adds calendar logic on top |
-| **Local-first / no auth** | Zero friction to start; privacy for personal designs |
-| **Generative by nature** | One designed page becomes dozens of correctly dated pages |
-| **Modular freemium model** | Free core + paid add-ons (typography, advanced pages, cloud) — pay only for what you need |
-| **Print-aware output** | PDF export is a first-class outcome, not an afterthought |
 
 ### How it works
 
@@ -42,44 +34,121 @@ flowchart LR
 
 ---
 
+## What I Built
+
+- **Visual canvas editor** — Konva-based drag/resize with Figma-like snap guides, multi-select, and full undo/redo
+- **Calendar generation engine** — locale-aware date logic (EN/ES), configurable week start (Monday/Sunday), ISO or US week numbers
+- **Client-side PDF pipeline** — two-phase export (page generation + PDF assembly) off the main thread via a Web Worker
+- **Feature-sliced architecture** — five domain modules with ports/adapters, use-case layer, and a central DI bootstrap
+- **Auth & early access** — Google sign-in, admin-granted access gate, waitlist collection
+- **Cloud-backed persistence** — Firestore realtime sync for templates; UploadThing for page artwork; IndexedDB as client-side image cache
+
+---
+
 ## Features
 
 ### Shipped
 
-- **Multi-project dashboard** — create, browse, and delete planner projects from a central home screen
-- **Page-type system** — upload images for cover, month cover, monthly calendar, weekly calendar, daily page, and extra pages
+- **Multi-project dashboard** — create, browse, and delete planner projects
+- **Page-type system** — cover, month cover, monthly calendar, weekly calendar, daily page, and extra pages — each with type-specific allowed field types
 - **Visual editor** — drag, resize, and snap dynamic blocks on a Konva canvas
-- **Typed dynamic fields** — year, month, day, and week range (startDay / endDay) with type-specific constraints per page
-- **Block styling** — per-field font, color, format variants (e.g. numeric vs. name), and text case
+- **Typed dynamic fields** — year, month, day, and week range (startDay / endDay) with per-page constraints
+- **Block styling** — font, color, format variants (numeric vs. name), text case, and alignment per field
 - **Pages map** — thumbnail navigation grouped by page type, with drag-to-reorder within each group
-- **Undo / redo** — full editor history for block and page operations
-- **Planner generation** — real calendar logic (configurable week start: Monday or Sunday) fills every page for a chosen date range
-- **PDF export** — print-ready output that matches each uploaded page's size and orientation, generated off the main thread via a Web Worker
-- **Local persistence** — template metadata in localStorage, image blobs in IndexedDB; no server required
+- **Undo / redo** — command-pattern history for block and page operations
+- **Planner generation** — real calendar logic fills every page for a chosen date range
+- **PDF export** — print-ready output matching each page's size and orientation
+- **Google sign-in & access gate** — Firebase Auth with admin-controlled early access
+- **Waitlist** — landing page signup stored in Firestore
+- **Firestore sync** — realtime template metadata sync across sessions and devices
+- **Cloud image storage** — UploadThing for page artwork with IndexedDB caching for fast loads
+- **Analytics** — Firebase Analytics events for key product actions
 - **Desktop editor** — optimized for viewports ≥ 900 × 560 px
 
 ### Planned
 
-- Cloud sync and backup across devices
 - Collaboration and planner sharing
 - Template library with ready-made layouts
 - Premium typography packs and advanced selectors
 - Mobile and tablet optimization
+- Version history
+
+---
+
+## Architecture at a Glance
+
+```mermaid
+flowchart TB
+  subgraph client [Browser SPA]
+    React --> Features
+    Features --> Zustand
+    Zustand --> Firestore
+    Zustand --> ImageCache[IndexedDB cache]
+    React --> PDFWorker[PDF Web Worker]
+  end
+
+  subgraph features [Feature Modules]
+    Auth
+    Template
+    Editor
+    Export
+    Landing
+  end
+
+  subgraph infra [getInfra]
+    FirebaseAuth
+    Firestore
+    UploadThing
+  end
+
+  Features --> infra
+  React --> VercelAPI["/api/uploadthing"]
+  VercelAPI --> UploadThing
+```
+
+The codebase follows a **feature-sliced, hexagonal architecture**: each module owns its domain logic, use cases, UI, and infrastructure adapters. Shared concerns (routing, i18n, UI primitives, DI) live in `src/core/`.
+
+**[Full architecture docs → docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+
+---
+
+## Key User Flows
+
+### Early access & auth
+
+```mermaid
+flowchart LR
+  Landing["/"] --> Waitlist[joinWaitlist]
+  Landing --> Login["/login"]
+  Login --> Google[Google Sign-In]
+  Google --> AccessCheck{isAccessGranted?}
+  AccessCheck -->|no| Pending["/access-pending"]
+  AccessCheck -->|yes| SyncGate[TemplateSyncGate]
+  SyncGate --> Home["/home"]
+```
+
+### Edit & export
+
+```mermaid
+flowchart LR
+  Home --> Editor["/editor/:id"]
+  Editor --> Upload[Upload pages]
+  Upload --> Zones[Define dynamic zones]
+  Zones --> Generate[Pick date range]
+  Generate --> PDF[Export PDF]
+```
 
 ---
 
 ## Product Decisions
 
-Decisions made as a Product Engineer — each with an explicit trade-off.
-
-| # | Decision | Trade-off | Outcome |
-|---|----------|-----------|---------|
-| 1 | **No backend for v1** | No cross-device sync yet | Faster iteration, zero account barrier, full privacy by default |
-| 2 | **Block-based dynamic fields over fixed grids** | More initial setup for the user | Maximum creative freedom — any layout, any artwork |
-| 3 | **Page-type system with allowed field types** | Less flexibility within a single page type | Reduces user error (e.g. weekly pages expose startDay/endDay; covers expose none) |
-| 4 | **Generation order: week → daily pages within that week** | More complex generation logic | Mirrors how people actually use planners day to day |
-| 5 | **Freemium scaffolding in the landing page** | Marketing ahead of full monetization | Communicates roadmap (Free / Pro Add-ons / Cloud) without blocking current free usage |
-| 6 | **Bilingual UX** | Mixed language experience | Spanish in editor and home (primary users); English on landing (global reach) |
+| Decision | Trade-off | Outcome |
+|----------|-----------|---------|
+| **Design-first, not template-first** | More initial setup for the user | Maximum creative freedom — any layout, any artwork |
+| **Cloud-backed persistence** | Requires auth and external services | Cross-device sync; Firestore as source of truth; swappable ports for infra |
+| **Block-based fields over fixed grids** | More setup per page | Any layout works — fields are placed freely on the canvas |
+| **Page-type constraints on field types** | Less flexibility within a page | Reduces user error (weekly pages expose startDay/endDay; covers expose none) |
+| **Generation order: week → daily pages within week** | More complex generation logic | Mirrors how people actually use planners day to day |
 
 ---
 
@@ -91,143 +160,113 @@ Decisions made as a Product Engineer — each with an explicit trade-off.
 | **Semantic field colors** | Purple = year, teal = month, orange = day — instantly scannable on the canvas |
 | **Progressive disclosure** | Collapsible sidebar sections; block settings panel appears only when a field is selected |
 | **Editor layout** | Dark sidebar + neutral canvas background — familiar mental model from pro design tools |
-| **Radix UI + custom SCSS** | Accessible primitives (dialogs, selects, tooltips) with a bespoke visual identity, not generic component defaults |
+| **Radix UI + custom SCSS** | Accessible primitives with a bespoke visual identity, not generic component defaults |
 | **Motion as polish** | Framer Motion for landing and home page entry; core editor interactions stay static and predictable |
-| **Typography hierarchy** | Inter for UI chrome; distinct script fonts (Gloria Hallelujah, Great Vibes, Lato) for generated planner text |
-| **BEM-style naming** | Component-scoped SCSS with predictable class names (`editor-sidebar__header`) for maintainability |
 
 ---
 
-## Technical Decisions
+## Tech Stack
 
-### Architecture
+| Layer | Technologies |
+|-------|-------------|
+| **Frontend** | React 19, TypeScript, Vite, React Router 6, SCSS |
+| **State** | Zustand, React Context (auth), TanStack React Query (scaffolded) |
+| **Canvas** | Konva, react-konva, @dnd-kit |
+| **Export** | pdf-lib (Web Worker), HTML Canvas |
+| **Dates / i18n** | date-fns, dayjs, i18next |
+| **UI** | Radix UI, MUI date pickers, Framer Motion, Lucide |
+| **Infrastructure** | Firebase (Auth, Firestore, Analytics), UploadThing, IndexedDB (image cache) |
+| **Server** | Vercel serverless (`/api/uploadthing`, `/api/images/delete`) |
+| **Testing** | Vitest, Testing Library, jsdom |
+| **Deploy** | Vercel |
 
-```mermaid
-flowchart TB
-  subgraph client [Browser SPA]
-    react[React19_Vite]
-    zustand[ZustandStores]
-    konva[KonvaEditor]
-    idb[IndexedDB_Images]
-    ls[LocalStorage_Metadata]
-    worker[PDF_WebWorker]
-  end
-  react --> zustand
-  zustand --> idb
-  zustand --> ls
-  react --> konva
-  react --> worker
+---
+
+## Project Structure
+
+```
+src/
+├── core/               # Router, i18n, shared UI, DI bootstrap (getInfra)
+├── features/
+│   ├── auth/           # Google sign-in, access gate, user profile
+│   ├── template/       # Domain model, Firestore sync, home dashboard
+│   ├── editor/         # Konva canvas, snap guides, undo/redo
+│   ├── export/         # PDF generation pipeline
+│   └── landing/        # Marketing page, waitlist
+├── styles/             # Global SCSS, design tokens
+└── test/               # Vitest setup
+
+server/                 # Shared server logic (Firebase Admin, UploadThing router)
+api/                    # Vercel serverless entry points
+docs/                   # Architecture documentation
 ```
 
-### Key choices
-
-| Area | Choice | Why |
-|------|--------|-----|
-| **Stack** | React 19 + TypeScript + Vite | Fast developer experience, type-safe domain model |
-| **State** | Zustand with persist middleware | Lightweight; no boilerplate for a client-only app |
-| **Storage split** | localStorage (metadata) + IndexedDB (images) | Avoids localStorage size limits; lazy-loads images per template |
-| **Canvas** | Konva + react-konva | Interactive drag / resize / snap guides, decoupled from DOM layout |
-| **Dual render pipeline** | Konva for editor preview, HTML Canvas for generation | Editor stays responsive; PDF output is pixel-accurate |
-| **PDF** | pdf-lib in a Web Worker | Keeps the UI thread free during large exports |
-| **Calendar logic** | date-fns, configurable week start (Monday/Sunday), ISO or US week numbers | Predictable, unit-tested (`src/lib/planner-week.test.ts`) |
-| **Undo / redo** | Command pattern in a separate history store | Clean separation; in-memory only (acceptable for v1) |
-| **Future-ready** | React Query wired in App, no queries yet | Reserved for cloud sync without premature complexity |
-| **Deploy** | Vercel with SPA rewrites | Zero-config static hosting |
-
-### Tech stack
-
-TypeScript · React 19 · Vite · Zustand · Konva · react-konva · pdf-lib · date-fns · Radix UI · SCSS · Framer Motion · @dnd-kit · Vitest · Vercel
-
-### Key files
-
-| Concern | Path |
-|---------|------|
-| Domain types | `src/types/planner.ts` |
-| Persistence | `src/stores/template-store.ts` |
-| Undo / redo | `src/stores/history-store.ts` |
-| Calendar & field logic | `src/lib/planner-utils.ts` |
-| Planner generation | `src/hooks/use-planner-generator.ts` |
-| Canvas editor | `src/components/canvas/TemplateCanvas.tsx` |
-| PDF worker | `src/workers/pdf.worker.ts` |
-| Design tokens | `src/styles/globals.scss` |
-
----
-
-## Roadmap
-
-### Now — Core planner generation
-
-- Upload custom images
-- Define dynamic areas on a visual canvas
-- Generate planners by date range
-- Local-first storage
-- PDF export
-
-### Next — Advanced generation & customization
-
-- Weekly and advanced page generators
-- Extended date logic and rules
-- Advanced selectors
-- Premium typography packs
-
-### Later — Cloud & collaboration
-
-- Cloud sync across devices
-- Backup and restore
-- Planner sharing
-- Version history
-
----
-
-## Early access & admin
-
-The app uses **Firebase** for Google sign-in, waitlist, and analytics. Planner data stays local (localStorage + IndexedDB).
-
-### Setup
-
-1. Create a Firebase project with **Google Auth**, **Firestore**, and **Analytics**
-2. Copy `.env.example` to `.env.local` and fill in your Firebase credentials
-3. Deploy Firestore rules: `firebase deploy --only firestore:rules` (or paste `firestore.rules` in Firebase Console)
-
-### Granting access
-
-- **Waitlist:** Firebase Console → Firestore → `waitlist` collection
-- **App access:** Firestore → `users/{uid}` → set `isAccessGranted: true`
-- Users can join the waitlist from the landing page, then sign in with Google when access is granted
-
-### Architecture
-
-Backend logic lives in `src/infrastructure/` behind ports (Auth, UserRepository, WaitlistRepository, Analytics, ImageAsset). Swap Firebase for another provider by adding a new adapter.
-
-### Cloud image storage (Uploadthing)
-
-Images can be stored in **Uploadthing** (2 GB free tier, no credit card) instead of device-only IndexedDB. This enables cross-device sync of page artwork when combined with Firestore metadata.
-
-1. Create a free app at [uploadthing.com](https://uploadthing.com) (GitHub sign-in, no card required)
-2. In Firebase Console → Project settings → Service accounts → Generate new private key
-3. Copy `.env.example` to `.env.local` and set:
-   - `VITE_IMAGE_STORAGE=cloud`
-   - `UPLOADTHING_TOKEN` — from the Uploadthing dashboard
-   - `FIREBASE_SERVICE_ACCOUNT` — paste the service account JSON (or base64-encode it)
-4. In **Vercel** → Project → Settings → Environment Variables, add the same server-only vars (`UPLOADTHING_TOKEN`, `FIREBASE_SERVICE_ACCOUNT`) for Production and Preview
-5. For local cloud uploads, use `npm run dev` — the dev server serves `/api/uploadthing` and `/api/images/delete` on the same port (8080).
-
-Existing local images are migrated to Uploadthing automatically on the next login after enabling cloud storage.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for layer details, domain model, and key file references.
 
 ---
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18+
+- A Firebase project with Google Auth, Firestore, and Analytics enabled
+
+### Setup
+
 ```bash
 npm install
-cp .env.example .env.local   # add Firebase credentials
-npm run dev      # http://localhost:8080
+cp .env.example .env.local   # fill in Firebase credentials
+npm run dev                  # http://localhost:8080
 npm run test
 npm run build
 ```
+
+### Environment variables
+
+Client-side (prefix `VITE_`): Firebase config, `VITE_IMAGE_STORAGE` (`cloud` for production, `local` for offline dev without UploadThing).
+
+Server-only (for image uploads): `UPLOADTHING_TOKEN`, `FIREBASE_SERVICE_ACCOUNT` or `FIREBASE_SERVICE_ACCOUNT_PATH`.
+
+See [`.env.example`](.env.example) for the full list and [docs/ARCHITECTURE.md#environment-variables](docs/ARCHITECTURE.md#environment-variables) for details.
+
+### Granting access
+
+1. Deploy Firestore rules: `firebase deploy --only firestore:rules`
+2. Users join the waitlist from the landing page
+3. Admin sets `users/{uid}.isAccessGranted = true` in Firestore Console
+4. User signs in with Google and accesses the editor
+
+### Cloud image storage
+
+Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin credentials. The dev server serves upload/delete API routes on the same port (8080). Set `VITE_IMAGE_STORAGE=local` only for offline development without UploadThing. See [docs/ARCHITECTURE.md#integrations](docs/ARCHITECTURE.md#integrations) for the full setup.
+
+---
+
+## Roadmap
+
+### Done
+
+- Core planner generation (upload, define zones, generate, export)
+- Firebase auth, waitlist, and analytics
+- Firestore template sync and UploadThing image storage
+
+### Next
+
+- Extended date logic and advanced page generators
+- Premium typography packs and advanced selectors
+- Mobile and tablet optimization
+
+### Later
+
+- Collaboration and planner sharing
+- Template library
+- Version history
 
 ---
 
 ## About
 
-Dyna was designed and built end-to-end — from product thesis and UX flows to canvas editing, calendar generation, PDF export, and production deployment. It demonstrates product thinking, design craft, and frontend engineering in a single cohesive project.
+Dyna was designed and built end-to-end — from product thesis and UX flows to canvas editing, calendar generation, PDF export, cloud sync, and production deployment on Vercel. It demonstrates product thinking, design craft, and frontend engineering in a single cohesive project.
+
+For the full technical story — domain model, state management, export pipeline, and integration details — see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
