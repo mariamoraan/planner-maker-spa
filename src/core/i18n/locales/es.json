@@ -17,12 +17,16 @@
     "nav": {
       "how": "Cómo funciona",
       "compare": "Comparativa",
+      "benefits": "Beneficios",
+      "demo": "Demo",
       "waitlist": "Lista de espera"
     },
     "hero": {
-      "title": "De horas duplicando páginas a un PDF completo en minutos",
-      "subtitle": "Sube tu diseño, marca dónde van las fechas y genera un planner fechado automáticamente — alineado y listo para imprimir.",
-      "cta": "Unirme a la lista de espera"
+      "badge": "Early access · Lista de espera abierta",
+      "title": "Tu diseño. 365 páginas fechadas. 15 minutos.",
+      "subtitle": "Para creadoras de planners que pierden horas duplicando spreads en Canva o Photoshop — sube tu layout una vez y obtén un PDF listo para imprimir automáticamente.",
+      "cta": "Unirme a la lista de espera",
+      "pills": ["Tu propio diseño", "PDF print-ready", "Calendarios EN / ES"]
     },
     "showcase": {
       "url": "dyna.app/editor",
@@ -37,7 +41,7 @@
     },
     "compare": {
       "title": "Manual vs Dyna",
-      "subtitle": "Mira exactamente dónde ahorras tiempo",
+      "subtitle": "Deja de perder fines de semana en copiar y pegar. Mira exactamente dónde ahorras tiempo.",
       "manual": {
         "title": "Manual (Canva / Photoshop)",
         "items": [
@@ -59,14 +63,64 @@
         "time": "~15 minutos para el mismo resultado"
       }
     },
-    "savings": {
-      "title": "Tiempo real ahorrado",
-      "description": "Un planner anual pueden ser 365+ páginas. Dyna las genera con lógica de calendario correcta — semanas, meses y nombres de días incluidos.",
-      "stat": "365 páginas",
-      "statLabel": "generadas desde un solo diseño de plantilla"
+    "audience": {
+      "title": "Hecho para creadoras de planners",
+      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Dyna se encarga de las fechas.",
+      "cards": [
+        {
+          "title": "Vendedoras Etsy y digitales",
+          "pain": "Un planner anual son 365 páginas que duplicar y fechar a mano.",
+          "solution": "Genera un PDF fechado completo desde una plantilla y lanza más rápido."
+        },
+        {
+          "title": "Diseñadoras en Canva y Photoshop",
+          "pain": "Las plantillas fijas matan tu estilo; los spreads manuales se comen el fin de semana.",
+          "solution": "Conserva tu layout exacto — solo marca dónde van las fechas en el canvas."
+        },
+        {
+          "title": "Proyectos personales e impresión",
+          "pain": "Reordenar páginas cuando cambia el calendario es tedioso y propenso a errores.",
+          "solution": "Elige un rango de fechas y deja que Dyna ordene semanas, meses y días correctamente."
+        }
+      ]
+    },
+    "benefits": {
+      "title": "Lo que ganas con Dyna",
+      "subtitle": "Todo lo que necesitas para pasar del artwork a un planner terminado.",
+      "items": [
+        {
+          "title": "Horas de vuelta en cada lanzamiento",
+          "text": "~15 minutos en lugar de 8–15 horas para un planner anual."
+        },
+        {
+          "title": "Tu diseño, tus reglas",
+          "text": "Sube cualquier layout — portadas, spreads semanales, páginas diarias. Sin rejillas rígidas."
+        },
+        {
+          "title": "PDF listo para imprimir",
+          "text": "Exporta un único PDF ajustado al tamaño y orientación de cada página."
+        },
+        {
+          "title": "Calendario inteligente",
+          "text": "Nombres de mes y día en inglés y español, semana empezando en lunes o domingo."
+        }
+      ]
+    },
+    "demo": {
+      "title": "Míralo en acción",
+      "subtitle": "Sube tu diseño, marca zonas dinámicas, elige un rango de fechas y descarga un planner completo.",
+      "videoLabel": "Demo del flujo del editor Dyna",
+      "posterAlt": "Editor Dyna con zonas dinámicas de fechas en un layout semanal"
     },
     "how": {
-      "title": "Cómo funciona"
+      "title": "Cómo funciona",
+      "subtitle": "Cuatro pasos. Un PDF completo."
+    },
+    "screenshots": {
+      "upload": "Dashboard con proyectos de planner listos para editar",
+      "zones": "Canvas del editor con zonas dinámicas de mes y día marcadas",
+      "range": "Selector de rango de fechas para generar un planner anual",
+      "generate": "Mapa de páginas del editor con múltiples plantillas listas para exportar"
     },
     "steps": {
       "upload": {
@@ -88,7 +142,7 @@
     },
     "waitlist": {
       "title": "Consigue acceso anticipado",
-      "subtitle": "Abrimos de forma gradual. Apúntate a la lista de espera y te avisaremos cuando sea tu turno.",
+      "subtitle": "Abrimos de forma gradual. Apúntate a la lista de espera — te avisaremos cuando sea tu turno para crear tu primer planner.",
       "emailPlaceholder": "tu@email.com",
       "submit": "Unirme",
       "submitting": "Apuntando…",

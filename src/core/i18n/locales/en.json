@@ -17,12 +17,16 @@
     "nav": {
       "how": "How it works",
       "compare": "Compare",
+      "benefits": "Benefits",
+      "demo": "Demo",
       "waitlist": "Waitlist"
     },
     "hero": {
-      "title": "From hours duplicating pages to a complete PDF in minutes",
-      "subtitle": "Upload your design, mark where dates go, and generate a fully dated planner automatically — aligned and print-ready.",
-      "cta": "Join the waitlist"
+      "badge": "Early access · Waitlist open",
+      "title": "Your design. 365 dated pages. 15 minutes.",
+      "subtitle": "For planner creators who lose hours duplicating spreads in Canva or Photoshop — upload your layout once and get a print-ready PDF automatically.",
+      "cta": "Join the waitlist",
+      "pills": ["Your own design", "Print-ready PDF", "EN / ES calendars"]
     },
     "showcase": {
       "url": "dyna.app/editor",
@@ -37,7 +41,7 @@
     },
     "compare": {
       "title": "Manual vs Dyna",
-      "subtitle": "See exactly where you save time",
+      "subtitle": "Stop spending weekends on copy-paste. See exactly where you save time.",
       "manual": {
         "title": "Manual (Canva / Photoshop)",
         "items": [
@@ -59,14 +63,64 @@
         "time": "~15 minutes for the same result"
       }
     },
-    "savings": {
-      "title": "Real time saved",
-      "description": "A yearly planner can mean 365+ pages. Dyna generates them with correct calendar logic — weeks, months and day names included.",
-      "stat": "365 pages",
-      "statLabel": "generated from one template design"
+    "audience": {
+      "title": "Built for planner creators",
+      "subtitle": "Whether you sell on Etsy or design for yourself — if you already have the artwork, Dyna handles the dates.",
+      "cards": [
+        {
+          "title": "Etsy & digital sellers",
+          "pain": "A yearly planner means 365 pages to duplicate and date by hand.",
+          "solution": "Generate a full dated PDF from one template and ship faster."
+        },
+        {
+          "title": "Canva & Photoshop designers",
+          "pain": "Fixed templates kill your style; manual spreads eat your weekends.",
+          "solution": "Keep your exact layout — just mark where dates go on the canvas."
+        },
+        {
+          "title": "Personal & print projects",
+          "pain": "Reordering pages when the calendar shifts is tedious and error-prone.",
+          "solution": "Pick a date range and let Dyna order weeks, months and days correctly."
+        }
+      ]
+    },
+    "benefits": {
+      "title": "What you get with Dyna",
+      "subtitle": "Everything you need to go from artwork to a finished planner.",
+      "items": [
+        {
+          "title": "Hours back every launch",
+          "text": "~15 minutes instead of 8–15 hours for a yearly planner."
+        },
+        {
+          "title": "Your design, your rules",
+          "text": "Upload any layout — covers, weekly spreads, daily pages. No rigid grids."
+        },
+        {
+          "title": "Print-ready PDF",
+          "text": "Export a single PDF matched to each page size and orientation."
+        },
+        {
+          "title": "Smart calendar logic",
+          "text": "English & Spanish month/day names, Monday or Sunday week start."
+        }
+      ]
+    },
+    "demo": {
+      "title": "See it in action",
+      "subtitle": "Upload your design, mark dynamic zones, pick a date range, and download a complete planner.",
+      "videoLabel": "Dyna editor workflow demo",
+      "posterAlt": "Dyna editor with dynamic date zones on a weekly planner layout"
     },
     "how": {
-      "title": "How it works"
+      "title": "How it works",
+      "subtitle": "Four steps. One complete PDF."
+    },
+    "screenshots": {
+      "upload": "Dashboard with planner projects ready to edit",
+      "zones": "Editor canvas with dynamic month and day zones marked",
+      "range": "Date range picker for generating a full-year planner",
+      "generate": "Editor pages map showing multiple template pages ready to export"
     },
     "steps": {
       "upload": {
@@ -88,7 +142,7 @@
     },
     "waitlist": {
       "title": "Get early access",
-      "subtitle": "We're opening gradually. Join the waitlist and we'll notify you when it's your turn.",
+      "subtitle": "We're opening gradually. Join the waitlist — we'll notify you when it's your turn to build your first planner.",
       "emailPlaceholder": "you@email.com",
       "submit": "Join waitlist",
       "submitting": "Joining…",

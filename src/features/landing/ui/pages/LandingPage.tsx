@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
-import { Sparkles, Calendar, Image as ImageIcon, Layers, Clock, Zap } from 'lucide-react';
+import { Clock, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PATHS } from '@/core/routes/paths';
-import { EditorShowcaseMockup } from '@/features/landing/ui/components/editor-showcase-mockup/editor-showcase-mockup';
+import { AudienceSection } from '@/features/landing/ui/components/audience-section/audience-section';
+import { BenefitsSection } from '@/features/landing/ui/components/benefits-section/benefits-section';
+import { DemoVideo } from '@/features/landing/ui/components/demo-video/demo-video';
+import { HowItWorksTimeline } from '@/features/landing/ui/components/how-it-works-timeline/how-it-works-timeline';
 import { WaitlistForm } from '@/features/landing/ui/components/waitlist-form/waitlist-form';
 import { trackPageView } from '@/features/template/use-case/commands/analytics.commands';
 import './landing-page.scss';
@@ -21,15 +24,9 @@ export default function LandingPage() {
     trackPageView('landing');
   }, []);
 
-  const steps = [
-    { icon: ImageIcon, title: t('landing.steps.upload.title'), text: t('landing.steps.upload.text') },
-    { icon: Layers, title: t('landing.steps.zones.title'), text: t('landing.steps.zones.text') },
-    { icon: Calendar, title: t('landing.steps.range.title'), text: t('landing.steps.range.text') },
-    { icon: Sparkles, title: t('landing.steps.generate.title'), text: t('landing.steps.generate.text') },
-  ];
-
   const manualItems = t('landing.compare.manual.items', { returnObjects: true }) as string[];
   const dynaItems = t('landing.compare.dyna.items', { returnObjects: true }) as string[];
+  const heroPills = t('landing.hero.pills', { returnObjects: true }) as string[];
 
   return (
     <main className="landing-page">
@@ -38,6 +35,8 @@ export default function LandingPage() {
           <div className="landing-page__logo">{t('common.appName')}</div>
           <nav className="landing-page__nav">
             <a href="#compare">{t('landing.nav.compare')}</a>
+            <a href="#benefits">{t('landing.nav.benefits')}</a>
+            <a href="#demo">{t('landing.nav.demo')}</a>
             <a href="#how">{t('landing.nav.how')}</a>
             <a href="#waitlist">{t('landing.nav.waitlist')}</a>
           </nav>
@@ -55,15 +54,22 @@ export default function LandingPage() {
         transition={{ duration: 0.6 }}
         className="landing-page__hero"
       >
+        <span className="landing-page__hero-badge">{t('landing.hero.badge')}</span>
         <h1 className="landing-page__hero-title">{t('landing.hero.title')}</h1>
         <p className="landing-page__hero-subtitle">{t('landing.hero.subtitle')}</p>
-        <div className="landing-page__hero-showcase">
-          <EditorShowcaseMockup />
-        </div>
+        <ul className="landing-page__hero-pills">
+          {heroPills.map(pill => (
+            <li key={pill}>{pill}</li>
+          ))}
+        </ul>
         <div className="landing-page__hero-waitlist">
           <WaitlistForm source="landing_hero" />
         </div>
       </motion.section>
+
+      <AudienceSection />
+
+      <BenefitsSection />
 
       <section id="compare" className="landing-page__section landing-page__section--white">
         <div className="landing-page__container">
@@ -119,54 +125,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="landing-page__section landing-page__section--neutral">
-        <div className="landing-page__container landing-page__savings">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            <h2 className="landing-page__section-title">{t('landing.savings.title')}</h2>
-            <p className="landing-page__savings-text">{t('landing.savings.description')}</p>
-            <div className="landing-page__savings-stat">
-              <span className="landing-page__savings-value">{t('landing.savings.stat')}</span>
-              <span className="landing-page__savings-label">{t('landing.savings.statLabel')}</span>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      <DemoVideo />
 
-      <section id="how" className="landing-page__section landing-page__section--white">
-        <div className="landing-page__container">
-          <motion.h2
-            className="landing-page__section-title"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={fadeUp}
-          >
-            {t('landing.how.title')}
-          </motion.h2>
-          <div className="landing-page__grid-4">
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.title}
-                variants={fadeUp}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="landing-page__card landing-page__card--neutral"
-              >
-                <step.icon className="landing-page__card-icon" />
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HowItWorksTimeline />
 
       <section id="waitlist" className="landing-page__section landing-page__section--dark">
         <div className="landing-page__container landing-page__waitlist-section">
@@ -197,6 +158,8 @@ export default function LandingPage() {
               <p className="landing-page__footer-label">{t('landing.nav.waitlist')}</p>
               <ul className="landing-page__footer-links">
                 <li><a href="#compare">{t('landing.nav.compare')}</a></li>
+                <li><a href="#benefits">{t('landing.nav.benefits')}</a></li>
+                <li><a href="#demo">{t('landing.nav.demo')}</a></li>
                 <li><a href="#how">{t('landing.nav.how')}</a></li>
                 <li><a href="#waitlist">{t('landing.nav.waitlist')}</a></li>
               </ul>
