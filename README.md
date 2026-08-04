@@ -232,8 +232,8 @@ See [`.env.example`](.env.example) for the full list and [docs/ARCHITECTURE.md#e
 
 ### Granting access
 
-1. Deploy Firestore rules: `firebase deploy --only firestore:rules`
-2. Users join the waitlist from the landing page
+1. Deploy Firestore rules: `firebase deploy --only firestore:rules` (include `demo_requests` create-only rules alongside `waitlist`; see [docs/ARCHITECTURE.md#firebase](docs/ARCHITECTURE.md#firebase))
+2. Users join the waitlist or book a demo from the landing page
 3. Admin sets `users/{uid}.isAccessGranted = true` in Firestore Console
 4. User signs in with Google and accesses the editor
 
@@ -248,7 +248,7 @@ Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin cre
 ### Done
 
 - Core planner generation (upload, define zones, generate, export)
-- Firebase auth, waitlist, and analytics
+- Firebase auth, waitlist, demo requests, and analytics
 - Firestore template sync and UploadThing image storage
 
 ### Next

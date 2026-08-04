@@ -74,4 +74,23 @@
       transform: scale(1.2);
     }
   }
+
+  &__cta {
+    margin-top: 3.5rem;
+    text-align: center;
+    max-width: 40rem;
+    margin-inline: auto;
+
+    h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 0 0 1.5rem;
+      color: #525252;
+      line-height: 1.6;
+    }
+  }
 }

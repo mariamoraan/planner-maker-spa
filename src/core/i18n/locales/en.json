@@ -19,7 +19,9 @@
       "compare": "Compare",
       "benefits": "Benefits",
       "demo": "Demo",
-      "waitlist": "Waitlist"
+      "waitlist": "Waitlist",
+      "menuOpen": "Open menu",
+      "menuClose": "Close menu"
     },
     "hero": {
       "badge": "Early access · Waitlist open",
@@ -151,6 +153,19 @@
       "error": "Something went wrong. Please try again.",
       "haveAccess": "Already have access?",
       "signIn": "Sign in"
+    },
+    "bookDemo": {
+      "heroPrompt": "Prefer a walkthrough? Book a live demo.",
+      "title": "Book a live demo",
+      "subtitle": "We'll reach out to schedule a 15-minute walkthrough.",
+      "namePlaceholder": "Your name",
+      "emailPlaceholder": "you@email.com",
+      "submit": "Book demo",
+      "submitting": "Booking…",
+      "success": "Request received! We'll email you to schedule your demo.",
+      "alreadyRegistered": "You've already requested a demo with this email.",
+      "error": "Something went wrong. Please try again.",
+      "divider": "or"
     },
     "footer": {
       "brand": "Dyna — Planner Builder",

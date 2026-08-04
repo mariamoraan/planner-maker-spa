@@ -1,6 +1,7 @@
 export type AnalyticsEvent =
   | 'landing_view'
   | 'waitlist_join'
+  | 'demo_request'
   | 'login'
   | 'planner_created'
   | 'block_added'

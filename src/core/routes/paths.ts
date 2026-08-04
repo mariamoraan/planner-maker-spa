@@ -10,3 +10,6 @@ export const PATHS = {
 
 export const getEditorPath = (templateId: string) =>
     `/editor/${templateId}`;
+
+export const getLandingDemoEditorPath = (templateId: string) =>
+    `/landing-demo/editor/${templateId}`;

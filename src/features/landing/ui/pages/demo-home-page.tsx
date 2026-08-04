@@ -1,9 +1,17 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { HomeRail } from '@/features/template/ui/components/home-rail/home-rail';
 import { NewProjectCard } from '@/features/template/ui/components/new-project-card/new-project-card';
 import { TemplateCard } from '@/features/template/ui/components/template-card/template-card';
 import { DEMO_HOME_TEMPLATES } from '@/features/landing/domain/demo-template-data';
+import { getLandingDemoEditorPath } from '@/core/routes/paths';
+import {
+  getDemoEntryPageId,
+  getDemoTemplate,
+  openDemoTemplate,
+} from '@/features/landing/use-case/commands/open-demo-template';
+import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import '@/features/template/ui/pages/home.page.scss';
 
 const fadeUp = {
@@ -13,11 +21,21 @@ const fadeUp = {
 
 export function DemoHomePage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const setCurrentImage = useTemplateStore(state => state.setCurrentImage);
   const templates = DEMO_HOME_TEMPLATES;
+
+  const goToTemplate = (templateId: string) => {
+    const template = getDemoTemplate(templateId);
+    if (!template || !openDemoTemplate(templateId)) return;
+
+    void setCurrentImage(getDemoEntryPageId(template));
+    navigate(getLandingDemoEditorPath(templateId));
+  };
 
   return (
     <div className="home-page">
-      <HomeRail templates={templates} isLoading={false} onOpenTemplate={() => undefined} />
+      <HomeRail templates={templates} isLoading={false} onOpenTemplate={goToTemplate} />
 
       <main className="home-page__workspace">
         <div className="home-page__content">
@@ -43,7 +61,7 @@ export function DemoHomePage() {
                     key={template.id}
                     template={template}
                     index={index}
-                    onOpen={() => undefined}
+                    onOpen={() => goToTemplate(template.id)}
                     onDelete={() => undefined}
                   />
                 ))}

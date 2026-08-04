@@ -1,46 +1,47 @@
-import { useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import TemplateEditor from '@/features/editor/ui/pages/TemplateEditor';
-import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useExportStore } from '@/features/export/ui/stores/export-store';
-import { DEMO_TEMPLATE } from '@/features/landing/domain/demo-template-data';
-import {
-  hydrateFromRemote,
-  resetSync,
-} from '@/features/template/use-case/commands/template.commands';
-
-let demoSeeded = false;
-
-function seedDemoEditor() {
-  if (demoSeeded) return;
-  resetSync();
-  hydrateFromRemote([DEMO_TEMPLATE]);
-  useEditorStore.getState().setCurrentImageId('page-monthly');
-  demoSeeded = true;
-}
-
-seedDemoEditor();
+import { PATHS } from '@/core/routes/paths';
+import { openDemoTemplate } from '@/features/landing/use-case/commands/open-demo-template';
+import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
 export function DemoEditorShell() {
+  const { templateId } = useParams<{ templateId: string }>();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [isReady, setIsReady] = useState(false);
   const openGenerator = useExportStore(state => state.openGenerator);
   const closeGenerator = useExportStore(state => state.closeGenerator);
-  const seeded = useRef(false);
+  const hasTemplate = useTemplateStore(state =>
+    templateId ? state.templates.some(template => template.id === templateId) : false,
+  );
 
   useEffect(() => {
-    if (!seeded.current) {
-      seedDemoEditor();
-      seeded.current = true;
+    if (!templateId) {
+      navigate(PATHS.landingDemoHome, { replace: true });
+      return;
     }
 
-    useEditorStore.getState().setCurrentImageId('page-monthly');
+    if (!openDemoTemplate(templateId)) {
+      navigate(PATHS.landingDemoHome, { replace: true });
+      return;
+    }
 
+    setIsReady(true);
+  }, [templateId, navigate]);
+
+  useEffect(() => {
     if (searchParams.get('generator') === 'open') {
       openGenerator();
     } else {
       closeGenerator();
     }
   }, [searchParams, openGenerator, closeGenerator]);
+
+  if (!isReady || !hasTemplate) {
+    return null;
+  }
 
   return <TemplateEditor />;
 }

@@ -19,7 +19,9 @@
       "compare": "Comparativa",
       "benefits": "Beneficios",
       "demo": "Demo",
-      "waitlist": "Lista de espera"
+      "waitlist": "Lista de espera",
+      "menuOpen": "Abrir menú",
+      "menuClose": "Cerrar menú"
     },
     "hero": {
       "badge": "Early access · Lista de espera abierta",
@@ -151,6 +153,19 @@
       "error": "Algo salió mal. Inténtalo de nuevo.",
       "haveAccess": "¿Ya tienes acceso?",
       "signIn": "Iniciar sesión"
+    },
+    "bookDemo": {
+      "heroPrompt": "¿Prefieres una demo en directo? Reserva una sesión.",
+      "title": "Reserva una demo",
+      "subtitle": "Te contactaremos para agendar una sesión de 15 minutos.",
+      "namePlaceholder": "Tu nombre",
+      "emailPlaceholder": "tu@email.com",
+      "submit": "Reservar demo",
+      "submitting": "Reservando…",
+      "success": "¡Solicitud recibida! Te escribiremos para agendar la demo.",
+      "alreadyRegistered": "Ya has solicitado una demo con este email.",
+      "error": "Algo salió mal. Inténtalo de nuevo.",
+      "divider": "o"
     },
     "footer": {
       "brand": "Dyna — Planner Builder",
