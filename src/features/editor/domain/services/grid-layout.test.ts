@@ -6,6 +6,7 @@ import {
   boundsFromPitch,
   cellOrigin,
   clampGridPadding,
+  clampGridRectSize,
   defaultGridBounds,
   detectGridMeasureAxis,
   expandGridRectIds,
@@ -388,6 +389,32 @@ describe('defaultGridBounds', () => {
     expect(bounds.height).toBe(192);
     expect(bounds.x).toBe(480);
     expect(bounds.y).toBe(704);
+  });
+});
+
+describe('clampGridRectSize', () => {
+  const bounds = { x: 100, y: 200, width: 306, height: 411 };
+  const settings = { cols: 3, rows: 2 };
+
+  it('clamps to minimum size', () => {
+    expect(clampGridRectSize(bounds, settings, { width: 5, height: 10 })).toEqual({
+      width: 20,
+      height: 20,
+    });
+  });
+
+  it('clamps width to maximum cell size but not height', () => {
+    expect(clampGridRectSize(bounds, settings, { width: 500, height: 500 })).toEqual({
+      width: 102,
+      height: 500,
+    });
+  });
+
+  it('keeps valid size unchanged', () => {
+    expect(clampGridRectSize(bounds, settings, { width: 48, height: 36 })).toEqual({
+      width: 48,
+      height: 36,
+    });
   });
 });
 

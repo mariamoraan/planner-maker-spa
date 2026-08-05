@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldTypeSelector } from './FieldTypeSelector';
 import { AreaStylePanel } from './area-style-panel';
+import { GridStylePanel } from './grid-style-panel';
 import { BlockSettingsHeader } from './block-settings-header';
 import { EditorSidebarSection } from './editor-sidebar-section';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
@@ -52,8 +53,8 @@ export const EditorSidebar: React.FC = () => {
     const singleSelectedId = selectedRectangleIds.length === 1 ? selectedRectangleIds[0] : null;
     const multiSelected = selectedRectangleIds.length > 1;
     const rectangles = currentImage?.rectangles ?? [];
-    const isLockedGridGroupSelected =
-      getGridGroupForSelection(selectedRectangleIds, currentImage?.gridGroups) !== null;
+    const lockedGridGroup = getGridGroupForSelection(selectedRectangleIds, currentImage?.gridGroups);
+    const isLockedGridGroupSelected = lockedGridGroup !== null;
     const canGroup = canGroupSelection(selectedRectangleIds, rectangles);
     const showMultiBlockSection = multiSelected && !isLockedGridGroupSelected;
 
@@ -210,6 +211,15 @@ export const EditorSidebar: React.FC = () => {
           >
             <BlockSettingsHeader rectangleId={singleSelectedId} />
             <AreaStylePanel />
+          </EditorSidebarSection>
+        )}
+        {isLockedGridGroupSelected && lockedGridGroup && (
+          <EditorSidebarSection
+            title={t('editor.blockSettings')}
+            open={sectionOpen.blockSettings}
+            onOpenChange={(open) => setSectionOpenState('blockSettings', open)}
+          >
+            <GridStylePanel group={lockedGridGroup} />
           </EditorSidebarSection>
         )}
         <EditorPlannerActions variant="sidebar" />

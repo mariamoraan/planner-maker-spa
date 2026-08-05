@@ -246,6 +246,21 @@ export function gridConfigFromGroup(
   );
 }
 
+const MIN_GRID_RECT_SIZE = 20;
+
+export function clampGridRectSize(
+  bounds: GridBounds,
+  settings: Pick<GridSettingsInput, 'cols' | 'rows'>,
+  size: { width: number; height: number },
+): { width: number; height: number } {
+  const maxWidth = Math.round(bounds.width / settings.cols);
+
+  return {
+    width: Math.min(maxWidth, Math.max(MIN_GRID_RECT_SIZE, Math.round(size.width))),
+    height: Math.max(MIN_GRID_RECT_SIZE, Math.round(size.height)),
+  };
+}
+
 export function clampGridPadding(
   bounds: GridBounds,
   settings: GridSettingsInput,

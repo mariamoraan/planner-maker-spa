@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
-import type { FieldType, GridGroup, Rectangle } from '@/features/template';
+import type { FieldStyle, FieldType, FormatVariant, GridGroup, Rectangle } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import {
   boundsFromInferredGrid,
   boundsFromPitch,
   boundsFromRectanglesWithPadding,
   clampGridPadding,
+  clampGridRectSize,
   defaultGridBounds,
   expandGridRectIds,
   gridConfigFromBounds,
@@ -31,7 +32,7 @@ import {
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
-import { getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
+import { getDefaultFormatVariant, resolveFieldStyle } from '@/features/editor/domain/services/field-style-config';
 
 function applyGridLayout(
   rectangles: Rectangle[],
@@ -50,7 +51,15 @@ function applyGridLayout(
   let next = [...rectangles];
   for (const move of moves) {
     next = next.map(rect =>
-      rect.id === move.id ? { ...rect, x: move.x, y: move.y } : rect,
+      rect.id === move.id
+        ? {
+            ...rect,
+            x: move.x,
+            y: move.y,
+            width: settings.rectWidth,
+            height: settings.rectHeight,
+          }
+        : rect,
     );
   }
   return next;
@@ -271,6 +280,19 @@ export function useGridGroupOps() {
       if (!group) return;
 
       const nextSettings: GridEditSettings = { ...group.settings, ...updates };
+      if (updates.rectWidth !== undefined || updates.rectHeight !== undefined) {
+        const clampedSize = clampGridRectSize(group.bounds, nextSettings, {
+          width: updates.rectWidth ?? nextSettings.rectWidth,
+          height: updates.rectHeight ?? nextSettings.rectHeight,
+        });
+        nextSettings.rectWidth = clampedSize.width;
+        nextSettings.rectHeight = clampedSize.height;
+        nextSettings.padding = clampGridPadding(
+          group.bounds,
+          nextSettings,
+          nextSettings.padding ?? { x: 0, y: 0 },
+        );
+      }
       if (updates.padding !== undefined) {
         nextSettings.padding = clampGridPadding(
           group.bounds,
@@ -385,6 +407,46 @@ export function useGridGroupOps() {
     [currentImage, updatePageGridState],
   );
 
+  const updateGroupStyle = useCallback(
+    (groupId: string, updates: Partial<FieldStyle>) => {
+      if (!currentImage) return;
+
+      const group = currentImage.gridGroups?.[groupId];
+      if (!group) return;
+
+      const templateRect = currentImage.rectangles.find(r => r.id === group.rectIds[0]);
+      if (!templateRect) return;
+
+      const baseStyle = resolveFieldStyle(templateRect);
+      const nextStyle = { ...baseStyle, ...updates };
+
+      const nextRects = currentImage.rectangles.map(rect => {
+        if (!group.rectIds.includes(rect.id)) return rect;
+        return { ...rect, style: nextStyle };
+      });
+
+      updatePageGridState({ rectangles: nextRects, gridGroups: currentImage.gridGroups });
+    },
+    [currentImage, updatePageGridState],
+  );
+
+  const updateGroupFormatVariant = useCallback(
+    (groupId: string, variant: FormatVariant) => {
+      if (!currentImage) return;
+
+      const group = currentImage.gridGroups?.[groupId];
+      if (!group) return;
+
+      const nextRects = currentImage.rectangles.map(rect => {
+        if (!group.rectIds.includes(rect.id)) return rect;
+        return { ...rect, formatVariant: variant };
+      });
+
+      updatePageGridState({ rectangles: nextRects, gridGroups: currentImage.gridGroups });
+    },
+    [currentImage, updatePageGridState],
+  );
+
   return {
     createGrid,
     createDefaultGrid,
@@ -394,6 +456,8 @@ export function useGridGroupOps() {
     updateGroupBounds,
     translateGridGroup,
     updateGroupFieldType,
+    updateGroupStyle,
+    updateGroupFormatVariant,
   };
 }
 

@@ -1,37 +1,42 @@
 import { useState, useEffect } from 'react';
-import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
+import type { FieldStyle, FormatVariant, GridGroup, Rectangle } from '@/features/template';
 import {
   FIELD_FORMAT_REGISTRY,
   getFormatVariant,
   isValidHexColor,
   resolveFieldStyle,
 } from '@/features/editor/domain/services/field-style-config';
-import type { FieldStyle, FormatVariant, Rectangle } from '@/features/template';
+import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 
-export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => {
-  const { updateArea } = useManageAreas();
+export const useGridStyleEditing = (
+  group: GridGroup | null | undefined,
+  rectangles: Rectangle[],
+) => {
+  const { updateGroupStyle, updateGroupFormatVariant } = useGridGroupOps();
   const [hexInput, setHexInput] = useState('');
+
+  const representativeRect = group
+    ? rectangles.find(rect => rect.id === group.rectIds[0])
+    : undefined;
 
   useEffect(() => {
     setHexInput('');
-  }, [rectangle?.id]);
+  }, [group?.id]);
 
-  if (!rectangle) {
+  if (!group || !representativeRect) {
     return null;
   }
 
-  const style = resolveFieldStyle(rectangle);
-  const formatVariant = getFormatVariant(rectangle);
-  const formatOptions = FIELD_FORMAT_REGISTRY[rectangle.fieldType];
+  const style = resolveFieldStyle(representativeRect);
+  const formatVariant = getFormatVariant(representativeRect);
+  const formatOptions = FIELD_FORMAT_REGISTRY[representativeRect.fieldType];
 
   const updateStyle = (updates: Partial<FieldStyle>) => {
-    updateArea(rectangle.id, {
-      style: { ...style, ...updates },
-    });
+    updateGroupStyle(group.id, updates);
   };
 
   const handleFormatChange = (variant: FormatVariant) => {
-    updateArea(rectangle.id, { formatVariant: variant });
+    updateGroupFormatVariant(group.id, variant);
   };
 
   const handleColorPreset = (color: string) => {
@@ -70,5 +75,3 @@ export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => 
     displayHex,
   };
 };
-
-export type AreaStyleEditing = NonNullable<ReturnType<typeof useAreaStyleEditing>>;

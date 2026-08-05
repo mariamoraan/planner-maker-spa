@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Input } from '@/core/components/ui/input';
 import useOnClickOutside from '@/core/hooks/use-on-click-outside';
-import { useAreaStyleEditing } from '@/features/editor/ui/hooks/use-area-style-editing';
+import { useAreaStyleEditing, type AreaStyleEditing } from '@/features/editor/ui/hooks/use-area-style-editing';
 import {
   COLOR_PRESET_REGISTRY,
   FONT_REGISTRY,
@@ -30,10 +30,12 @@ function TextAlignIcon({ align, size = 16 }: { align: TextAlign; size?: number }
 interface AreaStyleControlsProps {
   rectangle: Rectangle;
   variant: 'sidebar' | 'toolbar';
+  editing?: AreaStyleEditing | null;
 }
 
-export const AreaStyleControls = ({ rectangle, variant }: AreaStyleControlsProps) => {
-  const editing = useAreaStyleEditing(rectangle);
+export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride }: AreaStyleControlsProps) => {
+  const internalEditing = useAreaStyleEditing(editingOverride === undefined ? rectangle : null);
+  const editing = editingOverride === undefined ? internalEditing : editingOverride;
   const [openPopover, setOpenPopover] = useState<PopoverId>(null);
   const formatRef = useRef<HTMLButtonElement>(null);
   const colorRef = useRef<HTMLDivElement>(null);

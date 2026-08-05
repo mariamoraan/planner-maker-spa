@@ -5,14 +5,15 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { FieldType, GridGroup } from '@/features/template';
+import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-style-controls';
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector';
 import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls';
-import { ToolbarHistoryButtons } from '@/features/editor/ui/components/shared/toolbar-history-buttons';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { getGridGroupFieldType } from '@/features/editor/domain/services/grid-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
+import { useGridStyleEditing } from '@/features/editor/ui/hooks/use-grid-style-editing';
 import { GridIcon, PaddingIcon } from '@/core/icons';
 
 interface GridToolbarControlsProps {
@@ -23,8 +24,75 @@ function clampDimension(value: number, min = 1, max = 20): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function clampBlockSize(value: number, min = 20, max = 9999): number {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
 function clampPadding(value: number, min = 0): number {
   return Math.max(min, Math.round(value));
+}
+
+interface DimensionStepperInputProps {
+  value: number;
+  min?: number;
+  max?: number;
+  onCommit: (value: number) => void;
+  onAdjust: (delta: number) => void;
+  decrementLabel?: string;
+  incrementLabel?: string;
+}
+
+function DimensionStepperInput({
+  value,
+  min = 0,
+  max,
+  onCommit,
+  onAdjust,
+  decrementLabel = '-',
+  incrementLabel = '+',
+}: DimensionStepperInputProps) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const displayValue = draft ?? String(value);
+
+  const commitDraft = () => {
+    if (draft === null || draft.trim() === '') {
+      setDraft(null);
+      return;
+    }
+
+    const parsed = Number(draft);
+    if (Number.isFinite(parsed)) {
+      onCommit(parsed);
+    }
+    setDraft(null);
+  };
+
+  return (
+    <>
+      <button type="button" onClick={() => onAdjust(-1)} aria-label={decrementLabel}>
+        −
+      </button>
+      <input
+        type="text"
+        inputMode="numeric"
+        className="grid-toolbar-controls__dimension-input"
+        value={displayValue}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        onFocus={() => setDraft(String(value))}
+        onChange={event => setDraft(event.target.value.replace(/\D/g, ''))}
+        onBlur={commitDraft}
+        onKeyDown={event => {
+          if (event.key === 'Enter') {
+            event.currentTarget.blur();
+          }
+        }}
+      />
+      <button type="button" onClick={() => onAdjust(1)} aria-label={incrementLabel}>
+        +
+      </button>
+    </>
+  );
 }
 
 function useToolbarPopover() {
@@ -94,6 +162,7 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const currentImage = useCurrentImage();
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup } = useGridGroupOps();
+  const gridStyleEditing = useGridStyleEditing(group, currentImage?.rectangles ?? []);
 
   const layoutPopover = useToolbarPopover();
   const paddingPopover = useToolbarPopover();
@@ -101,8 +170,10 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const groupFieldType = currentImage
     ? getGridGroupFieldType(group, currentImage.rectangles, currentImage.gridGroups)
     : undefined;
+  const representativeRect = currentImage?.rectangles.find(rect => rect.id === group.rectIds[0]);
   const padding = group.settings.padding ?? { x: 0, y: 0 };
   const showPaddingControls = group.settings.align === 'top-left';
+  const maxRectWidth = Math.round(group.bounds.width / group.settings.cols);
 
   useEffect(() => {
     layoutPopover.close();
@@ -154,6 +225,32 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     const y = clampPadding(value);
     if (y !== padding.y) {
       updateGroupSettings(group.id, { padding: { x: padding.x, y } });
+    }
+  };
+
+  const adjustRectWidth = (delta: number) => {
+    updateGroupSettings(group.id, {
+      rectWidth: clampBlockSize(group.settings.rectWidth + delta, 20, maxRectWidth),
+    });
+  };
+
+  const adjustRectHeight = (delta: number) => {
+    updateGroupSettings(group.id, {
+      rectHeight: clampBlockSize(group.settings.rectHeight + delta, 20),
+    });
+  };
+
+  const commitRectWidth = (value: number) => {
+    const rectWidth = clampBlockSize(value, 20, maxRectWidth);
+    if (rectWidth !== group.settings.rectWidth) {
+      updateGroupSettings(group.id, { rectWidth });
+    }
+  };
+
+  const commitRectHeight = (value: number) => {
+    const rectHeight = clampBlockSize(value, 20);
+    if (rectHeight !== group.settings.rectHeight) {
+      updateGroupSettings(group.id, { rectHeight });
     }
   };
 
@@ -228,6 +325,31 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
                   <button type="button" onClick={() => adjustRows(1)} aria-label="+">
                     +
                   </button>
+                </div>
+              </label>
+
+              <label className="grid-toolbar-controls__stepper">
+                <span>{t('editor.gridBlockWidth')}</span>
+                <div className="grid-toolbar-controls__stepper-inputs">
+                  <DimensionStepperInput
+                    value={group.settings.rectWidth}
+                    min={20}
+                    max={maxRectWidth}
+                    onCommit={commitRectWidth}
+                    onAdjust={adjustRectWidth}
+                  />
+                </div>
+              </label>
+
+              <label className="grid-toolbar-controls__stepper">
+                <span>{t('editor.gridBlockHeight')}</span>
+                <div className="grid-toolbar-controls__stepper-inputs">
+                  <DimensionStepperInput
+                    value={group.settings.rectHeight}
+                    min={20}
+                    onCommit={commitRectHeight}
+                    onAdjust={adjustRectHeight}
+                  />
                 </div>
               </label>
             </div>,
@@ -310,6 +432,17 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
             currentType={groupFieldType}
             onSelect={(type: FieldType) => updateGroupFieldType(group.id, type)}
             variant="popover"
+          />
+        </>
+      )}
+
+      {representativeRect && gridStyleEditing && (
+        <>
+          <div className="grid-toolbar-controls__divider" />
+          <AreaStyleControls
+            rectangle={representativeRect}
+            variant="toolbar"
+            editing={gridStyleEditing}
           />
         </>
       )}
