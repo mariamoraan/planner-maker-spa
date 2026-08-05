@@ -193,7 +193,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
         const merged = remoteTemplate.images.map(remoteImg => {
           const localImg = localById.get(remoteImg.id);
-          const src = srcByPageId.get(remoteImg.id) ?? '';
+          const src = srcByPageId.get(remoteImg.id) ?? remoteImg.src ?? '';
 
           if (localImg && localImg.updatedAt.getTime() > remoteImg.updatedAt.getTime()) {
             return { ...localImg, src, missingLocalAsset: false };

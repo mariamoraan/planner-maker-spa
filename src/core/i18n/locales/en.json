@@ -154,17 +154,11 @@
       "haveAccess": "Already have access?",
       "signIn": "Sign in"
     },
-    "bookDemo": {
-      "heroPrompt": "Prefer a walkthrough? Book a live demo.",
-      "title": "Book a live demo",
-      "subtitle": "We'll reach out to schedule a 15-minute walkthrough.",
-      "namePlaceholder": "Your name",
-      "emailPlaceholder": "you@email.com",
-      "submit": "Book demo",
-      "submitting": "Booking…",
-      "success": "Request received! We'll email you to schedule your demo.",
-      "alreadyRegistered": "You've already requested a demo with this email.",
-      "error": "Something went wrong. Please try again.",
+    "tryDemo": {
+      "heroPrompt": "Want to try it yourself?",
+      "title": "Try the interactive demo",
+      "subtitle": "Explore the editor with sample templates — no sign-up required.",
+      "cta": "Open demo",
       "divider": "or"
     },
     "footer": {

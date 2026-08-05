@@ -490,18 +490,11 @@ waitlist/{email}
   ├── status: 'pending'
   ├── locale: string
   └── source: string
-demo_requests/{email}
-  ├── email: string
-  ├── name: string
-  ├── status: 'pending'
-  ├── locale: string
-  └── source: string
 ```
 
 **Security rules:** `firestore.rules`
 - Users can read/write only their own data (`users/{uid}/**`)
 - Waitlist: create-only, deduplicated by email doc ID; no read/update/delete from clients
-- Demo requests: create-only, deduplicated by email doc ID; no read/update/delete from clients
 
 ### UploadThing (cloud image storage)
 
@@ -542,7 +535,6 @@ export function getInfra(): InfraServices {
     auth: new FirebaseAuthAdapter(),
     users: new FirebaseUserRepository(),
     waitlist: new FirebaseWaitlistRepository(),
-    demoRequests: new FirebaseDemoRequestRepository(),
     analytics: new FirebaseAnalyticsAdapter(),
     templates: new FirebaseTemplateRepository(),
     images: createImageAdapter(),  // Caching(UploadThing, IndexedDB) in cloud mode; IndexedDB only in local dev
@@ -556,7 +548,7 @@ export function getInfra(): InfraServices {
 |-------|---------|
 | `landing_view` | Landing page load |
 | `waitlist_join` | Waitlist form submission |
-| `demo_request` | Book-a-demo form submission |
+| `demo_cta_click` | Try-demo CTA click (landing → interactive demo) |
 | `login` | Google sign-in |
 | `planner_created` | New template created |
 | `block_added` | Dynamic field placed on canvas |

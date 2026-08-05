@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { PATHS } from '@/core/routes/paths';
 import { AudienceSection } from '@/features/landing/ui/components/audience-section/audience-section';
 import { BenefitsSection } from '@/features/landing/ui/components/benefits-section/benefits-section';
-import { BookDemoForm } from '@/features/landing/ui/components/book-demo-form/book-demo-form';
+import { TryDemoCta } from '@/features/landing/ui/components/try-demo-cta/try-demo-cta';
 import { DemoVideo } from '@/features/landing/ui/components/demo-video/demo-video';
 import { HowItWorksTimeline } from '@/features/landing/ui/components/how-it-works-timeline/how-it-works-timeline';
 import { WaitlistForm } from '@/features/landing/ui/components/waitlist-form/waitlist-form';
@@ -76,9 +76,11 @@ export default function LandingPage() {
             <Link to={PATHS.login} className="landing-page__cta" onClick={closeMenu}>
               {t('landing.waitlist.signIn')}
             </Link>
-            <a href="#waitlist" className="landing-page__cta landing-page__cta--secondary" onClick={closeMenu}>
-              {t('landing.bookDemo.title')}
-            </a>
+            <TryDemoCta
+              source="landing_header"
+              variant="secondary"
+              onClick={closeMenu}
+            />
           </div>
         </div>
       </header>
@@ -103,8 +105,8 @@ export default function LandingPage() {
           <WaitlistForm source="landing_hero" />
         </div>
         <div className="landing-page__hero-demo">
-          <p className="landing-page__hero-demo-label">{t('landing.bookDemo.heroPrompt')}</p>
-          <BookDemoForm source="landing_hero" />
+          <p className="landing-page__hero-demo-label">{t('landing.tryDemo.heroPrompt')}</p>
+          <TryDemoCta source="landing_hero" />
         </div>
       </motion.section>
 
@@ -185,12 +187,12 @@ export default function LandingPage() {
             <WaitlistForm source="landing_footer" />
 
             <div className="landing-page__cta-divider" aria-hidden="true">
-              {t('landing.bookDemo.divider')}
+              {t('landing.tryDemo.divider')}
             </div>
 
-            <h3 className="landing-page__book-demo-title">{t('landing.bookDemo.title')}</h3>
-            <p className="landing-page__book-demo-subtitle">{t('landing.bookDemo.subtitle')}</p>
-            <BookDemoForm source="landing_footer" variant="dark" />
+            <h3 className="landing-page__try-demo-title">{t('landing.tryDemo.title')}</h3>
+            <p className="landing-page__try-demo-subtitle">{t('landing.tryDemo.subtitle')}</p>
+            <TryDemoCta source="landing_footer" variant="dark" />
           </motion.div>
         </div>
       </section>

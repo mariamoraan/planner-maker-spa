@@ -154,17 +154,11 @@
       "haveAccess": "¿Ya tienes acceso?",
       "signIn": "Iniciar sesión"
     },
-    "bookDemo": {
-      "heroPrompt": "¿Prefieres una demo en directo? Reserva una sesión.",
-      "title": "Reserva una demo",
-      "subtitle": "Te contactaremos para agendar una sesión de 15 minutos.",
-      "namePlaceholder": "Tu nombre",
-      "emailPlaceholder": "tu@email.com",
-      "submit": "Reservar demo",
-      "submitting": "Reservando…",
-      "success": "¡Solicitud recibida! Te escribiremos para agendar la demo.",
-      "alreadyRegistered": "Ya has solicitado una demo con este email.",
-      "error": "Algo salió mal. Inténtalo de nuevo.",
+    "tryDemo": {
+      "heroPrompt": "¿Quieres probarlo tú misma?",
+      "title": "Prueba la demo interactiva",
+      "subtitle": "Explora el editor con plantillas de ejemplo — sin registro.",
+      "cta": "Abrir demo",
       "divider": "o"
     },
     "footer": {

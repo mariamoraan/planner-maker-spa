@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BookDemoForm } from '@/features/landing/ui/components/book-demo-form/book-demo-form';
+import { TryDemoCta } from '@/features/landing/ui/components/try-demo-cta/try-demo-cta';
 import { DEMO_SLIDES } from '@/features/landing/domain/landing-assets';
 import { LandingScreenshot } from '@/features/landing/ui/components/landing-screenshot/landing-screenshot';
 import { useSharpDisplayWidth } from '@/features/landing/ui/hooks/use-sharp-display-width';
@@ -71,9 +71,9 @@ export function DemoVideo() {
         </div>
 
         <div className="demo-video__cta">
-          <h3>{t('landing.bookDemo.title')}</h3>
-          <p>{t('landing.bookDemo.subtitle')}</p>
-          <BookDemoForm source="landing_demo" />
+          <h3>{t('landing.tryDemo.title')}</h3>
+          <p>{t('landing.tryDemo.subtitle')}</p>
+          <TryDemoCta source="landing_demo" />
         </div>
       </div>
     </section>

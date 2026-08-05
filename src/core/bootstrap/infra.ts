@@ -1,13 +1,11 @@
 import type { AuthPort } from '@/features/auth/domain/ports/auth.port';
 import type { UserRepositoryPort } from '@/features/auth/domain/ports/user.port';
-import type { DemoRequestRepositoryPort } from '@/features/landing/domain/ports/demo-request.port';
 import type { WaitlistRepositoryPort } from '@/features/landing/domain/ports/waitlist.port';
 import type { AnalyticsPort } from '@/features/template/domain/ports/analytics.port';
 import type { TemplateRepositoryPort } from '@/features/template/domain/ports/template.port';
 import type { ImageAssetPort } from '@/features/template/domain/ports/image-asset.port';
 import { FirebaseAuthAdapter } from '@/features/auth/infrastructure/firebase/auth.adapter';
 import { FirebaseUserRepository } from '@/features/auth/infrastructure/firebase/user.repository';
-import { FirebaseDemoRequestRepository } from '@/features/landing/infrastructure/firebase/demo-request.repository';
 import { FirebaseWaitlistRepository } from '@/features/landing/infrastructure/firebase/waitlist.repository';
 import { FirebaseAnalyticsAdapter } from '@/features/template/infrastructure/firebase/analytics.adapter';
 import { FirebaseTemplateRepository } from '@/features/template/infrastructure/firebase/template.repository';
@@ -21,7 +19,6 @@ export type InfraServices = {
   auth: AuthPort;
   users: UserRepositoryPort;
   waitlist: WaitlistRepositoryPort;
-  demoRequests: DemoRequestRepositoryPort;
   analytics: AnalyticsPort;
   templates: TemplateRepositoryPort;
   images: ImageAssetPort;
@@ -48,7 +45,6 @@ export function getInfra(): InfraServices {
       auth: new FirebaseAuthAdapter(),
       users: new FirebaseUserRepository(),
       waitlist: new FirebaseWaitlistRepository(),
-      demoRequests: new FirebaseDemoRequestRepository(),
       analytics: new FirebaseAnalyticsAdapter(),
       templates: new FirebaseTemplateRepository(),
       images: createImageAdapter(),
@@ -60,7 +56,6 @@ export function getInfra(): InfraServices {
 export { isFirebaseConfigured, isCloudImageStorageEnabled };
 export type { AuthUser } from '@/features/auth/domain/ports/auth.port';
 export type { UserProfile } from '@/features/auth/domain/ports/user.port';
-export type { DemoRequestSource, RequestDemoInput } from '@/features/landing/domain/ports/demo-request.port';
 export type { JoinWaitlistInput, WaitlistSource } from '@/features/landing/domain/ports/waitlist.port';
 export type { AnalyticsEvent } from '@/features/template/domain/ports/analytics.port';
 export type { ImageRef } from '@/features/template/domain/value-objects/image-ref';
