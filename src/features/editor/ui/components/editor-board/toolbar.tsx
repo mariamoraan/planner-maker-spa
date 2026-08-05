@@ -6,7 +6,6 @@ import {
     LargeArrowRightIcon,
 } from '@/core/icons'
 import { useTranslation } from 'react-i18next'
-import { useTemplateStore } from '@/features/template/ui/stores/template-store'
 import { useHistoryStore } from '@/features/editor/ui/stores/history-store'
 import { FIELD_TYPE_CONFIG } from '@/features/template'
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas'
@@ -16,6 +15,8 @@ import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-s
 import { BlockDeleteButton } from '@/features/editor/ui/components/shared/block-delete-button'
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector'
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions'
+import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group'
+import { GridToolbarControls } from './grid-toolbar-controls'
 
 export const Toolbar = () => {
     const { t } = useTranslation();
@@ -27,6 +28,11 @@ export const Toolbar = () => {
         ? currentImage?.rectangles?.find(rectangle => selectedRectangleIds[0] === rectangle.id)
         : null
 
+    const lockedGridGroup = getGridGroupForSelection(
+      selectedRectangleIds,
+      currentImage?.gridGroups,
+    );
+
     const canUndo = useHistoryStore(state =>
       templateId ? (state.histories[templateId]?.past.length ?? 0) > 0 : false
     )
@@ -37,6 +43,14 @@ export const Toolbar = () => {
     const redo = useHistoryStore(state => state.redo)
 
     const { updateAreaType, deleteAreas } = useManageAreas();
+
+    if (lockedGridGroup) {
+        return (
+            <div className="toolbar toolbar--grid">
+                <GridToolbarControls group={lockedGridGroup} />
+            </div>
+        );
+    }
 
     if (selectedRectangleIds.length > 1) {
         return (

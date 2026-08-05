@@ -2,8 +2,8 @@ import './canvas-floating-controls.scss';
 
 import { CanvasViewToggles } from '@/features/editor/ui/components/shared/canvas-view-toggles';
 import { MeasureAdjustPanel } from './measure-adjust-panel';
-import { CanvasZoomControls } from './canvas-zoom-controls';
 import type { MeasureAnchor, MeasureRect } from '@/features/editor/domain/services/measure-utils';
+import { CanvasZoomControls } from './canvas-zoom-controls';
 
 interface CanvasFloatingControlsProps {
   zoom: number;

@@ -1,7 +1,7 @@
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useHistoryStore } from '@/features/editor/ui/stores/history-store';
-import { FieldType, Rectangle } from '@/features/template';
+import { FieldType, Rectangle, type GridGroup } from '@/features/template';
 import { getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
 import { useCallback } from 'react';
 import { useTemplateId } from './use-template-id';
@@ -15,6 +15,7 @@ export const useManageAreas = () => {
       deleteRectangle,
       getCurrentImage,
       updateRectangles,
+      updateImage,
     } = useTemplateStore();
 
     const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds)
@@ -37,7 +38,7 @@ export const useManageAreas = () => {
         return null;
     }, [templateId, currentImageId, addRectangle, setSelectedRectangleIds, pushHistory]);
 
-    const addAreas = useCallback((rects: Omit<Rectangle, 'id'>[]) => {
+    const addAreas = useCallback((rects: Omit<Rectangle, 'id'>[], options?: { select?: boolean }) => {
         const ids: string[] = [];
         if (!templateId || !currentImageId || rects.length === 0) return ids;
 
@@ -67,7 +68,9 @@ export const useManageAreas = () => {
           });
         }
 
-        setSelectedRectangleIds(ids);
+        if (options?.select !== false) {
+          setSelectedRectangleIds(ids);
+        }
         return ids;
     }, [templateId, currentImageId, addRectangle, setSelectedRectangleIds, getCurrentImage, pushHistory]);
 
@@ -220,6 +223,17 @@ export const useManageAreas = () => {
     }, [templateId, currentImageId, updateRectangle, getCurrentImage, pushHistory]);
 
 
+    const updatePageGridState = useCallback(
+      (updates: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+      }) => {
+        if (!templateId || !currentImageId) return;
+        updateImage(templateId, currentImageId, updates);
+      },
+      [templateId, currentImageId, updateImage],
+    );
+
     return {
       addArea,
       addAreas,
@@ -228,6 +242,7 @@ export const useManageAreas = () => {
       deleteAreas,
       moveAreas,
       updateAreaType,
+      updatePageGridState,
     }
  
 }

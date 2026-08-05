@@ -219,6 +219,21 @@ describe('computeSnap', () => {
     expect(result.x).toBe(180);
   });
 
+  it('uses median gap for long rows with inconsistent spacing', () => {
+    const row = [
+      rect('a', 0, 0, 40, 40),
+      rect('b', 60, 0, 40, 40),
+      rect('c', 130, 0, 40, 40),
+      rect('d', 190, 0, 40, 40),
+    ];
+    const moving = rect('m', 248, 0, 40, 40);
+    const exclude = new Set(['m']);
+
+    const result = computeSnap(moving, 248, 0, [...row, moving], exclude, scale);
+
+    expect(result.x).toBe(250);
+  });
+
   it('spacing guide label matches segment length in image coordinates', () => {
     const row = [
       rect('a', 0, 0, 40, 40),

@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -10,7 +11,8 @@ import {
   writeBatch,
   type Unsubscribe as FirestoreUnsubscribe,
 } from 'firebase/firestore';
-import type { Template, TemplateImage, Rectangle } from '@/features/template';
+import type { Template, TemplateImage, Rectangle, TemplatePage } from '@/features/template';
+import { repairGridMetadata } from '@/features/editor/domain/services/grid-group';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import type {
   TemplatePageRecord,
@@ -43,14 +45,56 @@ function normalizeImageRef(value: unknown): ImageRef | undefined {
   };
 }
 
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(item => stripUndefined(item)) as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, entry]) => entry !== undefined)
+        .map(([key, entry]) => [key, stripUndefined(entry)]),
+    ) as T;
+  }
+  return value;
+}
+
+function buildPageWriteData(page: TemplatePageRecord): Record<string, unknown> {
+  const data: Record<string, unknown> = {
+    name: page.name,
+    type: page.type,
+    width: page.width,
+    height: page.height,
+    rectangles: stripUndefined(page.rectangles),
+    updatedAt: serverTimestamp(),
+  };
+
+  if (page.gridGroups !== undefined) {
+    data.gridGroups = stripUndefined(page.gridGroups);
+  }
+
+  if (page.imageRef !== undefined) {
+    data.imageRef = stripUndefined(page.imageRef);
+  }
+
+  return data;
+}
+
 function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord {
+  const gridGroups = (data.gridGroups as TemplatePageRecord['gridGroups']) ?? undefined;
+  const rectangles = repairGridMetadata(
+    (data.rectangles as Rectangle[]) ?? [],
+    gridGroups,
+  );
+
   return {
     id,
     name: String(data.name ?? ''),
     type: data.type as TemplateImage['type'],
     width: Number(data.width ?? 0),
     height: Number(data.height ?? 0),
-    rectangles: (data.rectangles as Rectangle[]) ?? [],
+    rectangles,
+    gridGroups,
     imageRef: normalizeImageRef(data.imageRef),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
@@ -213,14 +257,8 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
 
     const batch = writeBatch(getFirebaseDb());
     batch.set(pageRef(uid, templateId, page.id), {
-      name: page.name,
-      type: page.type,
-      width: page.width,
-      height: page.height,
-      rectangles: page.rectangles,
-      imageRef: page.imageRef,
+      ...buildPageWriteData(page),
       createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
     }, { merge: true });
 
     if (!pageExists) {
@@ -239,15 +277,22 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     uid: string,
     templateId: string,
     pageId: string,
-    updates: Partial<TemplatePageRecord>
+    updates: Partial<TemplatePageRecord> & { gridGroups?: TemplatePageRecord['gridGroups'] | null }
   ): Promise<void> {
     const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
     if (updates.name !== undefined) payload.name = updates.name;
     if (updates.type !== undefined) payload.type = updates.type;
     if (updates.width !== undefined) payload.width = updates.width;
     if (updates.height !== undefined) payload.height = updates.height;
-    if (updates.rectangles !== undefined) payload.rectangles = updates.rectangles;
-    if (updates.imageRef !== undefined) payload.imageRef = updates.imageRef;
+    if (updates.rectangles !== undefined) {
+      payload.rectangles = stripUndefined(updates.rectangles);
+    }
+    if (updates.gridGroups === null) {
+      payload.gridGroups = deleteField();
+    } else if (updates.gridGroups !== undefined) {
+      payload.gridGroups = stripUndefined(updates.gridGroups);
+    }
+    if (updates.imageRef !== undefined) payload.imageRef = stripUndefined(updates.imageRef);
     await updateDoc(pageRef(uid, templateId, pageId), payload);
     await updateDoc(templateRef(uid, templateId), { updatedAt: serverTimestamp() });
   }
@@ -277,7 +322,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     rectangles: Rectangle[]
   ): Promise<void> {
     await updateDoc(pageRef(uid, templateId, pageId), {
-      rectangles,
+      rectangles: stripUndefined(rectangles),
       updatedAt: serverTimestamp(),
     });
     await updateDoc(templateRef(uid, templateId), { updatedAt: serverTimestamp() });

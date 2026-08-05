@@ -2,8 +2,7 @@ import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { Stage, Layer, Image as KonvaImage, Rect, Transformer } from 'react-konva';
 import useImage from 'use-image';
-import { useTranslation } from 'react-i18next';
-import type { Rectangle } from '@/features/template';
+import type { Rectangle, FieldType } from '@/features/template';
 import { FIELD_TYPE_CONFIG } from '@/features/template';
 import Konva from 'konva';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
@@ -13,11 +12,28 @@ import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-templ
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import type { MeasureAnchor } from '@/features/editor/domain/services/measure-utils';
 import { createMeasureAnchor, getMovingAnchor } from '@/features/editor/domain/services/measure-utils';
+import {
+  type GridBounds,
+  translateGridBounds,
+} from '@/features/editor/domain/services/grid-layout';
 import { computeSnap, computeGroupSnap, computeGroupBounds, rectsIntersect, normalizeCoord, type SnapGuide } from '@/features/editor/domain/services/canvas-snap';
 import { canPanCanvas, clampCanvasPan, type CanvasPanContext } from '@/features/editor/domain/services/canvas-pan';
 import { SnapGuidesOverlay } from './snap-guides-overlay';
 import { MeasureOverlay } from './measure-overlay';
+import { GridOverlay } from './grid-overlay';
+import { GridBoundsHandles, type ActiveGridGutter } from './grid-bounds-handles';
 import { CanvasFloatingControls } from './canvas-floating-controls';
+import {
+  computePreviewPositionsForBounds,
+  useGridGroupOps,
+} from '@/features/editor/ui/hooks/use-grid-group-ops';
+import {
+  expandSelectionToGridGroups,
+  getGridGroupForSelection,
+  getGridGroupMemberIds,
+  isSelectionLockedGridGroup,
+  resolveGridGroupId,
+} from '@/features/editor/domain/services/grid-group';
 import './template-canva.scss';
 import { TemplateRectangle } from './template-rectangle';
 
@@ -44,6 +60,7 @@ interface DragStartEntry {
 interface DragOverlay {
   guides: SnapGuide[];
   previewPositions: Record<string, { x: number; y: number }>;
+  delta: { dx: number; dy: number };
 }
 
 interface DragState {
@@ -79,7 +96,6 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export const TemplateCanvas: React.FC = () => {
-  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
@@ -112,12 +128,14 @@ export const TemplateCanvas: React.FC = () => {
   const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
   const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
   const [marqueePreviewIds, setMarqueePreviewIds] = useState<string[]>([]);
+  const [activeGridGutter, setActiveGridGutter] = useState<ActiveGridGutter>(null);
+  const [gridBoundsPreview, setGridBoundsPreview] = useState<GridBounds | null>(null);
+
+  const { updateGroupBounds, translateGridGroup } = useGridGroupOps();
 
   const selectedFieldType = useEditorStore(state => state.selectedFieldType);
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const setSelectedRectangleIds = useEditorStore(state => state.setSelectedRectangleIds);
-  const toggleRectangleInSelection = useEditorStore(state => state.toggleRectangleInSelection);
-  const addToSelection = useEditorStore(state => state.addToSelection);
   const clearSelection = useEditorStore(state => state.clearSelection);
   const showRectangleGuides = useEditorStore(state => state.showRectangleGuides);
   const canvasTool = useEditorStore(state => state.canvasTool);
@@ -158,6 +176,15 @@ export const TemplateCanvas: React.FC = () => {
 
   const groupSelectionBounds = useMemo(() => {
     if (selectedRectangleIds.length < 2) return null;
+    if (
+      isSelectionLockedGridGroup(
+        selectedRectangleIds,
+        currentImage?.rectangles ?? [],
+        currentImage?.gridGroups,
+      )
+    ) {
+      return null;
+    }
 
     const selectedRects =
       currentImage?.rectangles?.filter(rect => selectedRectangleIds.includes(rect.id)) ?? [];
@@ -175,7 +202,32 @@ export const TemplateCanvas: React.FC = () => {
       width: maxX - minX + padding * 2,
       height: maxY - minY + padding * 2,
     };
-  }, [selectedRectangleIds, currentImage?.rectangles]);
+  }, [selectedRectangleIds, currentImage?.rectangles, currentImage?.gridGroups]);
+
+  const lockedGridGroup = useMemo(() => {
+    if (!currentImage) return null;
+    return getGridGroupForSelection(selectedRectangleIds, currentImage.gridGroups);
+  }, [currentImage, selectedRectangleIds]);
+
+  const isGridGroupFullySelected = lockedGridGroup !== null;
+
+  const gridPreviewPositions = useMemo(() => {
+    if (!lockedGridGroup || !gridBoundsPreview) return {};
+    return computePreviewPositionsForBounds(lockedGridGroup, gridBoundsPreview);
+  }, [lockedGridGroup, gridBoundsPreview]);
+
+  const activeGridBounds = useMemo(() => {
+    if (gridBoundsPreview) return gridBoundsPreview;
+    if (!lockedGridGroup) return null;
+
+    const delta = dragOverlay?.delta;
+    if (dragState && delta && (delta.dx !== 0 || delta.dy !== 0)) {
+      return translateGridBounds(lockedGridGroup.bounds, delta.dx, delta.dy);
+    }
+
+    return lockedGridGroup.bounds;
+  }, [gridBoundsPreview, lockedGridGroup, dragState, dragOverlay]);
+  const isGridHandleDragging = gridBoundsPreview !== null;
 
   useEffect(() => {
     if (!containerRef?.current || !currentImage?.width || !currentImage?.height) return;
@@ -214,6 +266,7 @@ export const TemplateCanvas: React.FC = () => {
     setPan({ x: 0, y: 0 });
     setMeasureState({ phase: 'idle' });
     setMeasurePreview(null);
+    setGridBoundsPreview(null);
   }, [currentImage?.id]);
 
   useEffect(() => {
@@ -234,17 +287,28 @@ export const TemplateCanvas: React.FC = () => {
   }, [canvasTool]);
 
   useEffect(() => {
+    if (!lockedGridGroup) {
+      setActiveGridGutter(null);
+      setGridBoundsPreview(null);
+    }
+  }, [lockedGridGroup?.id]);
+
+  useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
-      if (isSelectMode && selectedRectangleIds.length === 1) {
-        const selectedNode = stage.findOne(`#rect-${selectedRectangleIds[0]}`);
+      if (isSelectMode && selectedRectangleIds.length === 1 && !isGridGroupFullySelected) {
+        const selectedRect = currentImage?.rectangles.find(r => r.id === selectedRectangleIds[0]);
+        const selectedNode =
+          selectedRect?.gridGroupId
+            ? null
+            : stage.findOne(`#rect-${selectedRectangleIds[0]}`);
         transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
       } else {
         transformerRef.current.nodes([]);
       }
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedRectangleIds, currentImage?.rectangles, isSelectMode]);
+  }, [selectedRectangleIds, currentImage?.rectangles, isSelectMode, isGridGroupFullySelected]);
 
   const pointerToImage = useCallback(
     (pos: { x: number; y: number }) => ({
@@ -362,11 +426,18 @@ export const TemplateCanvas: React.FC = () => {
   }, []);
 
   const getMarqueeHitIds = useCallback(
-    (marqueeRect: MarqueeRect) =>
-      currentImage?.rectangles
-        ?.filter(rect => rectsIntersect(marqueeRect, rect))
-        .map(rect => rect.id) ?? [],
-    [currentImage?.rectangles],
+    (marqueeRect: MarqueeRect) => {
+      const rawIds =
+        currentImage?.rectangles
+          ?.filter(rect => rectsIntersect(marqueeRect, rect))
+          .map(rect => rect.id) ?? [];
+      return expandSelectionToGridGroups(
+        rawIds,
+        currentImage?.rectangles ?? [],
+        currentImage?.gridGroups,
+      );
+    },
+    [currentImage?.rectangles, currentImage?.gridGroups],
   );
 
   const handleMeasureClick = useCallback(
@@ -413,9 +484,19 @@ export const TemplateCanvas: React.FC = () => {
         return;
       }
 
+      if (isGridHandleDragging) return;
+
       const clickedOnEmpty = e.target === e.target.getStage() || e.target.name() === 'background';
 
       if (!clickedOnEmpty || !isSelectMode) return;
+
+      const wasGridSelected = isGridGroupFullySelected;
+
+      if (!e.evt.shiftKey && !e.evt.metaKey && !e.evt.ctrlKey) {
+        clearSelection();
+      }
+
+      if (wasGridSelected) return;
 
       const imagePos = pointerToImage(pos);
       marqueeStartRef.current = imagePos;
@@ -427,7 +508,7 @@ export const TemplateCanvas: React.FC = () => {
         clearSelection();
       }
     },
-    [isMeasureMode, isPanMode, isSelectMode, handleMeasureClick, pointerToImage, pan, panContext, clearSelection],
+    [isMeasureMode, isGridHandleDragging, isPanMode, isSelectMode, isGridGroupFullySelected, handleMeasureClick, pointerToImage, pan, panContext, clearSelection],
   );
 
   const handleMouseMove = useCallback(() => {
@@ -536,35 +617,67 @@ export const TemplateCanvas: React.FC = () => {
       drawingRect,
       selectedFieldType,
       addArea,
-      currentImage?.rectangles?.length,
+      currentImage,
     ],
   );
 
   const handleRectClick = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
-      if (!isSelectMode) return;
+      if (!isSelectMode || isGridHandleDragging) return;
       e.cancelBubble = true;
       const nativeEvent = e.evt;
+      const rects = currentImage?.rectangles ?? [];
+      const gridGroups = currentImage?.gridGroups;
+      const groupId = resolveGridGroupId(rectId, rects, gridGroups);
+      const memberIds = groupId
+        ? getGridGroupMemberIds(groupId, rects, gridGroups)
+        : [rectId];
 
       if (nativeEvent.shiftKey) {
-        toggleRectangleInSelection(rectId);
+        const allMembersSelected = memberIds.every(id => selectedRectangleIds.includes(id));
+        if (allMembersSelected) {
+          setSelectedRectangleIds(selectedRectangleIds.filter(id => !memberIds.includes(id)));
+        } else {
+          setSelectedRectangleIds([...new Set([...selectedRectangleIds, ...memberIds])]);
+        }
       } else if (nativeEvent.metaKey || nativeEvent.ctrlKey) {
-        addToSelection(rectId);
+        const allMembersSelected = memberIds.every(id => selectedRectangleIds.includes(id));
+        if (!allMembersSelected) {
+          setSelectedRectangleIds([...new Set([...selectedRectangleIds, ...memberIds])]);
+        }
       } else {
-        setSelectedRectangleIds([rectId]);
+        setSelectedRectangleIds(memberIds);
       }
     },
-    [isSelectMode, toggleRectangleInSelection, addToSelection, setSelectedRectangleIds],
+    [
+      isSelectMode,
+      isGridHandleDragging,
+      currentImage?.rectangles,
+      currentImage?.gridGroups,
+      selectedRectangleIds,
+      setSelectedRectangleIds,
+    ],
   );
 
   const handleDragStart = useCallback(
     (rectId: string) => {
-      if (!isSelectMode) return;
+      if (!isSelectMode || isGridHandleDragging) return;
       const rects = currentImage?.rectangles ?? [];
-      const movingIds =
-        selectedRectangleIds.includes(rectId) && selectedRectangleIds.length > 1
-          ? selectedRectangleIds
-          : [rectId];
+      const gridGroups = currentImage?.gridGroups;
+      const groupId = resolveGridGroupId(rectId, rects, gridGroups);
+      let movingIds: string[];
+
+      if (groupId) {
+        movingIds = getGridGroupMemberIds(groupId, rects, gridGroups);
+        if (!movingIds.every(id => selectedRectangleIds.includes(id))) {
+          setSelectedRectangleIds(movingIds);
+        }
+      } else {
+        movingIds =
+          selectedRectangleIds.includes(rectId) && selectedRectangleIds.length > 1
+            ? selectedRectangleIds
+            : [rectId];
+      }
 
       dragGroupStartRef.current = movingIds.map(id => {
         const rect = rects.find(r => r.id === id)!;
@@ -593,9 +706,10 @@ export const TemplateCanvas: React.FC = () => {
             return [id, { x: rect.x, y: rect.y }];
           }),
         ),
+        delta: { dx: 0, dy: 0 },
       });
     },
-    [isSelectMode, currentImage?.rectangles, selectedRectangleIds],
+    [isSelectMode, isGridHandleDragging, currentImage?.rectangles, selectedRectangleIds, setSelectedRectangleIds],
   );
 
   const handleTransformEnd = useCallback(
@@ -625,12 +739,41 @@ export const TemplateCanvas: React.FC = () => {
       if (!startEntries || !delta) return;
 
       if (delta.dx !== 0 || delta.dy !== 0) {
-        const moves = startEntries.map(entry => ({
-          id: entry.id,
-          x: entry.x + delta.dx,
-          y: entry.y + delta.dy,
-        }));
-        moveAreas(moves);
+        const rects = currentImage?.rectangles ?? [];
+        const gridGroups = currentImage?.gridGroups;
+        const groupIds = new Set(
+          startEntries
+            .map(entry => resolveGridGroupId(entry.id, rects, gridGroups))
+            .filter((id): id is string => Boolean(id)),
+        );
+
+        if (groupIds.size === 1) {
+          const groupId = [...groupIds][0];
+          const memberIds = getGridGroupMemberIds(groupId, rects, gridGroups);
+          const allMembersMoving =
+            memberIds.length === startEntries.length &&
+            memberIds.every(id => startEntries.some(entry => entry.id === id));
+
+          if (allMembersMoving) {
+            translateGridGroup(groupId, delta.dx, delta.dy);
+          } else {
+            moveAreas(
+              startEntries.map(entry => ({
+                id: entry.id,
+                x: entry.x + delta.dx,
+                y: entry.y + delta.dy,
+              })),
+            );
+          }
+        } else {
+          moveAreas(
+            startEntries.map(entry => ({
+              id: entry.id,
+              x: entry.x + delta.dx,
+              y: entry.y + delta.dy,
+            })),
+          );
+        }
       }
 
       dragGroupStartRef.current = null;
@@ -639,7 +782,7 @@ export const TemplateCanvas: React.FC = () => {
       setDragState(null);
       setDragOverlay(null);
     },
-    [moveAreas],
+    [currentImage?.rectangles, currentImage?.gridGroups, moveAreas, translateGridGroup],
   );
 
   const handleDragMove = useCallback(
@@ -735,6 +878,7 @@ export const TemplateCanvas: React.FC = () => {
       setDragOverlay({
         guides: snapResult.guides,
         previewPositions,
+        delta: { dx: deltaX, dy: deltaY },
       });
     },
     [currentImage, scale, offset],
@@ -748,6 +892,10 @@ export const TemplateCanvas: React.FC = () => {
       if (isEditableTarget(e.target)) return;
 
       if (e.key === 'Escape') {
+        if (isGridHandleDragging) {
+          setGridBoundsPreview(null);
+          return;
+        }
         if (isPanMode) {
           setCanvasTool('select');
           return;
@@ -817,6 +965,7 @@ export const TemplateCanvas: React.FC = () => {
   }, [
     isPanMode,
     isMeasureMode,
+    isGridHandleDragging,
     measureState.phase,
     setCanvasTool,
     selectedRectangleIds,
@@ -838,7 +987,15 @@ export const TemplateCanvas: React.FC = () => {
         ? measurePreview
         : null;
   const measureRects = useMemo(
-    () => currentImage?.rectangles?.map(({ id, x, y }) => ({ id, x, y })) ?? [],
+    () =>
+      currentImage?.rectangles?.map(({ id, x, y, width, height, order }) => ({
+        id,
+        x,
+        y,
+        width,
+        height,
+        order,
+      })) ?? [],
     [currentImage?.rectangles],
   );
   const movingBlockId =
@@ -853,9 +1010,29 @@ export const TemplateCanvas: React.FC = () => {
     [moveAreas],
   );
 
+  const gridBoundsPreviewRef = useRef<GridBounds | null>(null);
+
+  const handleGridBoundsPreview = useCallback((bounds: GridBounds) => {
+    gridBoundsPreviewRef.current = bounds;
+    setGridBoundsPreview(bounds);
+  }, []);
+
+  const handleGridBoundsCommit = useCallback(() => {
+    const bounds = gridBoundsPreviewRef.current;
+    if (!bounds || !lockedGridGroup) {
+      setGridBoundsPreview(null);
+      gridBoundsPreviewRef.current = null;
+      return;
+    }
+    updateGroupBounds(lockedGridGroup.id, bounds);
+    setGridBoundsPreview(null);
+    gridBoundsPreviewRef.current = null;
+  }, [lockedGridGroup, updateGroupBounds]);
+
   const containerClassName = [
     'template-canva',
     isMeasureMode && 'template-canva--measure',
+    lockedGridGroup !== null && 'template-canva--grid',
     isPanMode && 'template-canva--pan-tool',
     isPanning && 'template-canva--panning',
     spacePressed && 'template-canva--space-pan',
@@ -904,7 +1081,10 @@ export const TemplateCanvas: React.FC = () => {
             const isMarqueePreview = marqueePreviewIds.includes(rect.id);
             const isGroupDragging = dragState !== null && dragState.movingIds.length > 1;
             const isDragLeader = dragState?.leaderId === rect.id;
-            const draggable = isSelectMode && (!isGroupDragging || isDragLeader);
+            const draggable =
+              isSelectMode && !isGridHandleDragging && (!isGroupDragging || isDragLeader);
+            const previewPosition =
+              gridPreviewPositions[rect.id] ?? dragOverlay?.previewPositions[rect.id];
             return (
               <TemplateRectangle
                 key={`${currentImage.id}-${rect.id}`}
@@ -918,8 +1098,9 @@ export const TemplateCanvas: React.FC = () => {
                 showRectangleGuides={showRectangleGuides}
                 isSelected={isSelected}
                 isMarqueePreview={isMarqueePreview}
-                previewPosition={dragOverlay?.previewPositions[rect.id]}
+                previewPosition={previewPosition}
                 draggable={draggable}
+                listening
                 onClick={e => handleRectClick(rect.id, e)}
                 onDragStart={() => handleDragStart(rect.id)}
                 onDragMove={e => handleDragMove(rect.id, e)}
@@ -956,7 +1137,7 @@ export const TemplateCanvas: React.FC = () => {
             />
           )}
 
-          {groupSelectionBounds && isSelectMode && (
+          {groupSelectionBounds && isSelectMode && !isGridGroupFullySelected && (
             <Rect
               x={offset.x + groupSelectionBounds.x * scale}
               y={offset.y + groupSelectionBounds.y * scale}
@@ -995,6 +1176,29 @@ export const TemplateCanvas: React.FC = () => {
             anchorStroke="white"
           />
         </Layer>
+
+        {lockedGridGroup && activeGridBounds && (
+          <Layer>
+            <GridOverlay
+              bounds={activeGridBounds}
+              settings={lockedGridGroup.settings}
+              scale={scale}
+              offset={offset}
+              activeGutter={activeGridGutter}
+              mode="edit"
+            />
+            <GridBoundsHandles
+              bounds={activeGridBounds}
+              cols={lockedGridGroup.settings.cols}
+              rows={lockedGridGroup.settings.rows}
+              scale={scale}
+              offset={offset}
+              onBoundsChange={handleGridBoundsPreview}
+              onActiveGutterChange={setActiveGridGutter}
+              onDragEnd={handleGridBoundsCommit}
+            />
+          </Layer>
+        )}
       </Stage>
 
       <div className="template-canva__controls">

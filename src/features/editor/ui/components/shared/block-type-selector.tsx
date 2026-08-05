@@ -33,7 +33,6 @@ export const BlockTypeSelector = ({
 }: BlockTypeSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
-  const menuRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const floatingMenuRef = useRef<HTMLDivElement>(null);
@@ -48,7 +47,7 @@ export const BlockTypeSelector = ({
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node;
-      if (menuRef.current?.contains(target)) return;
+      if (triggerRef.current?.contains(target)) return;
       if (containerRef.current?.contains(target)) return;
       if (floatingMenuRef.current?.contains(target)) return;
       closeMenu();
@@ -81,6 +80,29 @@ export const BlockTypeSelector = ({
 
   const typeOptions = Object.keys(FIELD_TYPE_CONFIG) as FieldType[];
 
+  const openMenu = (triggerRect: DOMRect, minWidth = triggerRect.width) => {
+    setMenuPosition({
+      top: triggerRect.bottom + 6,
+      left: triggerRect.left,
+      width: Math.max(minWidth, triggerRect.width),
+    });
+    setIsOpen(true);
+  };
+
+  const handlePopoverToggle = (event: React.MouseEvent) => {
+    event.stopPropagation();
+
+    if (isOpen) {
+      closeMenu();
+      return;
+    }
+
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    openMenu(rect, 300);
+  };
+
   if (variant === 'sidebar') {
     const currentConfig = FIELD_TYPE_CONFIG[currentType];
 
@@ -95,12 +117,7 @@ export const BlockTypeSelector = ({
       const rect = triggerRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      setMenuPosition({
-        top: rect.bottom + 6,
-        left: rect.left,
-        width: rect.width,
-      });
-      setIsOpen(true);
+      openMenu(rect);
     };
 
     return (
@@ -190,36 +207,47 @@ export const BlockTypeSelector = ({
   }
 
   return (
-    <button
-      ref={menuRef}
-      type="button"
-      onClick={e => {
-        e.stopPropagation();
-        setIsOpen(!isOpen);
-      }}
-      className="block-type-selector block-type-selector--popover"
-    >
-      Editar Tipo
-      <div
-        className={clsx('block-type-selector__menu', {
-          'block-type-selector__menu--visible': isOpen,
+    <div ref={containerRef} className="block-type-selector block-type-selector--popover">
+      <button
+        ref={triggerRef}
+        type="button"
+        className={clsx('block-type-selector__popover-trigger', {
+          'block-type-selector__popover-trigger--open': isOpen,
         })}
+        onClick={handlePopoverToggle}
       >
-        <div className="block-type-selector__menu__options">
-          {typeOptions.map(type => (
-            <button
-              key={type}
-              type="button"
-              className={clsx('block-type-selector__menu__option', {
-                'block-type-selector__menu__option--active': currentType === type,
-              })}
-              onClick={() => handleSelect(type)}
-            >
-              {FIELD_ICONS[type]}
-            </button>
-          ))}
-        </div>
-      </div>
-    </button>
+        Editar Tipo
+      </button>
+      {isOpen && menuPosition &&
+        createPortal(
+          <div
+            ref={floatingMenuRef}
+            className="block-type-selector__popover-menu"
+            {...blockSelectionZoneProps}
+            style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
+              minWidth: menuPosition.width,
+            }}
+          >
+            <div className="block-type-selector__popover-menu__options">
+              {typeOptions.map(type => (
+                <button
+                  key={type}
+                  type="button"
+                  className={clsx('block-type-selector__popover-menu__option', {
+                    'block-type-selector__popover-menu__option--active': currentType === type,
+                  })}
+                  onClick={() => handleSelect(type)}
+                  title={FIELD_TYPE_CONFIG[type].label}
+                >
+                  {FIELD_ICONS[type]}
+                </button>
+              ))}
+            </div>
+          </div>,
+          document.body,
+        )}
+    </div>
   );
 };

@@ -22,4 +22,26 @@
     gap: 8px;
     flex-shrink: 0;
   }
+
+  &__grid-btn {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid hsl(168, 76%, 42%);
+    border-radius: 8px;
+    background: rgba(0, 200, 180, 0.08);
+    color: hsl(168, 50%, 28%);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 200ms ease;
+
+    &:hover:not(:disabled) {
+      opacity: 0.85;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
 }

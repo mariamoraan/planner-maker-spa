@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
+  computeGridMeasureAdjustMoves,
   computeMeasureMetrics,
   computeMeasureAdjustMoves,
+  computeMeasureAdjustMovesWithGrid,
   createMeasureAnchor,
   getFixedAnchor,
   getMovingAnchor,
@@ -156,5 +158,69 @@ describe('createMeasureAnchor', () => {
       blockId: 'a',
       offsetInBlock: { x: 15, y: 15 },
     });
+  });
+});
+
+describe('computeGridMeasureAdjustMoves', () => {
+  const gridRects: MeasureRect[] = [
+    { id: 'a', x: 100, y: 200, width: 48, height: 36, order: 0 },
+    { id: 'b', x: 200, y: 200, width: 48, height: 36, order: 1 },
+    { id: 'c', x: 300, y: 200, width: 48, height: 36, order: 2 },
+    { id: 'd', x: 100, y: 300, width: 48, height: 36, order: 3 },
+    { id: 'e', x: 200, y: 300, width: 48, height: 36, order: 4 },
+    { id: 'f', x: 300, y: 300, width: 48, height: 36, order: 5 },
+  ];
+
+  it('redistributes a 3x2 grid when horizontal spacing changes', () => {
+    const fixed: MeasureAnchor = {
+      x: 100,
+      y: 200,
+      blockId: 'a',
+      offsetInBlock: { x: 0, y: 0 },
+    };
+    const moving: MeasureAnchor = {
+      x: 200,
+      y: 200,
+      blockId: 'b',
+      offsetInBlock: { x: 0, y: 0 },
+    };
+
+    const moves = computeGridMeasureAdjustMoves(
+      fixed,
+      moving,
+      gridRects.map(rect => rect.id),
+      120,
+      0,
+      gridRects,
+    );
+
+    expect(moves).toEqual([
+      { id: 'b', x: 220, y: 200 },
+      { id: 'c', x: 340, y: 200 },
+      { id: 'e', x: 220, y: 300 },
+      { id: 'f', x: 340, y: 300 },
+    ]);
+  });
+
+  it('falls back to translate moves when grid mode is disabled', () => {
+    const fixed: MeasureAnchor = { x: 50, y: 50 };
+    const moving: MeasureAnchor = {
+      x: 220,
+      y: 100,
+      blockId: 'b',
+      offsetInBlock: { x: 20, y: 20 },
+    };
+
+    const moves = computeMeasureAdjustMovesWithGrid(
+      fixed,
+      moving,
+      ['b'],
+      100,
+      30,
+      rects,
+      { applyToGrid: false },
+    );
+
+    expect(moves).toEqual([{ id: 'b', x: 130, y: 60 }]);
   });
 });

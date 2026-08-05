@@ -1,0 +1,129 @@
+.measure-adjust-panel,
+.grid-edit-panel {
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  max-width: 280px;
+}
+
+.grid-edit-panel {
+  &__hint {
+    margin: 0 0 4px;
+    font-size: 11px;
+    color: hsl(220, 10%, 40%);
+    line-height: 1.4;
+  }
+
+  &__stretch-hint {
+    margin: 0 0 8px;
+    font-size: 10px;
+    color: hsl(220, 10%, 50%);
+    line-height: 1.35;
+  }
+
+  &__fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    color: hsl(220, 10%, 35%);
+
+    input,
+    select {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+
+      &:read-only {
+        background: rgba(0, 0, 0, 0.04);
+        color: hsl(220, 10%, 45%);
+      }
+    }
+  }
+
+  &__stepper {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    button {
+      flex: 0 0 28px;
+      height: 28px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  &__primary,
+  &__secondary {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 200ms ease;
+  }
+
+  &__primary {
+    background: hsl(168, 76%, 42%);
+    color: white;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  &__secondary {
+    background: rgba(0, 0, 0, 0.06);
+    color: hsl(220, 10%, 25%);
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
+
+  &--compact {
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+}

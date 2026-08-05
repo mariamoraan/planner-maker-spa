@@ -87,4 +87,9 @@ $toolbar-padding-x-compact: 16px;
             background: #fee2e2;
         }
     }
+
+    &--grid {
+        width: 100%;
+        max-width: min(900px, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
+    }
 }

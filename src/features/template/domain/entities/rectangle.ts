@@ -10,4 +10,6 @@ export interface Rectangle {
   order: number;
   formatVariant?: FormatVariant;
   style?: FieldStyle;
+  gridGroupId?: string;
+  gridCellIndex?: number;
 }

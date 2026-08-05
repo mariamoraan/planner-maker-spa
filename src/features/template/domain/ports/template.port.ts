@@ -33,7 +33,7 @@ export interface TemplateRepositoryPort {
     uid: string,
     templateId: string,
     pageId: string,
-    updates: Partial<TemplatePageRecord>
+    updates: Partial<TemplatePageRecord> & { gridGroups?: TemplatePageRecord['gridGroups'] | null }
   ): Promise<void>;
   deletePage(uid: string, templateId: string, pageId: string): Promise<void>;
   setPageOrder(uid: string, templateId: string, pageOrder: string[]): Promise<void>;

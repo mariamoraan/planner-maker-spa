@@ -3,7 +3,8 @@ import './measure-adjust-panel.scss';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  computeMeasureAdjustMoves,
+  canApplyGridMeasureAdjust,
+  computeMeasureAdjustMovesWithGrid,
   computeMeasureMetrics,
   getMovingAnchor,
   getMovingBlockIds,
@@ -37,11 +38,27 @@ export const MeasureAdjustPanel = ({
 
   const [dx, setDx] = useState(String(Math.round(metrics.dx)));
   const [dy, setDy] = useState(String(Math.round(metrics.dy)));
+  const movingIds = moving?.blockId
+    ? getMovingBlockIds(moving.blockId, selectedRectangleIds)
+    : [];
+  const overlayDx = Number(dx);
+  const overlayDy = Number(dy);
+  const gridEligible =
+    !Number.isNaN(overlayDx) &&
+    !Number.isNaN(overlayDy) &&
+    canApplyGridMeasureAdjust(movingIds, rectangles, overlayDx, overlayDy);
+  const [applyToGrid, setApplyToGrid] = useState(gridEligible);
 
   useEffect(() => {
     setDx(String(Math.round(metrics.dx)));
     setDy(String(Math.round(metrics.dy)));
   }, [metrics.dx, metrics.dy, p1, p2, rectangles]);
+
+  useEffect(() => {
+    if (gridEligible) {
+      setApplyToGrid(true);
+    }
+  }, [gridEligible]);
 
   if (!moving?.blockId) return null;
 
@@ -52,14 +69,14 @@ export const MeasureAdjustPanel = ({
 
     const { targetDx, targetDy } = overlayDeltaToAdjustTarget(p1, p2, overlayDx, overlayDy);
     const fixed = moving === p2 ? p1 : p2;
-    const movingIds = getMovingBlockIds(moving.blockId, selectedRectangleIds);
-    const moves = computeMeasureAdjustMoves(
+    const moves = computeMeasureAdjustMovesWithGrid(
       fixed,
       moving,
       movingIds,
       targetDx,
       targetDy,
       rectangles,
+      { applyToGrid },
     );
 
     if (moves.length > 0) {
@@ -69,7 +86,21 @@ export const MeasureAdjustPanel = ({
 
   return (
     <div className="measure-adjust-panel">
-      <p className="measure-adjust-panel__hint">{t('editor.measureAdjustHint')}</p>
+      <p className="measure-adjust-panel__hint">
+        {gridEligible && applyToGrid
+          ? t('editor.measureGridAdjustHint', { count: movingIds.length })
+          : t('editor.measureAdjustHint')}
+      </p>
+      {gridEligible && (
+        <label className="measure-adjust-panel__grid-toggle">
+          <input
+            type="checkbox"
+            checked={applyToGrid}
+            onChange={event => setApplyToGrid(event.target.checked)}
+          />
+          <span>{t('editor.measureApplyToGrid')}</span>
+        </label>
+      )}
       <div className="measure-adjust-panel__fields">
         <label className="measure-adjust-panel__field">
           <span>{t('editor.measureAdjustDx')}</span>
@@ -90,7 +121,9 @@ export const MeasureAdjustPanel = ({
           />
         </label>
         <button type="button" className="measure-adjust-panel__apply" onClick={handleApply}>
-          {t('editor.measureApply')}
+          {gridEligible && applyToGrid
+            ? t('editor.measureApplyGrid')
+            : t('editor.measureApply')}
         </button>
       </div>
     </div>

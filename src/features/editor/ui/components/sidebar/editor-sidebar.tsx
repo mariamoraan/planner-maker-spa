@@ -7,6 +7,11 @@ import { FieldTypeSelector } from './FieldTypeSelector';
 import { AreaStylePanel } from './area-style-panel';
 import { BlockSettingsHeader } from './block-settings-header';
 import { EditorSidebarSection } from './editor-sidebar-section';
+import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
+import {
+  canGroupSelection,
+  getGridGroupForSelection,
+} from '@/features/editor/domain/services/grid-group';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { Link } from 'react-router-dom';
@@ -35,6 +40,7 @@ export const EditorSidebar: React.FC = () => {
     const updateTemplate = useTemplateStore(state => state.updateTemplate);
     const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
     const { deleteAreas } = useManageAreas();
+    const { groupSelectionAsGrid } = useGridGroupOps();
     const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
     const [templateName, setTemplateName] = useState(template?.name ?? '');
     const [sectionOpen, setSectionOpen] = useState(DEFAULT_SECTION_STATE);
@@ -42,6 +48,11 @@ export const EditorSidebar: React.FC = () => {
 
     const singleSelectedId = selectedRectangleIds.length === 1 ? selectedRectangleIds[0] : null;
     const multiSelected = selectedRectangleIds.length > 1;
+    const rectangles = currentImage?.rectangles ?? [];
+    const isLockedGridGroupSelected =
+      getGridGroupForSelection(selectedRectangleIds, currentImage?.gridGroups) !== null;
+    const canGroup = canGroupSelection(selectedRectangleIds, rectangles);
+    const showMultiBlockSection = multiSelected && !isLockedGridGroupSelected;
 
     const setSectionOpenState = (id: SidebarSectionId, open: boolean) => {
       setSectionOpen(prev => ({ ...prev, [id]: open }));
@@ -156,7 +167,7 @@ export const EditorSidebar: React.FC = () => {
             </div>
           )}
         </EditorSidebarSection>
-        {multiSelected && (
+        {showMultiBlockSection && (
           <EditorSidebarSection
             title={t('editor.blockSettings')}
             open={sectionOpen.blockSettings}
@@ -165,6 +176,15 @@ export const EditorSidebar: React.FC = () => {
             <p className="editor-sidebar__multi-select-count">
               {t('editor.blocksSelected', { count: selectedRectangleIds.length })}
             </p>
+            {canGroup ? (
+              <button
+                type="button"
+                className="editor-sidebar__grid-action"
+                onClick={() => groupSelectionAsGrid([...selectedRectangleIds])}
+              >
+                {t('editor.gridGroupAsGrid')}
+              </button>
+            ) : null}
             <button
               type="button"
               className="editor-sidebar__delete-selected"
@@ -174,7 +194,7 @@ export const EditorSidebar: React.FC = () => {
             </button>
           </EditorSidebarSection>
         )}
-        {singleSelectedId && (
+        {singleSelectedId && !isLockedGridGroupSelected && (
           <EditorSidebarSection
             title={t('editor.blockSettings')}
             open={sectionOpen.blockSettings}

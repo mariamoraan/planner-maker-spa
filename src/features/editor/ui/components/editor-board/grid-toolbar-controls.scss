@@ -1,0 +1,113 @@
+.grid-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+
+  &__badge {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: hsl(220, 10%, 25%);
+    white-space: nowrap;
+  }
+
+  &__divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+  }
+
+  &__stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: hsl(220, 10%, 35%);
+    white-space: nowrap;
+
+    span {
+      font-weight: 500;
+    }
+  }
+
+  &__stepper-inputs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    button {
+      width: 26px;
+      height: 26px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 6px;
+      background: white;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+
+      &:hover {
+        background: rgba(0, 0, 0, 0.04);
+      }
+    }
+
+    input {
+      width: 36px;
+      height: 26px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 13px;
+    }
+  }
+
+  &__ungroup {
+    margin-left: auto;
+    padding: 6px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  &__popover-anchor {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  &__menu-trigger {
+    padding: 6px 12px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover,
+    &--open {
+      background: rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  &__popover {
+    position: fixed;
+    z-index: 1200;
+    min-width: 280px;
+    background: rgba(255, 255, 255, 0.98);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+}

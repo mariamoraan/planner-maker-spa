@@ -13,6 +13,7 @@ import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImag
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import type { TemplatePageRecord } from '@/features/template/domain/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/canvas-snap';
+import { repairGridMetadata } from '@/features/editor/domain/services/grid-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
 const RECTANGLE_SYNC_DELAY_MS = 500;
@@ -88,6 +89,12 @@ function needsImageLoad(image: TemplateImage): boolean {
   return !image.src;
 }
 
+function withRepairedGridMetadata(image: TemplateImage): TemplateImage {
+  const rectangles = repairGridMetadata(image.rectangles, image.gridGroups);
+  if (rectangles === image.rectangles) return image;
+  return { ...image, rectangles };
+}
+
 function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
   const imageRef = resolveImageRef(uid, image.id, image.imageRef);
   return {
@@ -97,6 +104,7 @@ function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
     width: image.width,
     height: image.height,
     rectangles: image.rectangles,
+    gridGroups: image.gridGroups,
     imageRef,
     createdAt: image.createdAt,
     updatedAt: image.updatedAt,
@@ -132,7 +140,7 @@ interface TemplateState {
     name?: string;
   }) => Promise<string>;
   getImageData: (imageId: string) => Promise<string | undefined>;
-  updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage>) => void;
+  updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage> & { gridGroups?: TemplateImage['gridGroups'] | null }) => void;
   deleteImage: (templateId: string, imageId: string) => Promise<void>;
   setCurrentImage: (id: string | null) => Promise<void>;
   getCurrentImage: (templateId: string) => TemplateImage | null;
@@ -157,7 +165,19 @@ interface TemplateState {
   reorderImages: (templateId: string, activeId: string, overId: string) => boolean;
 }
 
-export const useTemplateStore = create<TemplateState>()((set, get) => ({
+export const useTemplateStore = create<TemplateState>()((set, get) => {
+  const syncRectanglesWithGridMetadata = (
+    templateId: string,
+    imageId: string,
+    rectangles: Rectangle[],
+  ): Rectangle[] => {
+    const image = get().templates
+      .find(t => t.id === templateId)
+      ?.images.find(img => img.id === imageId);
+    return repairGridMetadata(rectangles, image?.gridGroups);
+  };
+
+  return {
   templates: [],
   syncUid: null,
   isSyncReady: false,
@@ -196,10 +216,10 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
           const src = srcByPageId.get(remoteImg.id) ?? remoteImg.src ?? '';
 
           if (localImg && localImg.updatedAt.getTime() > remoteImg.updatedAt.getTime()) {
-            return { ...localImg, src, missingLocalAsset: false };
+            return withRepairedGridMetadata({ ...localImg, src, missingLocalAsset: false });
           }
 
-          return { ...remoteImg, src, missingLocalAsset: false };
+          return withRepairedGridMetadata({ ...remoteImg, src, missingLocalAsset: false });
         });
 
         localTemplate?.images.forEach(localImg => {
@@ -418,13 +438,18 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
   },
 
   updateImage: (templateId, imageId, updates) => {
+    const localUpdates: Partial<TemplateImage> = {
+      ...updates,
+      gridGroups: updates.gridGroups === null ? undefined : updates.gridGroups,
+    };
+
     set(state => ({
       templates: state.templates.map(t =>
         t.id === templateId
           ? {
               ...t,
               images: t.images.map(img =>
-                img.id === imageId ? { ...img, ...updates, updatedAt: new Date() } : img
+                img.id === imageId ? { ...img, ...localUpdates, updatedAt: new Date() } : img
               ),
               updatedAt: new Date(),
             }
@@ -434,13 +459,20 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
     const uid = get().syncUid;
     if (uid) {
-      void getInfra().templates.updatePage(uid, templateId, imageId, {
-        name: updates.name,
-        type: updates.type,
-        width: updates.width,
-        height: updates.height,
-        rectangles: updates.rectangles,
-      });
+      const pageUpdates: Partial<TemplatePageRecord> & {
+        gridGroups?: TemplatePageRecord['gridGroups'] | null;
+      } = {};
+      if (updates.name !== undefined) pageUpdates.name = updates.name;
+      if (updates.type !== undefined) pageUpdates.type = updates.type;
+      if (updates.width !== undefined) pageUpdates.width = updates.width;
+      if (updates.height !== undefined) pageUpdates.height = updates.height;
+      if (updates.rectangles !== undefined) pageUpdates.rectangles = updates.rectangles;
+      if (updates.gridGroups !== undefined) {
+        pageUpdates.gridGroups = updates.gridGroups;
+      }
+      if (updates.imageRef !== undefined) pageUpdates.imageRef = updates.imageRef;
+
+      void getInfra().templates.updatePage(uid, templateId, imageId, pageUpdates);
     }
   },
 
@@ -610,7 +642,12 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
     const uid = get().syncUid;
     if (uid) {
-      void getInfra().templates.updatePageRectangles(uid, templateId, imageId, rectangles);
+      void getInfra().templates.updatePageRectangles(
+        uid,
+        templateId,
+        imageId,
+        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+      );
     }
 
     return id;
@@ -639,7 +676,12 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
     const uid = get().syncUid;
     if (uid) {
-      void getInfra().templates.updatePageRectangles(uid, templateId, imageId, rectangles);
+      void getInfra().templates.updatePageRectangles(
+        uid,
+        templateId,
+        imageId,
+        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+      );
     }
   },
 
@@ -677,7 +719,12 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
       key,
       setTimeout(() => {
         rectangleSyncTimers.delete(key);
-        void getInfra().templates.updatePageRectangles(uid, templateId, imageId, rectangles);
+        void getInfra().templates.updatePageRectangles(
+          uid,
+          templateId,
+          imageId,
+          syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+        );
       }, RECTANGLE_SYNC_DELAY_MS)
     );
   },
@@ -720,7 +767,12 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
       key,
       setTimeout(() => {
         rectangleSyncTimers.delete(key);
-        void getInfra().templates.updatePageRectangles(uid, templateId, imageId, rectangles);
+        void getInfra().templates.updatePageRectangles(
+          uid,
+          templateId,
+          imageId,
+          syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+        );
       }, RECTANGLE_SYNC_DELAY_MS)
     );
   },
@@ -746,7 +798,13 @@ export const useTemplateStore = create<TemplateState>()((set, get) => ({
 
     const uid = get().syncUid;
     if (uid) {
-      void getInfra().templates.updatePageRectangles(uid, templateId, imageId, rectangles);
+      void getInfra().templates.updatePageRectangles(
+        uid,
+        templateId,
+        imageId,
+        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+      );
     }
   },
-}));
+};
+});

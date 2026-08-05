@@ -21,6 +21,7 @@ interface TemplateRectangleProps {
     isMarqueePreview?: boolean;
     previewPosition?: { x: number; y: number };
     draggable?: boolean;
+    listening?: boolean;
     onClick: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
     onDragStart?: () => void;
     onDragMove: (e: Konva.KonvaEventObject<DragEvent>) => void;
@@ -41,6 +42,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     isMarqueePreview = false,
     previewPosition,
     draggable = true,
+    listening = true,
     onClick,
     onDragStart,
     onDragMove,
@@ -97,6 +99,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
         width={width}
         height={height}
         draggable={draggable}
+        listening={listening}
         onClick={onClick}
         onTap={onClick}
         onDragStart={onDragStart}

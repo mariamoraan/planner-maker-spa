@@ -1,15 +1,25 @@
-import type { Template } from '@/features/template';
+import {
+  layoutGridRectangles,
+  type GridLayoutConfig,
+} from '@/features/editor/domain/services/grid-layout';
+import type { GridGroup, Rectangle, Template } from '@/features/template';
 
 export const DEMO_TEMPLATE_ID = 'demo-planner';
+const DEMO_MONTHLY_DAY_GRID_ID = 'grid-demo-monthly-days';
 
 const now = new Date();
-const pageSrc = '/demo/weekly-planner.svg';
+const coverSrc = '/demo/cover.png';
+const monthlyCalendarSrc = '/demo/month-calendar.png';
+const weeklyPlannerSrc = '/demo/weekly-planner.png';
+const dailyPageSrc = '/demo/daily-planner.png';
 
 function page(
   id: string,
   name: string,
   type: Template['images'][number]['type'],
+  pageSrc: string,
   rectangles: Template['images'][number]['rectangles'] = [],
+  gridGroups?: Record<string, GridGroup>,
 ) {
   return {
     id,
@@ -19,10 +29,108 @@ function page(
     height: 1600,
     src: pageSrc,
     rectangles,
+    gridGroups,
     createdAt: now,
     updatedAt: now,
     missingLocalAsset: false,
   };
+}
+
+const MONTHLY_DAY_GRID: GridLayoutConfig = {
+  origin: { x: 120, y: 430 },
+  cols: 7,
+  rows: 5,
+  cellSize: { width: 137, height: 211 },
+  rectSize: { width: 48, height: 36 },
+  align: 'top-left',
+  padding: { x: 12, y: 10 },
+};
+
+const WEEKLY_DAY_GRID: GridLayoutConfig = {
+  origin: { x: 210, y: 420 },
+  cols: 1,
+  rows: 5,
+  cellSize: { width: 48, height: 150 },
+  rectSize: { width: 48, height: 36 },
+  align: 'top-left',
+  padding: { x: 12, y: 0 },
+};
+
+const generateMonthlyCalendarDayRectangles = (): Rectangle[] =>
+  layoutGridRectangles(35, MONTHLY_DAY_GRID, (index, { x, y }) => ({
+    id: `rect-day-${index + 1}`,
+    x,
+    y,
+    width: 48,
+    height: 36,
+    fieldType: 'day',
+    order: index,
+    formatVariant: 'name',
+  }));
+
+const generateWeeklyCalendarDayRectangles = (): Rectangle[] =>
+  layoutGridRectangles(7, WEEKLY_DAY_GRID, (index, { x, y }) => ({
+    id: `rect-day-${index + 1}`,
+    x,
+    y,
+    width: 48,
+    height: 36,
+    fieldType: 'day',
+    order: index,
+    formatVariant: 'name',
+  }));
+
+function buildMonthlyCalendarPage() {
+  const dayRectangles = generateMonthlyCalendarDayRectangles();
+  const rectIds = dayRectangles.map(rect => rect.id);
+  const bounds = {
+    x: MONTHLY_DAY_GRID.origin.x,
+    y: MONTHLY_DAY_GRID.origin.y,
+    width: MONTHLY_DAY_GRID.cols * MONTHLY_DAY_GRID.cellSize.width,
+    height: MONTHLY_DAY_GRID.rows * MONTHLY_DAY_GRID.cellSize.height,
+  };
+  const gridGroups: Record<string, GridGroup> = {
+    [DEMO_MONTHLY_DAY_GRID_ID]: {
+      id: DEMO_MONTHLY_DAY_GRID_ID,
+      rectIds,
+      cols: MONTHLY_DAY_GRID.cols,
+      rows: MONTHLY_DAY_GRID.rows,
+      bounds,
+      settings: {
+        cols: MONTHLY_DAY_GRID.cols,
+        rows: MONTHLY_DAY_GRID.rows,
+        align: MONTHLY_DAY_GRID.align ?? 'top-left',
+        rectWidth: MONTHLY_DAY_GRID.rectSize.width,
+        rectHeight: MONTHLY_DAY_GRID.rectSize.height,
+      },
+    },
+  };
+  const rectangles: Rectangle[] = [
+    {
+      id: 'rect-month',
+      x: 420,
+      y: 120,
+      width: 360,
+      height: 106,
+      fieldType: 'month',
+      order: 0,
+      formatVariant: 'name',
+    },
+    ...dayRectangles.map((rect, index) => ({
+      ...rect,
+      gridGroupId: DEMO_MONTHLY_DAY_GRID_ID,
+      gridCellIndex: index,
+    })),
+  ];
+
+  return page(
+    'page-monthly',
+    'Monthly Calendar',
+    'monthly-calendar',
+    monthlyCalendarSrc,
+    rectangles,
+    gridGroups,
+  );
 }
 
 export const DEMO_TEMPLATE: Template = {
@@ -30,95 +138,14 @@ export const DEMO_TEMPLATE: Template = {
   name: '2026 Weekly Planner',
   description: 'Demo planner for marketing assets',
   images: [
-    page('page-cover', 'Cover', 'cover'),
-    page('page-month-cover', 'Month Cover', 'month-cover'),
-    page('page-monthly', 'Monthly Calendar', 'monthly-calendar', [
-      {
-        id: 'rect-month',
-        x: 420,
-        y: 220,
-        width: 360,
-        height: 56,
-        fieldType: 'month',
-        order: 0,
-        formatVariant: 'name',
-      },
-      {
-        id: 'rect-day-1',
-        x: 168,
-        y: 430,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 1,
-      },
-    ]),
-    page('page-weekly', 'Weekly Spread', 'weekly-calendar', [
-      {
-        id: 'rect-start-day',
-        x: 210,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 0,
-      },
-      {
-        id: 'rect-start-day',
-        x: 335,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 1,
-      },
-      {
-        id: 'rect-start-day',
-        x: 470,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 2,
-      },
-      {
-        id: 'rect-start-day',
-        x: 595,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 3,
-      },
-      {
-        id: 'rect-start-day',
-        x: 720,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 4,
-      },
-      {
-        id: 'rect-end-day',
-        x: 855,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 5,
-      },
-      {
-        id: 'rect-end-day',
-        x: 980,
-        y: 335,
-        width: 48,
-        height: 36,
-        fieldType: 'day',
-        order: 6,
-      },
-    ]),
-    page('page-daily', 'Daily Page', 'daily-page', [
+    page('page-cover', 'Cover', 'cover', coverSrc),
+    buildMonthlyCalendarPage(),
+    page('page-weekly', 'Weekly Spread', 'weekly-calendar', weeklyPlannerSrc,
+      [
+        ...generateWeeklyCalendarDayRectangles(),
+      ]
+    ),
+    page('page-daily', 'Daily Page', 'daily-page', dailyPageSrc, [
       {
         id: 'rect-day-daily',
         x: 975,
@@ -129,7 +156,6 @@ export const DEMO_TEMPLATE: Template = {
         order: 1,
       },
     ]),
-    page('page-extra', 'Notes', 'extra'),
   ],
   createdAt: now,
   updatedAt: now,
@@ -145,6 +171,6 @@ export const DEMO_HOME_TEMPLATES: Template[] = [
     ...DEMO_TEMPLATE,
     id: 'demo-minimal',
     name: 'Minimal Daily Journal',
-    images: [page('page-daily-2', 'Daily Page', 'weekly-calendar')],
+    images: [page('page-weekly-2', 'Daily Page', 'weekly-calendar', weeklyPlannerSrc)],
   },
 ];

@@ -1,3 +1,10 @@
+import {
+  detectGridMeasureAxis,
+  gridPositionsFromConfig,
+  inferGridFromRectangles,
+  type GridLayoutConfig,
+} from './grid-layout';
+
 export interface Point {
   x: number;
   y: number;
@@ -20,6 +27,9 @@ export interface MeasureRect {
   id: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
+  order?: number;
 }
 
 export interface MeasureAdjustMove {
@@ -133,4 +143,141 @@ export function createMeasureAnchor(
     blockId,
     offsetInBlock: rect ? { x: imagePos.x - rect.x, y: imagePos.y - rect.y } : undefined,
   };
+}
+
+export function canApplyGridMeasureAdjust(
+  selectedIds: string[],
+  rectangles: MeasureRect[],
+  targetDx: number,
+  targetDy: number,
+  options?: { cols?: number },
+): boolean {
+  if (selectedIds.length < 3) return false;
+  if (detectGridMeasureAxis(targetDx, targetDy) === null) return false;
+  const selectedRects = rectangles.filter(rect => selectedIds.includes(rect.id));
+  return inferGridFromRectangles(selectedRects, options) !== null;
+}
+
+export function computeGridMeasureAdjustMoves(
+  fixed: MeasureAnchor,
+  moving: MeasureAnchor,
+  selectedIds: string[],
+  targetDx: number,
+  targetDy: number,
+  rectangles: MeasureRect[],
+  options?: { cols?: number },
+): MeasureAdjustMove[] | null {
+  if (!moving.blockId || !fixed.blockId) return null;
+
+  const selectedRects = rectangles.filter(rect => selectedIds.includes(rect.id));
+  if (selectedRects.length < 3) return null;
+
+  const inferred = inferGridFromRectangles(selectedRects, options);
+  if (!inferred) return null;
+
+  const axis = detectGridMeasureAxis(targetDx, targetDy);
+  if (!axis) return null;
+
+  const fixedBlock = rectangles.find(rect => rect.id === fixed.blockId);
+  const movingBlock = rectangles.find(rect => rect.id === moving.blockId);
+  if (!fixedBlock || !movingBlock) return null;
+
+  const fixedIndex = inferred.rectIds.indexOf(fixedBlock.id);
+  const movingIndex = inferred.rectIds.indexOf(movingBlock.id);
+  if (fixedIndex < 0 || movingIndex < 0) return null;
+
+  const fixedCol = fixedIndex % inferred.cols;
+  const fixedRow = Math.floor(fixedIndex / inferred.cols);
+  const movingCol = movingIndex % inferred.cols;
+  const movingRow = Math.floor(movingIndex / inferred.cols);
+
+  const fixedOffset = fixed.offsetInBlock ?? { x: 0, y: 0 };
+  const movingOffset = moving.offsetInBlock ?? { x: 0, y: 0 };
+  const padding = inferred.padding ?? { x: 0, y: 0 };
+
+  let nextConfig: GridLayoutConfig;
+
+  if (axis === 'x') {
+    if (fixedRow !== movingRow) return null;
+    const colDelta = movingCol - fixedCol;
+    if (colDelta === 0) return null;
+
+    const newCellWidth = (targetDx - (movingOffset.x - fixedOffset.x)) / colDelta;
+    if (newCellWidth <= 0) return null;
+
+    nextConfig = {
+      ...inferred,
+      origin: {
+        x: fixedBlock.x - fixedCol * newCellWidth - padding.x,
+        y: fixedBlock.y - fixedRow * inferred.cellSize.height - padding.y,
+      },
+      cellSize: {
+        width: newCellWidth,
+        height: inferred.cellSize.height,
+      },
+    };
+  } else {
+    if (fixedCol !== movingCol) return null;
+    const rowDelta = movingRow - fixedRow;
+    if (rowDelta === 0) return null;
+
+    const newCellHeight = (targetDy - (movingOffset.y - fixedOffset.y)) / rowDelta;
+    if (newCellHeight <= 0) return null;
+
+    nextConfig = {
+      ...inferred,
+      origin: {
+        x: fixedBlock.x - fixedCol * inferred.cellSize.width - padding.x,
+        y: fixedBlock.y - fixedRow * newCellHeight - padding.y,
+      },
+      cellSize: {
+        width: inferred.cellSize.width,
+        height: newCellHeight,
+      },
+    };
+  }
+
+  const nextPositions = gridPositionsFromConfig(inferred.rectIds, nextConfig);
+  const moves = nextPositions
+    .map(next => {
+      const current = rectangles.find(rect => rect.id === next.id);
+      if (!current) return null;
+      if (current.x === next.x && current.y === next.y) return null;
+      return next;
+    })
+    .filter((move): move is MeasureAdjustMove => move !== null);
+
+  return moves.length > 0 ? moves : null;
+}
+
+export function computeMeasureAdjustMovesWithGrid(
+  fixed: MeasureAnchor,
+  moving: MeasureAnchor,
+  movingIds: string[],
+  targetDx: number,
+  targetDy: number,
+  rectangles: MeasureRect[],
+  options?: { cols?: number; applyToGrid?: boolean },
+): MeasureAdjustMove[] {
+  if (options?.applyToGrid !== false && movingIds.length >= 3) {
+    const gridMoves = computeGridMeasureAdjustMoves(
+      fixed,
+      moving,
+      movingIds,
+      targetDx,
+      targetDy,
+      rectangles,
+      options,
+    );
+    if (gridMoves !== null) return gridMoves;
+  }
+
+  return computeMeasureAdjustMoves(
+    fixed,
+    moving,
+    movingIds,
+    targetDx,
+    targetDy,
+    rectangles,
+  );
 }

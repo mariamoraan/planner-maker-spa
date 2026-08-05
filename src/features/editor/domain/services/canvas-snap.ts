@@ -237,25 +237,52 @@ function splitChainByGap(chain: RectBounds[], axis: 'x' | 'y'): RectBounds[][] {
   return subchains;
 }
 
+function chainGaps(chain: RectBounds[], axis: 'x' | 'y'): number[] {
+  const gaps: number[] = [];
+  for (let i = 0; i < chain.length - 1; i++) {
+    const gap = gapBetween(chain[i], chain[i + 1], axis);
+    if (gap > 0) gaps.push(gap);
+  }
+  return gaps;
+}
+
+function gapsForChain(chain: RectBounds[], axis: 'x' | 'y'): number[] {
+  const gaps = chainGaps(chain, axis);
+  if (gaps.length < 3 || chain.length < 4) return gaps;
+
+  const min = Math.min(...gaps);
+  const max = Math.max(...gaps);
+  if (max - min <= 2) return gaps;
+
+  const canonical = canonicalGap(gaps);
+  return canonical > 0 ? [canonical] : gaps;
+}
+
 function gapsForSnapBelow(chain: RectBounds[], index: number, axis: 'x' | 'y'): number[] {
+  const chainGapsResolved = gapsForChain(chain, axis);
   if (index < chain.length - 1) {
     const gap = gapBetween(chain[index], chain[index + 1], axis);
+    if (gap > 0 && chainGapsResolved.length === 1) return chainGapsResolved;
     return gap > 0 ? [gap] : [];
   }
   if (index > 0) {
     const gap = gapBetween(chain[index - 1], chain[index], axis);
+    if (gap > 0 && chainGapsResolved.length === 1) return chainGapsResolved;
     return gap > 0 ? [gap] : [];
   }
   return [];
 }
 
 function gapsForSnapAbove(chain: RectBounds[], index: number, axis: 'x' | 'y'): number[] {
+  const chainGapsResolved = gapsForChain(chain, axis);
   if (index > 0) {
     const gap = gapBetween(chain[index - 1], chain[index], axis);
+    if (gap > 0 && chainGapsResolved.length === 1) return chainGapsResolved;
     return gap > 0 ? [gap] : [];
   }
   if (index < chain.length - 1) {
     const gap = gapBetween(chain[index], chain[index + 1], axis);
+    if (gap > 0 && chainGapsResolved.length === 1) return chainGapsResolved;
     return gap > 0 ? [gap] : [];
   }
   return [];
