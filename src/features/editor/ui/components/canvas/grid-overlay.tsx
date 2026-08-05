@@ -195,17 +195,19 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
 
   return (
     <Group listening={false}>
-      <Rect
-        x={frameX}
-        y={frameY}
-        width={frameW}
-        height={frameH}
-        fill="rgba(0, 200, 180, 0.06)"
-        stroke="hsl(168, 76%, 42%)"
-        strokeWidth={1.5}
-        dash={[6, 4]}
-        listening={false}
-      />
+      {!isEditMode && (
+        <Rect
+          x={frameX}
+          y={frameY}
+          width={frameW}
+          height={frameH}
+          fill="rgba(0, 200, 180, 0.06)"
+          stroke="hsl(168, 76%, 42%)"
+          strokeWidth={1.5}
+          dash={[6, 4]}
+          listening={false}
+        />
+      )}
       {isEditMode && verticalLines}
       {isEditMode && horizontalLines}
       {isEditMode && cellPreviews}

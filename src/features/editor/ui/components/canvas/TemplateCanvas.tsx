@@ -2,7 +2,7 @@ import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { Stage, Layer, Image as KonvaImage, Rect, Transformer } from 'react-konva';
 import useImage from 'use-image';
-import type { Rectangle, FieldType } from '@/features/template';
+import type { Rectangle, FieldType, GridGroup } from '@/features/template';
 import { FIELD_TYPE_CONFIG } from '@/features/template';
 import Konva from 'konva';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
@@ -29,6 +29,7 @@ import {
 } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import {
   expandSelectionToGridGroups,
+  findGridGroupAtPoint,
   getGridGroupForSelection,
   getGridGroupMemberIds,
   isSelectionLockedGridGroup,
@@ -455,6 +456,22 @@ export const TemplateCanvas: React.FC = () => {
     [currentImage?.rectangles],
   );
 
+  const toggleGridGroupSelection = useCallback(
+    (group: GridGroup, nativeEvent: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => {
+      if (nativeEvent.shiftKey || nativeEvent.metaKey || nativeEvent.ctrlKey) {
+        const allMembersSelected = group.rectIds.every(id => selectedRectangleIds.includes(id));
+        if (allMembersSelected) {
+          setSelectedRectangleIds(selectedRectangleIds.filter(id => !group.rectIds.includes(id)));
+        } else {
+          setSelectedRectangleIds([...new Set([...selectedRectangleIds, ...group.rectIds])]);
+        }
+      } else {
+        setSelectedRectangleIds(group.rectIds);
+      }
+    },
+    [selectedRectangleIds, setSelectedRectangleIds],
+  );
+
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       const stage = stageRef.current;
@@ -490,6 +507,14 @@ export const TemplateCanvas: React.FC = () => {
 
       if (!clickedOnEmpty || !isSelectMode) return;
 
+      const imagePos = pointerToImage(pos);
+      const groupAtPoint = findGridGroupAtPoint(imagePos, currentImage?.gridGroups);
+
+      if (groupAtPoint) {
+        toggleGridGroupSelection(groupAtPoint, e.evt);
+        return;
+      }
+
       const wasGridSelected = isGridGroupFullySelected;
 
       if (!e.evt.shiftKey && !e.evt.metaKey && !e.evt.ctrlKey) {
@@ -498,7 +523,6 @@ export const TemplateCanvas: React.FC = () => {
 
       if (wasGridSelected) return;
 
-      const imagePos = pointerToImage(pos);
       marqueeStartRef.current = imagePos;
       setIsMarqueeSelecting(true);
       setMarquee({ x: imagePos.x, y: imagePos.y, width: 0, height: 0 });
@@ -508,7 +532,7 @@ export const TemplateCanvas: React.FC = () => {
         clearSelection();
       }
     },
-    [isMeasureMode, isGridHandleDragging, isPanMode, isSelectMode, isGridGroupFullySelected, handleMeasureClick, pointerToImage, pan, panContext, clearSelection],
+    [isMeasureMode, isGridHandleDragging, isPanMode, isSelectMode, isGridGroupFullySelected, handleMeasureClick, pointerToImage, pan, panContext, clearSelection, currentImage?.gridGroups, toggleGridGroupSelection],
   );
 
   const handleMouseMove = useCallback(() => {
@@ -1109,6 +1133,29 @@ export const TemplateCanvas: React.FC = () => {
               />
             );
           })}
+
+          {isSelectMode &&
+            !isGridHandleDragging &&
+            currentImage?.gridGroups &&
+            Object.values(currentImage.gridGroups).map(group => {
+              const fullySelected = group.rectIds.every(id => selectedRectangleIds.includes(id));
+              if (fullySelected) return null;
+
+              return (
+                <Rect
+                  key={`grid-hit-${group.id}`}
+                  x={offset.x + group.bounds.x * scale}
+                  y={offset.y + group.bounds.y * scale}
+                  width={group.bounds.width * scale}
+                  height={group.bounds.height * scale}
+                  fill="rgba(0, 0, 0, 0.001)"
+                  onMouseDown={e => {
+                    e.cancelBubble = true;
+                    toggleGridGroupSelection(group, e.evt);
+                  }}
+                />
+              );
+            })}
 
           {drawingRect && (
             <Rect

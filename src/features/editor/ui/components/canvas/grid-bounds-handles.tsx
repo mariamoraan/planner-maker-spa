@@ -41,10 +41,6 @@ function fromStage(value: number, scale: number, offsetValue: number): number {
   return (value - offsetValue) / scale;
 }
 
-function resetDragNode(event: Konva.KonvaEventObject<DragEvent>) {
-  event.target.position({ x: 0, y: 0 });
-}
-
 function stopMouseDown(event: Konva.KonvaEventObject<MouseEvent>) {
   event.cancelBubble = true;
 }
@@ -134,7 +130,6 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
   const endDrag = useCallback(
     (event: Konva.KonvaEventObject<DragEvent>) => {
       event.cancelBubble = true;
-      resetDragNode(event);
       dragStartBounds.current = null;
       dragStartPointer.current = null;
       onActiveGutterChange?.(null);
@@ -146,7 +141,6 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
   const onHandleDrag = useCallback(
     (handle: GridInteractionHandle) => (event: Konva.KonvaEventObject<DragEvent>) => {
       event.cancelBubble = true;
-      resetDragNode(event);
 
       const startBounds = dragStartBounds.current;
       const startPointer = dragStartPointer.current;
@@ -214,6 +208,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         stroke="hsl(168, 76%, 42%)"
         strokeWidth={2}
         draggable
+        dragBoundFunc={() => ({ x: cx, y: cy })}
         onMouseDown={stopMouseDown}
         onDragStart={beginDrag(handle)}
         onDragMove={onHandleDrag(handle)}
@@ -246,6 +241,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         x={cx}
         y={cy}
         draggable
+        dragBoundFunc={() => ({ x: cx, y: cy })}
         onMouseDown={stopMouseDown}
         onDragStart={beginDrag(handle)}
         onDragMove={onHandleDrag(handle)}
@@ -301,6 +297,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         strokeWidth={1.5}
         dash={[6, 4]}
         draggable
+        dragBoundFunc={() => ({ x: frameX, y: frameY })}
         onMouseDown={stopMouseDown}
         onDragStart={beginDrag('move')}
         onDragMove={onHandleDrag('move')}
@@ -329,6 +326,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
             dash={[6, 4]}
             hitStrokeWidth={GUTTER_HIT}
             draggable
+            dragBoundFunc={() => ({ x: 0, y: 0 })}
             onMouseDown={stopMouseDown}
             onDragStart={beginDrag('gutterX')}
             onDragMove={onHandleDrag('gutterX')}
@@ -358,6 +356,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
             dash={[6, 4]}
             hitStrokeWidth={GUTTER_HIT}
             draggable
+            dragBoundFunc={() => ({ x: 0, y: 0 })}
             onMouseDown={stopMouseDown}
             onDragStart={beginDrag('gutterY')}
             onDragMove={onHandleDrag('gutterY')}

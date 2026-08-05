@@ -15,6 +15,31 @@ export function findGridGroupForRect(
   return Object.values(gridGroups).find(group => group.rectIds.includes(rectId)) ?? null;
 }
 
+export function pointInGridBounds(
+  point: { x: number; y: number },
+  bounds: GridBounds,
+): boolean {
+  return (
+    point.x >= bounds.x &&
+    point.x <= bounds.x + bounds.width &&
+    point.y >= bounds.y &&
+    point.y <= bounds.y + bounds.height
+  );
+}
+
+export function findGridGroupAtPoint(
+  point: { x: number; y: number },
+  gridGroups: Record<string, GridGroup> | undefined,
+): GridGroup | null {
+  if (!gridGroups) return null;
+
+  const groups = Object.values(gridGroups).sort(
+    (a, b) => a.bounds.width * a.bounds.height - b.bounds.width * b.bounds.height,
+  );
+
+  return groups.find(group => pointInGridBounds(point, group.bounds)) ?? null;
+}
+
 export function resolveGridGroupId(
   rectId: string,
   rectangles: Rectangle[],
