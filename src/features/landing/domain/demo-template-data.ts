@@ -146,7 +146,7 @@ function buildMonthlyCalendarPage() {
 
 export const DEMO_TEMPLATE: Template = {
   id: DEMO_TEMPLATE_ID,
-  name: '2026 Weekly Planner',
+  name: 'Agenda',
   description: 'Demo planner for marketing assets',
   images: [
     page('page-cover', 'Cover', 'cover', coverSrc),
@@ -191,6 +191,10 @@ export const DEMO_HOME_TEMPLATES: Template[] = [
     ...DEMO_TEMPLATE,
     id: 'demo-minimal',
     name: 'Minimal Daily Journal',
-    images: [page('page-weekly-2', 'Daily Page', 'weekly-calendar', weeklyPlannerSrc)],
+    images: [page('page-weekly-2', 'Weekly Spread', 'weekly-calendar', weeklyPlannerSrc,
+      [
+        ...generateWeeklyCalendarDayRectangles(),
+      ]
+    ),],
   },
 ];

@@ -1,8 +1,42 @@
 .layer-controls {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
 
+  &__menu-trigger {
+    padding: 6px 6px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: white;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover,
+    &--open {
+      background: rgba(0, 0, 0, 0.04);
+    }
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 180px;
+    z-index: 1200;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    background: white;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
   &__button {
     display: flex;
     align-items: center;

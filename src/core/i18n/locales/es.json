@@ -192,6 +192,7 @@
     "deleteConfirm": "¿Eliminar este proyecto?"
   },
   "editor": {
+    "editType": "Tipo",
     "currentPage": "Página actual",
     "dynamicBlocks": "Bloques dinámicos",
     "actions": "Configuración",
@@ -234,7 +235,8 @@
     "gridEditPadding": "Editar padding",
     "gridPaddingX": "Padding X",
     "gridPaddingY": "Padding Y",
-    "gridGroupBadge": "Cuadrícula · {{cols}}×{{rows}} · {{count}} bloques",
+    "gridGroupBadge": "Cuadrícula · {{cols}}×{{rows}}",
+    "editPosition": "Posición",
     "gridGroupSelectHint": "Selección de grupo — los bloques se mueven juntos",
     "gridEditModeBanner": "Modo edición de cuadrícula — arrastra las líneas internas o usa Separación X/Y · Enter aplicar · Esc cancelar",
     "gridApply": "Aplicar",

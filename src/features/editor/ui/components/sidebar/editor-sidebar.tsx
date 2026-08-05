@@ -14,7 +14,7 @@ import {
 } from '@/features/editor/domain/services/grid-group';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
@@ -34,6 +34,7 @@ const DEFAULT_SECTION_STATE: Record<SidebarSectionId, boolean> = {
 };
 
 export const EditorSidebar: React.FC = () => {
+  const {pathname} = useLocation();
     const { t } = useTranslation();
     const template = useCurrentTemplate();
     const currentImage = useCurrentImage();
@@ -46,6 +47,7 @@ export const EditorSidebar: React.FC = () => {
     const [sectionOpen, setSectionOpen] = useState(DEFAULT_SECTION_STATE);
     const prevSelectionCount = useRef(0);
 
+    const isDemo = pathname.includes('landing-demo');
     const singleSelectedId = selectedRectangleIds.length === 1 ? selectedRectangleIds[0] : null;
     const multiSelected = selectedRectangleIds.length > 1;
     const rectangles = currentImage?.rectangles ?? [];
@@ -79,7 +81,7 @@ export const EditorSidebar: React.FC = () => {
     <aside className="editor-sidebar" {...blockSelectionZoneProps}>
       <div className='editor-sidebar__header'>
         <div className='editor-sidebar__header__home-icon'>
-          <Link to={PATHS.home}><HomeIcon /></Link>
+          <Link to={isDemo ? PATHS.landingDemoHome : PATHS.home}><HomeIcon /></Link>
         </div>
         {isEditingTemplateName ? (
           <input 

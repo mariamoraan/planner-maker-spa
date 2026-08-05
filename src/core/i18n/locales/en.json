@@ -192,6 +192,7 @@
     "deleteConfirm": "Delete this project?"
   },
   "editor": {
+    "editType": "Type",
     "currentPage": "Current Page",
     "dynamicBlocks": "Dynamic Blocks",
     "actions": "Configuration",
@@ -231,10 +232,11 @@
     "gridGroupAsGrid": "Group as grid",
     "gridUngroup": "Ungroup",
     "gridEditLayout": "Edit layout",
+    "editPosition": "Position",
     "gridEditPadding": "Edit padding",
     "gridPaddingX": "Padding X",
     "gridPaddingY": "Padding Y",
-    "gridGroupBadge": "Grid · {{cols}}×{{rows}} · {{count}} blocks",
+    "gridGroupBadge": "Grid · {{cols}}×{{rows}}",
     "gridGroupSelectHint": "Group selection — blocks move together",
     "gridEditModeBanner": "Grid edit mode — drag inner lines or use X/Y spacing · Enter apply · Esc cancel",
     "gridApply": "Apply",

@@ -12,6 +12,7 @@ import { blockSelectionZoneProps } from '@/features/editor/domain/services/block
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
+import { GridIcon, PaddingIcon } from '@/core/icons';
 
 interface GridToolbarControlsProps {
   group: GridGroup;
@@ -155,14 +156,10 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
 
   return (
     <div className="grid-toolbar-controls">
-      <ToolbarHistoryButtons />
-      <div className="grid-toolbar-controls__divider" />
-
       <p className="grid-toolbar-controls__badge">
         {t('editor.gridGroupBadge', {
           cols: group.cols,
           rows: group.rows,
-          count: group.rectIds.length,
         })}
       </p>
       <div className="grid-toolbar-controls__divider" />
@@ -175,8 +172,10 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
             'grid-toolbar-controls__menu-trigger--open': layoutPopover.isOpen,
           })}
           onClick={layoutPopover.toggle}
+          title={t('editor.gridEditLayout')}
+          aria-label={t('editor.gridEditLayout')}
         >
-          {t('editor.gridEditLayout')}
+          <GridIcon size={16} />
         </button>
         {layoutPopover.isOpen && layoutPopover.menuPosition &&
           createPortal(
@@ -242,8 +241,10 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
               'grid-toolbar-controls__menu-trigger--open': paddingPopover.isOpen,
             })}
             onClick={paddingPopover.toggle}
+            title={t('editor.gridEditPadding')}
+            aria-label={t('editor.gridEditPadding')}
           >
-            {t('editor.gridEditPadding')}
+            <PaddingIcon size={16} />
           </button>
           {paddingPopover.isOpen && paddingPopover.menuPosition &&
             createPortal(

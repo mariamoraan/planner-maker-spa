@@ -22,6 +22,7 @@ import {
     CaseSensitive,
     Signature,
     Grid3X3,
+    AlignHorizontalSpaceAround,
 } from 'lucide-react';
 
 
@@ -49,4 +50,5 @@ export {
     CaseSensitive as CaseSensitiveIcon,
     Signature as SignatureIcon,
     Grid3X3 as GridIcon,
+    AlignHorizontalSpaceAround as PaddingIcon,
 };

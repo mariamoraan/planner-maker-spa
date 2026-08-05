@@ -11,6 +11,7 @@ import type { LayerOperation } from '@/features/editor/domain/services/layer-ord
 import { canLayerOperation } from '@/features/editor/domain/services/layer-order';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
+import { useState } from 'react';
 
 interface LayerControlsProps {
   selectedIds: string[];
@@ -27,6 +28,7 @@ export const LayerControls = ({ selectedIds }: LayerControlsProps) => {
   const { t } = useTranslation();
   const currentImage = useCurrentImage();
   const { reorderLayers } = useManageAreas();
+  const [isOpen, setIsOpen] = useState(false);
 
   if (selectedIds.length === 0) return null;
 
@@ -35,22 +37,29 @@ export const LayerControls = ({ selectedIds }: LayerControlsProps) => {
 
   return (
     <div className="layer-controls">
-      {OPERATIONS.map(({ operation, icon: Icon, labelKey }) => {
-        const disabled = !canLayerOperation(rectangles, gridGroups, selectedIds, operation);
-        return (
-          <button
-            key={operation}
-            type="button"
-            className="layer-controls__button"
-            disabled={disabled}
-            aria-label={t(labelKey)}
-            title={t(labelKey)}
-            onClick={() => reorderLayers(operation, selectedIds)}
-          >
-            <Icon size={16} />
-          </button>
-        );
-      })}
+      <button onClick={() => setIsOpen(!isOpen)} className='layer-controls__menu-trigger'>
+        {t('editor.editPosition')}
+      </button>
+      {isOpen && (
+        <div className='layer-controls__menu'>
+        {OPERATIONS.map(({ operation, icon: Icon, labelKey }) => {
+          const disabled = !canLayerOperation(rectangles, gridGroups, selectedIds, operation);
+          return (
+            <button
+              key={operation}
+              type="button"
+              className="layer-controls__button"
+              disabled={disabled}
+              aria-label={t(labelKey)}
+              title={t(labelKey)}
+              onClick={() => reorderLayers(operation, selectedIds)}
+            >
+              <Icon size={16} />
+            </button>
+          );
+        })}
+      </div>
+      )}
     </div>
   );
 };

@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { FIELD_ICONS, getFieldIcon } from '@/features/editor/ui/components/sidebar/FieldTypeSelector';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { FIELD_TYPE_CONFIG, FieldType } from '@/features/template';
+import { useTranslation } from 'react-i18next';
 
 const GRID_ICON_SIZES = {
   default: 50,
@@ -31,6 +32,7 @@ export const BlockTypeSelector = ({
   variant,
   size = 'default',
 }: BlockTypeSelectorProps) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -216,7 +218,7 @@ export const BlockTypeSelector = ({
         })}
         onClick={handlePopoverToggle}
       >
-        Editar Tipo
+        {t('editor.editType')}
       </button>
       {isOpen && menuPosition &&
         createPortal(
