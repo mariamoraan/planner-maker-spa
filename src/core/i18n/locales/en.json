@@ -265,7 +265,7 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "zoomReset": "Fit to view",
-    "panHint": "Drag to pan. Space+drag also works.",
+    "panHint": "When zoomed: two-finger scroll to pan. Space+drag also works.",
     "exportInProgress": "Export in progress…",
     "plannerLocale": "Planner language",
     "plannerLocaleHint": "Month and day names in the generated PDF",
