@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Clock, Menu, X, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PATHS } from '@/core/routes/paths';
 import { AudienceSection } from '@/features/landing/ui/components/audience-section/audience-section';
 import { BenefitsSection } from '@/features/landing/ui/components/benefits-section/benefits-section';
 import { TryDemoCta } from '@/features/landing/ui/components/try-demo-cta/try-demo-cta';
 import { DemoVideo } from '@/features/landing/ui/components/demo-video/demo-video';
 import { HowItWorksTimeline } from '@/features/landing/ui/components/how-it-works-timeline/how-it-works-timeline';
 import { WaitlistForm } from '@/features/landing/ui/components/waitlist-form/waitlist-form';
+import { SignInLink } from '@/features/landing/ui/components/sign-in-link/sign-in-link';
 import { trackPageView } from '@/features/template/use-case/commands/analytics.commands';
 import './landing-page.scss';
 
@@ -73,9 +72,7 @@ export default function LandingPage() {
           </nav>
 
           <div className="landing-page__actions">
-            <Link to={PATHS.login} className="landing-page__cta" onClick={closeMenu}>
-              {t('landing.waitlist.signIn')}
-            </Link>
+            <SignInLink className="landing-page__cta" onClick={closeMenu} />
             <TryDemoCta
               source="landing_header"
               variant="secondary"

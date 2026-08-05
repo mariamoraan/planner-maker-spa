@@ -5,7 +5,8 @@
     "cancel": "Cancelar",
     "continueWithGoogle": "Continuar con Google",
     "signOut": "Cerrar sesión",
-    "backToHome": "Volver al inicio"
+    "backToHome": "Volver al inicio",
+    "you": "usuario"
   },
   "sync": {
     "loading": "Cargando tus planners…",
@@ -152,7 +153,8 @@
       "alreadyRegistered": "Ya estás en la lista de espera.",
       "error": "Algo salió mal. Inténtalo de nuevo.",
       "haveAccess": "¿Ya tienes acceso?",
-      "signIn": "Iniciar sesión"
+      "signIn": "Iniciar sesión",
+      "greeting": "Bienvenido de nuevo, {{name}}"
     },
     "tryDemo": {
       "heroPrompt": "¿Quieres probarlo tú misma?",

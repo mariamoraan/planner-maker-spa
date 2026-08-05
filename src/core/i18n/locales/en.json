@@ -5,7 +5,8 @@
     "cancel": "Cancel",
     "continueWithGoogle": "Continue with Google",
     "signOut": "Sign out",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "you": "there"
   },
   "sync": {
     "loading": "Loading your planners…",
@@ -152,7 +153,8 @@
       "alreadyRegistered": "You're already on the waitlist.",
       "error": "Something went wrong. Please try again.",
       "haveAccess": "Already have access?",
-      "signIn": "Sign in"
+      "signIn": "Sign in",
+      "greeting": "Welcome back, {{name}}"
     },
     "tryDemo": {
       "heroPrompt": "Want to try it yourself?",

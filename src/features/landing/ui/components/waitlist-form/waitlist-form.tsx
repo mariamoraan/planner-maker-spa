@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { useAuth } from '@/features/auth/ui/contexts/auth-provider';
+import { SignInLink } from '@/features/landing/ui/components/sign-in-link/sign-in-link';
 import { getInfra, isFirebaseConfigured, type WaitlistSource } from '@/core/bootstrap/infra';
 import { trackEvent } from '@/features/template/use-case/commands/analytics.commands';
-import { PATHS } from '@/core/routes/paths';
 import './waitlist-form.scss';
 
 const waitlistSchema = z.object({
@@ -22,6 +22,7 @@ interface WaitlistFormProps {
 
 export function WaitlistForm({ source = 'landing_hero', compact = false }: WaitlistFormProps) {
   const { t, i18n } = useTranslation();
+  const { user, isLoading } = useAuth();
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'already_registered' | 'error'>('idle');
 
   const {
@@ -94,8 +95,14 @@ export function WaitlistForm({ source = 'landing_hero', compact = false }: Waitl
       )}
 
       <p className="waitlist-form__sign-in">
-        {t('landing.waitlist.haveAccess')}{' '}
-        <Link to={PATHS.login}>{t('landing.waitlist.signIn')}</Link>
+        {Boolean(user) && !isLoading ? (
+          <SignInLink />
+        ) : (
+          <>
+            {t('landing.waitlist.haveAccess')}{' '}
+            <SignInLink />
+          </>
+        )}
       </p>
     </div>
   );
