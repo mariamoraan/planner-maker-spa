@@ -28,3 +28,4 @@ firestore.rules
 .vercel
 .env*
 firebase-admin-key.json
+firebase-admin-key-prod.json
