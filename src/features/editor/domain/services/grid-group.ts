@@ -1,4 +1,4 @@
-import type { GridGroup, Rectangle } from '@/features/template';
+import type { FieldType, GridGroup, Rectangle } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import type { GridEditSettings } from './grid-edit-types';
 import { translateGridBounds, type GridBounds } from './grid-layout';
@@ -48,6 +48,17 @@ export function resolveGridGroupId(
   const rect = rectangles.find(r => r.id === rectId);
   if (rect?.gridGroupId) return rect.gridGroupId;
   return findGridGroupForRect(rectId, gridGroups)?.id;
+}
+
+export function getGridGroupFieldType(
+  group: GridGroup,
+  rectangles: Rectangle[],
+  gridGroups?: Record<string, GridGroup>,
+): FieldType | undefined {
+  const memberIds = getGridGroupMemberIds(group.id, rectangles, gridGroups);
+  if (memberIds.length === 0) return undefined;
+
+  return rectangles.find(rect => rect.id === memberIds[0])?.fieldType;
 }
 
 export function getGridGroupMemberIds(

@@ -9,6 +9,7 @@ import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-
 import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls';
 import { ToolbarHistoryButtons } from '@/features/editor/ui/components/shared/toolbar-history-buttons';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
+import { getGridGroupFieldType } from '@/features/editor/domain/services/grid-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
@@ -97,7 +98,9 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const layoutPopover = useToolbarPopover();
   const paddingPopover = useToolbarPopover();
 
-  const groupFieldType = currentImage?.rectangles.find(r => r.id === group.rectIds[0])?.fieldType;
+  const groupFieldType = currentImage
+    ? getGridGroupFieldType(group, currentImage.rectangles, currentImage.gridGroups)
+    : undefined;
   const padding = group.settings.padding ?? { x: 0, y: 0 };
   const showPaddingControls = group.settings.align === 'top-left';
 

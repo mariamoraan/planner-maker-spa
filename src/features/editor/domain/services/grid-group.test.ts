@@ -7,6 +7,7 @@ import {
   canGroupSelection,
   clearGridGroupFromRects,
   expandSelectionToGridGroups,
+  getGridGroupFieldType,
   getGridGroupForSelection,
   getGridGroupMemberIds,
   isFullGridGroupSelected,
@@ -39,6 +40,22 @@ const rectangles: Rectangle[] = [
   { id: 'c', x: 200, y: 0, width: 48, height: 36, fieldType: 'day', order: 2, gridGroupId: 'grid-1', gridCellIndex: 2 },
   { id: 'd', x: 0, y: 100, width: 48, height: 36, fieldType: 'day', order: 3 },
 ];
+
+describe('getGridGroupFieldType', () => {
+  it('reads field type from live grid members instead of stale rectIds', () => {
+    const staleGroup: GridGroup = {
+      ...sampleGroup,
+      rectIds: ['old-a', 'old-b', 'old-c'],
+    };
+    const liveRects: Rectangle[] = [
+      { id: 'new-a', x: 0, y: 0, width: 48, height: 36, fieldType: 'day', order: 0, gridGroupId: 'grid-1', gridCellIndex: 0 },
+      { id: 'new-b', x: 100, y: 0, width: 48, height: 36, fieldType: 'day', order: 1, gridGroupId: 'grid-1', gridCellIndex: 1 },
+      { id: 'new-c', x: 200, y: 0, width: 48, height: 36, fieldType: 'day', order: 2, gridGroupId: 'grid-1', gridCellIndex: 2 },
+    ];
+
+    expect(getGridGroupFieldType(staleGroup, liveRects, { 'grid-1': staleGroup })).toBe('day');
+  });
+});
 
 describe('expandSelectionToGridGroups', () => {
   it('expands partial group selection to full group', () => {

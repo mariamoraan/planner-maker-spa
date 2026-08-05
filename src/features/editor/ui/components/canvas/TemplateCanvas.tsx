@@ -429,18 +429,23 @@ export const TemplateCanvas: React.FC = () => {
 
   const toggleGridGroupSelection = useCallback(
     (group: GridGroup, nativeEvent: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }) => {
+      const rects = currentImage?.rectangles ?? [];
+      const gridGroups = currentImage?.gridGroups;
+      const memberIds = getGridGroupMemberIds(group.id, rects, gridGroups);
+      const ids = memberIds.length > 0 ? memberIds : group.rectIds;
+
       if (nativeEvent.shiftKey || nativeEvent.metaKey || nativeEvent.ctrlKey) {
-        const allMembersSelected = group.rectIds.every(id => selectedRectangleIds.includes(id));
+        const allMembersSelected = ids.every(id => selectedRectangleIds.includes(id));
         if (allMembersSelected) {
-          setSelectedRectangleIds(selectedRectangleIds.filter(id => !group.rectIds.includes(id)));
+          setSelectedRectangleIds(selectedRectangleIds.filter(id => !ids.includes(id)));
         } else {
-          setSelectedRectangleIds([...new Set([...selectedRectangleIds, ...group.rectIds])]);
+          setSelectedRectangleIds([...new Set([...selectedRectangleIds, ...ids])]);
         }
       } else {
-        setSelectedRectangleIds(group.rectIds);
+        setSelectedRectangleIds(ids);
       }
     },
-    [selectedRectangleIds, setSelectedRectangleIds],
+    [selectedRectangleIds, setSelectedRectangleIds, currentImage?.rectangles, currentImage?.gridGroups],
   );
 
   const handleMouseDown = useCallback(
