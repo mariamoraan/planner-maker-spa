@@ -45,15 +45,6 @@ export const CanvasViewToggles = ({ variant }: CanvasViewTogglesProps) => {
         {!isToolbar && !isFloating && t('editor.panTool')}
       </button>
       <button
-        className={toolButtonClass('measure')}
-        type="button"
-        onClick={() => setCanvasTool('measure')}
-        title={t('editor.measureTool')}
-      >
-        <RulerIcon />
-        {!isToolbar && !isFloating && t('editor.measureTool')}
-      </button>
-      <button
         className={guidesButtonClass}
         type="button"
         onClick={() => setShowRectangleGuides(!showRectangleGuides)}

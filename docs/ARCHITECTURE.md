@@ -601,7 +601,6 @@ This separation keeps the editor responsive (Konva handles interaction efficient
 | `src/features/editor/domain/services/planner-week.test.ts` | Week calculation, ISO vs US week numbers |
 | `src/features/editor/domain/services/canvas-snap.test.ts` | Snap guide alignment and spacing |
 | `src/features/editor/domain/services/canvas-pan.test.ts` | Canvas panning bounds |
-| `src/features/editor/domain/services/measure-utils.test.ts` | Measurement overlay calculations |
 | `src/features/export/domain/services/pdf-page-size.test.ts` | PDF page dimension logic |
 | `src/test/daily-page.test.ts` | Daily page generation integration |
 

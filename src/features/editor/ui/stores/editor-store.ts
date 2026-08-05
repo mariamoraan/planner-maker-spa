@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { FieldType } from '@/features/template';
 
-export type CanvasTool = 'select' | 'pan' | 'measure';
+export type CanvasTool = 'select' | 'pan';
 
 interface EditorState {
   currentImageId: string | null;
