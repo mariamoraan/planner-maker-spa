@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   detectPaperSize,
+  detectPaperSizeExact,
   formatPaperSizeLabel,
   getTemplatePaperSizeLabel,
   resolvePageSizeLabel,
@@ -24,8 +25,17 @@ describe('detectPaperSize', () => {
     expect(detectPaperSize(595, 420)).toEqual({ kind: 'A5', orientation: 'landscape' });
   });
 
-  it('returns null for custom sizes', () => {
-    expect(detectPaperSize(1200, 1600)).toBeNull();
+  it('detects A4 portrait at 144 DPI (common Canva export)', () => {
+    expect(detectPaperSize(1190, 1684)).toEqual({ kind: 'A4', orientation: 'portrait' });
+  });
+
+  it('detects approximate A4 exports with slightly off Canva dimensions', () => {
+    expect(detectPaperSize(1200, 1600)).toEqual({ kind: 'A4', orientation: 'portrait' });
+  });
+
+  it('returns null for clearly custom sizes', () => {
+    expect(detectPaperSize(1200, 800)).toBeNull();
+    expect(detectPaperSizeExact(1200, 800)).toBeNull();
   });
 });
 
@@ -44,13 +54,17 @@ describe('resolvePageSizeLabel', () => {
     expect(resolvePageSizeLabel(2480, 3508)).toBe('A4');
   });
 
+  it('returns approximate A4 labels for near-standard Canva exports', () => {
+    expect(resolvePageSizeLabel(1200, 1600)).toBe('A4');
+  });
+
   it('returns pixel dimensions for custom sizes', () => {
-    expect(resolvePageSizeLabel(1200, 1600)).toBe('1200 × 1600');
+    expect(resolvePageSizeLabel(1200, 800)).toBe('1200 × 800');
   });
 });
 
 describe('getTemplatePaperSizeLabel', () => {
-  it('uses the cover page dimensions when available', () => {
+  it('uses the most common page dimensions across the template', () => {
     const template = {
       id: 't1',
       name: 'Planner',
@@ -59,6 +73,17 @@ describe('getTemplatePaperSizeLabel', () => {
           id: 'cover',
           name: 'Cover',
           type: 'cover',
+          width: 1200,
+          height: 1600,
+          src: '',
+          rectangles: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'monthly-1',
+          name: 'Monthly 1',
+          type: 'monthly-calendar',
           width: 2480,
           height: 3508,
           src: '',
@@ -67,11 +92,11 @@ describe('getTemplatePaperSizeLabel', () => {
           updatedAt: new Date(),
         },
         {
-          id: 'monthly',
-          name: 'Monthly',
+          id: 'monthly-2',
+          name: 'Monthly 2',
           type: 'monthly-calendar',
-          width: 1200,
-          height: 1600,
+          width: 2480,
+          height: 3508,
           src: '',
           rectangles: [],
           createdAt: new Date(),
@@ -85,10 +110,10 @@ describe('getTemplatePaperSizeLabel', () => {
     expect(getTemplatePaperSizeLabel(template)).toBe('A4');
   });
 
-  it('falls back to pixel dimensions for custom sizes', () => {
+  it('detects approximate A4 when all pages share Canva-like dimensions', () => {
     const template = {
       id: 't2',
-      name: 'Demo',
+      name: 'Canva Planner',
       images: [
         {
           id: 'page',
@@ -106,6 +131,6 @@ describe('getTemplatePaperSizeLabel', () => {
       updatedAt: new Date(),
     } satisfies Template;
 
-    expect(getTemplatePaperSizeLabel(template)).toBe('1200 × 1600');
+    expect(getTemplatePaperSizeLabel(template)).toBe('A4');
   });
 });

@@ -1,5 +1,5 @@
 import {
-  detectPaperSize,
+  detectPaperSizeExact,
   paperSizeToPoints,
 } from '@/features/template/domain/services/paper-size';
 
@@ -10,7 +10,7 @@ function pixelsToPoints(px: number, dpi: number): number {
 }
 
 export function resolvePdfPageSize(widthPx: number, heightPx: number): { width: number; height: number } {
-  const detected = detectPaperSize(widthPx, heightPx);
+  const detected = detectPaperSizeExact(widthPx, heightPx);
   if (detected) return paperSizeToPoints(detected);
 
   return {
