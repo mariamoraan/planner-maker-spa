@@ -21,7 +21,7 @@ import { canPanCanvas, clampCanvasPan, type CanvasPanContext } from '@/features/
 import { SnapGuidesOverlay } from './snap-guides-overlay';
 import { MeasureOverlay } from './measure-overlay';
 import { GridOverlay } from './grid-overlay';
-import { GridBoundsHandles, type ActiveGridGutter } from './grid-bounds-handles';
+import { GridBoundsHandles } from './grid-bounds-handles';
 import { CanvasFloatingControls } from './canvas-floating-controls';
 import {
   computePreviewPositionsForBounds,
@@ -132,7 +132,6 @@ export const TemplateCanvas: React.FC = () => {
   const [marquee, setMarquee] = useState<MarqueeRect | null>(null);
   const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
   const [marqueePreviewIds, setMarqueePreviewIds] = useState<string[]>([]);
-  const [activeGridGutter, setActiveGridGutter] = useState<ActiveGridGutter>(null);
   const [gridBoundsPreview, setGridBoundsPreview] = useState<GridBounds | null>(null);
 
   const { updateGroupBounds, translateGridGroup } = useGridGroupOps();
@@ -292,7 +291,6 @@ export const TemplateCanvas: React.FC = () => {
 
   useEffect(() => {
     if (!lockedGridGroup) {
-      setActiveGridGutter(null);
       setGridBoundsPreview(null);
     }
   }, [lockedGridGroup?.id]);
@@ -1208,17 +1206,13 @@ export const TemplateCanvas: React.FC = () => {
               settings={lockedGridGroup.settings}
               scale={scale}
               offset={offset}
-              activeGutter={activeGridGutter}
               mode="edit"
             />
             <GridBoundsHandles
               bounds={activeGridBounds}
-              cols={lockedGridGroup.settings.cols}
-              rows={lockedGridGroup.settings.rows}
               scale={scale}
               offset={offset}
               onBoundsChange={handleGridBoundsPreview}
-              onActiveGutterChange={setActiveGridGutter}
               onDragEnd={handleGridBoundsCommit}
             />
           </Layer>

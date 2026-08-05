@@ -6,7 +6,6 @@ import {
   gridLinePositions,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
-import type { ActiveGridGutter } from './grid-bounds-handles';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
 
 interface GridOverlayProps {
@@ -14,7 +13,6 @@ interface GridOverlayProps {
   settings: GridEditSettings;
   scale: number;
   offset: { x: number; y: number };
-  activeGutter?: ActiveGridGutter;
   mode?: 'edit' | 'preview';
 }
 
@@ -27,7 +25,6 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
   settings,
   scale,
   offset,
-  activeGutter = null,
   mode = 'edit',
 }) => {
   const isEditMode = mode === 'edit';
@@ -48,30 +45,28 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
   const frameH = bounds.height * scale;
 
   const verticalLines = lines.vertical.map((x, index) => {
-    const isGutter = index === 1 && activeGutter === 'x';
     const stageX = toStage(x, scale, offset.x);
     return (
       <Line
         key={`v-${index}`}
         points={[stageX, frameY, stageX, frameY + frameH]}
-        stroke={isGutter ? 'hsl(168, 90%, 38%)' : 'hsl(168, 76%, 42%)'}
-        strokeWidth={isGutter ? 3 : isEditMode ? 1 : 0.8}
-        opacity={isGutter ? 1 : isEditMode ? 0.7 : 0.5}
+        stroke="hsl(168, 76%, 42%)"
+        strokeWidth={isEditMode ? 1 : 0.8}
+        opacity={isEditMode ? 0.7 : 0.5}
         listening={false}
       />
     );
   });
 
   const horizontalLines = lines.horizontal.map((y, index) => {
-    const isGutter = index === 1 && activeGutter === 'y';
     const stageY = toStage(y, scale, offset.y);
     return (
       <Line
         key={`h-${index}`}
         points={[frameX, stageY, frameX + frameW, stageY]}
-        stroke={isGutter ? 'hsl(168, 90%, 38%)' : 'hsl(168, 76%, 42%)'}
-        strokeWidth={isGutter ? 3 : isEditMode ? 1 : 0.8}
-        opacity={isGutter ? 1 : isEditMode ? 0.7 : 0.5}
+        stroke="hsl(168, 76%, 42%)"
+        strokeWidth={isEditMode ? 1 : 0.8}
+        opacity={isEditMode ? 0.7 : 0.5}
         listening={false}
       />
     );

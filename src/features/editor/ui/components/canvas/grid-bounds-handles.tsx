@@ -1,35 +1,27 @@
 import React, { useRef, useCallback } from 'react';
-import { Group, Rect, Circle, Line } from 'react-konva';
+import { Group, Rect, Circle } from 'react-konva';
 import type Konva from 'konva';
 import {
   GRID_HANDLE_OUTSET,
   resizeGridBounds,
-  resizeGridPitch,
   translateGridBounds,
-  pitchFromBounds,
   type GridBounds,
   type GridBoundsHandle,
 } from '@/features/editor/domain/services/grid-layout';
 
-export type GridInteractionHandle = GridBoundsHandle | 'move' | 'gutterX' | 'gutterY';
-export type ActiveGridGutter = 'x' | 'y' | null;
+export type GridInteractionHandle = GridBoundsHandle | 'move';
 
 interface GridBoundsHandlesProps {
   bounds: GridBounds;
-  cols: number;
-  rows: number;
   scale: number;
   offset: { x: number; y: number };
   onBoundsChange: (bounds: GridBounds) => void;
-  onActiveGutterChange?: (gutter: ActiveGridGutter) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
 }
 
 const HANDLE_RADIUS = 9;
 const MIN_BOUNDS = 40;
-const MIN_PITCH = 8;
-const GUTTER_HIT = 18;
 
 function toStage(value: number, scale: number, offsetValue: number): number {
   return offsetValue + value * scale;
@@ -87,27 +79,14 @@ function handlePosition(
 
 export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
   bounds,
-  cols,
-  rows,
   scale,
   offset,
   onBoundsChange,
-  onActiveGutterChange,
   onDragStart,
   onDragEnd,
 }) => {
   const dragStartBounds = useRef<GridBounds | null>(null);
   const dragStartPointer = useRef<{ x: number; y: number } | null>(null);
-
-  const gutterXPosition = () => {
-    const pitch = pitchFromBounds(bounds, cols, rows);
-    return bounds.x + pitch.pitchX;
-  };
-
-  const gutterYPosition = () => {
-    const pitch = pitchFromBounds(bounds, cols, rows);
-    return bounds.y + pitch.pitchY;
-  };
 
   const beginDrag = useCallback(
     (handle: GridInteractionHandle) => (event: Konva.KonvaEventObject<DragEvent>) => {
@@ -118,11 +97,9 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
       dragStartPointer.current = pointer
         ? { x: fromStage(pointer.x, scale, offset.x), y: fromStage(pointer.y, scale, offset.y) }
         : null;
-      if (handle === 'gutterX') onActiveGutterChange?.('x');
-      if (handle === 'gutterY') onActiveGutterChange?.('y');
       onDragStart?.();
     },
-    [bounds, scale, offset, onDragStart, onActiveGutterChange],
+    [bounds, scale, offset, onDragStart],
   );
 
   const endDrag = useCallback(
@@ -130,10 +107,9 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
       event.cancelBubble = true;
       dragStartBounds.current = null;
       dragStartPointer.current = null;
-      onActiveGutterChange?.(null);
       onDragEnd?.();
     },
-    [onDragEnd, onActiveGutterChange],
+    [onDragEnd],
   );
 
   const onHandleDrag = useCallback(
@@ -161,16 +137,6 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         return;
       }
 
-      if (handle === 'gutterX') {
-        onBoundsChange(resizeGridPitch(startBounds, cols, rows, 'x', dx, MIN_PITCH));
-        return;
-      }
-
-      if (handle === 'gutterY') {
-        onBoundsChange(resizeGridPitch(startBounds, cols, rows, 'y', dy, MIN_PITCH));
-        return;
-      }
-
       onBoundsChange(
         resizeGridBounds(startBounds, handle, { dx, dy }, {
           minWidth: MIN_BOUNDS,
@@ -179,7 +145,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         }),
       );
     },
-    [scale, offset, onBoundsChange, cols, rows],
+    [scale, offset, onBoundsChange],
   );
 
   const frameX = toStage(bounds.x, scale, offset.x);
@@ -223,11 +189,6 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
     );
   };
 
-  const showGutterX = cols >= 2;
-  const showGutterY = rows >= 2;
-  const gutterX = gutterXPosition();
-  const gutterY = gutterYPosition();
-
   return (
     <Group>
       <Rect
@@ -254,48 +215,6 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
           if (container) container.style.cursor = 'default';
         }}
       />
-
-      {showGutterX && (
-        <Line
-          points={[
-            toStage(gutterX, scale, offset.x),
-            toStage(bounds.y, scale, offset.y),
-            toStage(gutterX, scale, offset.x),
-            toStage(bounds.y + bounds.height, scale, offset.y),
-          ]}
-          stroke="hsl(168, 90%, 38%)"
-          strokeWidth={3}
-          dash={[6, 4]}
-          hitStrokeWidth={GUTTER_HIT}
-          draggable
-          dragBoundFunc={() => ({ x: 0, y: 0 })}
-          onMouseDown={stopMouseDown}
-          onDragStart={beginDrag('gutterX')}
-          onDragMove={onHandleDrag('gutterX')}
-          onDragEnd={endDrag}
-        />
-      )}
-
-      {showGutterY && (
-        <Line
-          points={[
-            toStage(bounds.x, scale, offset.x),
-            toStage(gutterY, scale, offset.y),
-            toStage(bounds.x + bounds.width, scale, offset.x),
-            toStage(gutterY, scale, offset.y),
-          ]}
-          stroke="hsl(168, 90%, 38%)"
-          strokeWidth={3}
-          dash={[6, 4]}
-          hitStrokeWidth={GUTTER_HIT}
-          draggable
-          dragBoundFunc={() => ({ x: 0, y: 0 })}
-          onMouseDown={stopMouseDown}
-          onDragStart={beginDrag('gutterY')}
-          onDragMove={onHandleDrag('gutterY')}
-          onDragEnd={endDrag}
-        />
-      )}
 
       {CORNER_HANDLES.map(({ handle, cursor }) =>
         renderHandle(handle, cursor, handlePosition(bounds, handle)),
