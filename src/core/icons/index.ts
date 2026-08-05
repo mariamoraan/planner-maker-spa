@@ -21,6 +21,7 @@ import {
     Type,
     CaseSensitive,
     Signature,
+    Grid3X3,
 } from 'lucide-react';
 
 
@@ -47,4 +48,5 @@ export {
     Type as FontIcon,
     CaseSensitive as CaseSensitiveIcon,
     Signature as SignatureIcon,
+    Grid3X3 as GridIcon,
 };

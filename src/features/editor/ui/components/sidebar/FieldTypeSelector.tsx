@@ -14,6 +14,7 @@ import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { getDefaultFieldStyle, getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
+import { GridIcon } from '@/core/icons';
 
 const DEFAULT_ICON_SIZE = 50;
 const DEFAULT_BLOCK_WIDTH = 150;
@@ -124,8 +125,10 @@ export const FieldTypeSelector = () => {
         type="button"
         className="field-type-selector__grid-btn"
         onClick={handleAddGrid}
+        aria-label={t('editor.gridAddGrid')}
+        title={t('editor.gridAddGrid')}
       >
-        {t('editor.gridAddGrid')}
+         <div className="field-type-selector__grid-btn__icon-wrapper"><GridIcon size={30} color='#7af87a' /></div>
       </button>
     </div>
   );
