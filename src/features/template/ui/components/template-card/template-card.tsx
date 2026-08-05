@@ -2,6 +2,7 @@ import { CloudUpload, EllipsisIcon, TrashIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ActionMenuButton from '@/core/components/action-menu-button/action-menu-button';
 import type { Template, TemplateImage } from '@/features/template';
+import { getTemplatePaperSizeLabel } from '@/features/template';
 import './template-card.scss';
 
 const fadeUp = {
@@ -24,6 +25,7 @@ interface TemplateCardProps {
 
 export const TemplateCard = ({ template, index, onOpen, onDelete }: TemplateCardProps) => {
   const cover = getCoverImage(template.images);
+  const paperSizeLabel = getTemplatePaperSizeLabel(template);
   const formattedDate = template.updatedAt.toLocaleString('es-ES', {
     day: '2-digit',
     month: 'short',
@@ -60,7 +62,12 @@ export const TemplateCard = ({ template, index, onOpen, onDelete }: TemplateCard
 
       <div className="template-card__footer">
         <div className="template-card__meta">
-          <p className="template-card__name">{template.name}</p>
+          <p className="template-card__name">
+            <span className="template-card__name-text">{template.name}</span>
+            {paperSizeLabel ? (
+              <span className="template-card__format">{paperSizeLabel}</span>
+            ) : null}
+          </p>
           <p className="template-card__date">Editado el {formattedDate}</p>
         </div>
         <div

@@ -13,6 +13,7 @@ import { AddTemplateButton } from '@/features/template/ui/components/add-templat
 import { getCoverImage } from '@/features/template/ui/components/template-card/template-card';
 import { PATHS } from '@/core/routes/paths';
 import type { Template } from '@/features/template';
+import { getTemplatePaperSizeLabel } from '@/features/template';
 
 const ONBOARDING_STEPS = [
   { icon: ImageIcon, label: 'Sube tu diseño' },
@@ -58,6 +59,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
                 <ul className="home-rail__recent-list">
                   {recentTemplates.map(template => {
                     const cover = getCoverImage(template.images);
+                    const paperSizeLabel = getTemplatePaperSizeLabel(template);
 
                     return (
                       <li key={template.id}>
@@ -78,7 +80,12 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
                               <CloudUpload className="home-rail__recent-placeholder-icon" />
                             </span>
                           )}
-                          <span className="home-rail__recent-name">{template.name}</span>
+                          <span className="home-rail__recent-name">
+                            <span className="home-rail__recent-name-text">{template.name}</span>
+                            {paperSizeLabel ? (
+                              <span className="home-rail__recent-format">{paperSizeLabel}</span>
+                            ) : null}
+                          </span>
                         </button>
                       </li>
                     );

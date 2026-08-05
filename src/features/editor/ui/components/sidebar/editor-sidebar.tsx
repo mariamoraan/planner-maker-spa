@@ -19,7 +19,7 @@ import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
-import { TEMPLATE_TYPE_CONFIG, type PlannerLocale, type WeekStartsOn } from '@/features/template';
+import { TEMPLATE_TYPE_CONFIG, type PlannerLocale, type WeekStartsOn, getTemplatePaperSizeLabel } from '@/features/template';
 import { DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions';
@@ -48,6 +48,7 @@ export const EditorSidebar: React.FC = () => {
     const prevSelectionCount = useRef(0);
 
     const isDemo = pathname.includes('landing-demo');
+    const paperSizeLabel = template ? getTemplatePaperSizeLabel(template) : null;
     const singleSelectedId = selectedRectangleIds.length === 1 ? selectedRectangleIds[0] : null;
     const multiSelected = selectedRectangleIds.length > 1;
     const rectangles = currentImage?.rectangles ?? [];
@@ -103,7 +104,12 @@ export const EditorSidebar: React.FC = () => {
           />
         ) : (
           <div className='editor-sidebar__header__title'>
-            <p className='editor-sidebar__header__title__name'>{template?.name ?? 'Template'}</p>
+            <div className='editor-sidebar__header__title__meta'>
+              <p className='editor-sidebar__header__title__name'>{template?.name ?? 'Template'}</p>
+              {paperSizeLabel ? (
+                <span className='editor-sidebar__header__title__format'>{paperSizeLabel}</span>
+              ) : null}
+            </div>
             <button className='editor-sidebar__header__title__button' onClick={() => setIsEditingTemplateName(true)}>
               <PencilIcon size={14} />
             </button>

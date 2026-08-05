@@ -49,16 +49,42 @@
         }
         &__title {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
+            gap: 8px;
             font-weight: bold;
+
+            &__meta {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-width: 0;
+                flex: 1;
+            }
+
             &__name {
                 font-size: 16px;
+                margin: 0;
+                word-break: break-word;
             }
+
+            &__format {
+                align-self: flex-start;
+                padding: 2px 8px;
+                border-radius: 999px;
+                font-size: 11px;
+                font-weight: 600;
+                line-height: 1.4;
+                color: hsl(var(--muted-foreground));
+                background: hsl(var(--muted));
+                white-space: nowrap;
+            }
+
             &__button {
                 background: none;
                 border: none;
                 cursor: pointer;
+                flex-shrink: 0;
             }
             &__button:hover {
                 opacity: 0.5;

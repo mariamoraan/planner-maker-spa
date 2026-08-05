@@ -110,7 +110,7 @@ function buildMonthlyCalendarPage() {
     {
       id: 'rect-month',
       x: 420,
-      y: 120,
+      y: 220,
       width: 360,
       height: 106,
       fieldType: 'month',
@@ -180,7 +180,7 @@ export const DEMO_TEMPLATE: Template = {
   createdAt: now,
   updatedAt: now,
   locale: 'en',
-  weekStartsOn: 'monday',
+  weekStartsOn: 'sunday',
   startDate: new Date(2026, 0, 1),
   endDate: new Date(2026, 11, 31),
 };
@@ -190,11 +190,13 @@ export const DEMO_HOME_TEMPLATES: Template[] = [
   {
     ...DEMO_TEMPLATE,
     id: 'demo-minimal',
-    name: 'Minimal Daily Journal',
-    images: [page('page-weekly-2', 'Weekly Spread', 'weekly-calendar', weeklyPlannerSrc,
-      [
-        ...generateWeeklyCalendarDayRectangles(),
-      ]
-    ),],
+    name: 'Minimal Monthly Calendar',
+    images: [buildMonthlyCalendarPage()],
+    createdAt: now,
+    updatedAt: now,
+    locale: 'en',
+    weekStartsOn: 'sunday',
+    startDate: new Date(2026, 0, 1),
+    endDate: new Date(2026, 11, 31),
   },
 ];

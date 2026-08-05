@@ -95,7 +95,7 @@ async function generatePage(
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0);
+  ctx.drawImage(img, 0, 0, templateImage.width, templateImage.height);
 
   const dateLocale = resolveLocale(plannerLocale ?? 'es');
 

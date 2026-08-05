@@ -56,6 +56,13 @@ export {
   formatWeekdayName,
   resolveWeekStartsOn,
 } from './domain/services/locale-config';
+export {
+  detectPaperSize,
+  formatPaperSizeLabel,
+  getTemplatePaperSizeLabel,
+  resolvePageSizeLabel,
+} from './domain/services/paper-size';
+export type { PaperSize, PaperSizeKind, PaperOrientation } from './domain/services/paper-size';
 
 // Use cases
 export { trackEvent, trackPageView } from './use-case/commands/analytics.commands';
