@@ -47,10 +47,10 @@ const MONTHLY_DAY_GRID: GridLayoutConfig = {
 };
 
 const WEEKLY_DAY_GRID: GridLayoutConfig = {
-  origin: { x: 210, y: 420 },
+  origin: { x: 510, y: 420 },
   cols: 1,
-  rows: 5,
-  cellSize: { width: 48, height: 150 },
+  rows: 6,
+  cellSize: { width: 48, height: 175 },
   rectSize: { width: 48, height: 36 },
   align: 'top-left',
   padding: { x: 12, y: 0 },
@@ -69,7 +69,7 @@ const generateMonthlyCalendarDayRectangles = (): Rectangle[] =>
   }));
 
 const generateWeeklyCalendarDayRectangles = (): Rectangle[] =>
-  layoutGridRectangles(7, WEEKLY_DAY_GRID, (index, { x, y }) => ({
+  layoutGridRectangles(6, WEEKLY_DAY_GRID, (index, { x, y }) => ({
     id: `rect-day-${index + 1}`,
     x,
     y,
@@ -116,6 +116,16 @@ function buildMonthlyCalendarPage() {
       order: 0,
       formatVariant: 'name',
     },
+    {
+      id: 'rect-year',
+      x: 920,
+      y: 290,
+      width: 200,
+      height: 70,
+      fieldType: 'year',
+      order: 0,
+      formatVariant: 'name',
+    },
     ...dayRectangles.map((rect, index) => ({
       ...rect,
       gridGroupId: DEMO_MONTHLY_DAY_GRID_ID,
@@ -148,11 +158,20 @@ export const DEMO_TEMPLATE: Template = {
     page('page-daily', 'Daily Page', 'daily-page', dailyPageSrc, [
       {
         id: 'rect-day-daily',
-        x: 975,
-        y: 335,
+        x: 220,
+        y: 235,
         width: 120,
         height: 48,
         fieldType: 'day',
+        order: 1,
+      },
+      {
+        id: 'rect-day-month',
+        x: 355,
+        y: 235,
+        width: 120,
+        height: 48,
+        fieldType: 'month',
         order: 1,
       },
     ]),

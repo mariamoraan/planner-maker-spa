@@ -5,9 +5,11 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { FieldType, GridGroup } from '@/features/template';
-import { GridGroupPanel } from '@/features/editor/ui/components/canvas/grid-edit-panel';
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector';
+import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls';
+import { ToolbarHistoryButtons } from '@/features/editor/ui/components/shared/toolbar-history-buttons';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
+import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 
@@ -84,17 +86,15 @@ function useToolbarPopover() {
 export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const { t } = useTranslation();
   const currentImage = useCurrentImage();
-  const { updateGroupSettings, updateGroupBounds, updateGroupFieldType, ungroupGridGroup } =
-    useGridGroupOps();
+  const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
+  const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup } = useGridGroupOps();
 
   const layoutPopover = useToolbarPopover();
-  const spacingPopover = useToolbarPopover();
 
   const groupFieldType = currentImage?.rectangles.find(r => r.id === group.rectIds[0])?.fieldType;
 
   useEffect(() => {
     layoutPopover.close();
-    spacingPopover.close();
   }, [group.id]);
 
   const adjustCols = (delta: number) => {
@@ -105,8 +105,25 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     updateGroupSettings(group.id, { rows: clampDimension(group.settings.rows + delta) });
   };
 
+  const commitCols = (value: number) => {
+    const cols = clampDimension(value);
+    if (cols !== group.settings.cols) {
+      updateGroupSettings(group.id, { cols });
+    }
+  };
+
+  const commitRows = (value: number) => {
+    const rows = clampDimension(value);
+    if (rows !== group.settings.rows) {
+      updateGroupSettings(group.id, { rows });
+    }
+  };
+
   return (
     <div className="grid-toolbar-controls">
+      <ToolbarHistoryButtons />
+      <div className="grid-toolbar-controls__divider" />
+
       <p className="grid-toolbar-controls__badge">
         {t('editor.gridGroupBadge', {
           cols: group.cols,
@@ -148,12 +165,9 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
                     type="number"
                     min={1}
                     max={20}
-                    value={group.settings.cols}
-                    onChange={e =>
-                      updateGroupSettings(group.id, {
-                        cols: clampDimension(Number(e.target.value) || 1),
-                      })
-                    }
+                    defaultValue={group.settings.cols}
+                    key={`cols-${group.id}-${group.settings.cols}`}
+                    onBlur={e => commitCols(Number(e.target.value) || 1)}
                   />
                   <button type="button" onClick={() => adjustCols(1)} aria-label="+">
                     +
@@ -171,12 +185,9 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
                     type="number"
                     min={1}
                     max={20}
-                    value={group.settings.rows}
-                    onChange={e =>
-                      updateGroupSettings(group.id, {
-                        rows: clampDimension(Number(e.target.value) || 1),
-                      })
-                    }
+                    defaultValue={group.settings.rows}
+                    key={`rows-${group.id}-${group.settings.rows}`}
+                    onBlur={e => commitRows(Number(e.target.value) || 1)}
                   />
                   <button type="button" onClick={() => adjustRows(1)} aria-label="+">
                     +
@@ -199,40 +210,8 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
         </>
       )}
 
-      <div ref={spacingPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
-        <button
-          ref={spacingPopover.triggerRef}
-          type="button"
-          className={clsx('grid-toolbar-controls__menu-trigger', {
-            'grid-toolbar-controls__menu-trigger--open': spacingPopover.isOpen,
-          })}
-          onClick={spacingPopover.toggle}
-        >
-          {t('editor.gridEditSpacing')}
-        </button>
-        {spacingPopover.isOpen && spacingPopover.menuPosition &&
-          createPortal(
-            <div
-              ref={spacingPopover.menuRef}
-              className="grid-toolbar-controls__popover"
-              {...blockSelectionZoneProps}
-              style={{
-                top: spacingPopover.menuPosition.top,
-                left: spacingPopover.menuPosition.left,
-              }}
-            >
-              <GridGroupPanel
-                settings={group.settings}
-                bounds={group.bounds}
-                blockCount={group.rectIds.length}
-                compact
-                onSettingsChange={updates => updateGroupSettings(group.id, updates)}
-                onBoundsChange={bounds => updateGroupBounds(group.id, bounds)}
-              />
-            </div>,
-            document.body,
-          )}
-      </div>
+      <div className="grid-toolbar-controls__divider" />
+      <LayerControls selectedIds={selectedRectangleIds} />
 
       <div className="grid-toolbar-controls__divider" />
       <button

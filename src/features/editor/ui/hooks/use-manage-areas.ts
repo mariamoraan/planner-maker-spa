@@ -3,6 +3,10 @@ import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useHistoryStore } from '@/features/editor/ui/stores/history-store';
 import { FieldType, Rectangle, type GridGroup } from '@/features/template';
 import { getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
+import {
+  applyLayerOperation,
+  type LayerOperation,
+} from '@/features/editor/domain/services/layer-order';
 import { useCallback } from 'react';
 import { useTemplateId } from './use-template-id';
 
@@ -16,6 +20,7 @@ export const useManageAreas = () => {
       getCurrentImage,
       updateRectangles,
       updateImage,
+      reorderRectangles,
     } = useTemplateStore();
 
     const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds)
@@ -224,14 +229,75 @@ export const useManageAreas = () => {
 
 
     const updatePageGridState = useCallback(
-      (updates: {
-        rectangles: Rectangle[];
-        gridGroups?: Record<string, GridGroup> | null;
-      }) => {
+      (
+        updates: {
+          rectangles: Rectangle[];
+          gridGroups?: Record<string, GridGroup> | null;
+        },
+        options?: { recordHistory?: boolean },
+      ) => {
         if (!templateId || !currentImageId) return;
+
+        const recordHistory = options?.recordHistory ?? true;
+        if (recordHistory) {
+          const currentImage = getCurrentImage(templateId);
+          if (!currentImage) return;
+
+          pushHistory(templateId, {
+            type: 'updatePageGridState',
+            imageId: currentImageId,
+            before: {
+              rectangles: structuredClone(currentImage.rectangles),
+              gridGroups: currentImage.gridGroups
+                ? structuredClone(currentImage.gridGroups)
+                : null,
+            },
+            after: {
+              rectangles: structuredClone(updates.rectangles),
+              gridGroups:
+                updates.gridGroups !== undefined
+                  ? updates.gridGroups
+                    ? structuredClone(updates.gridGroups)
+                    : null
+                  : currentImage.gridGroups
+                    ? structuredClone(currentImage.gridGroups)
+                    : null,
+            },
+          });
+        }
+
         updateImage(templateId, currentImageId, updates);
       },
-      [templateId, currentImageId, updateImage],
+      [templateId, currentImageId, updateImage, getCurrentImage, pushHistory],
+    );
+
+    const reorderLayers = useCallback(
+      (operation: LayerOperation, selectedIds: string[]) => {
+        if (!templateId || !currentImageId || selectedIds.length === 0) return;
+
+        const currentImage = getCurrentImage(templateId);
+        if (!currentImage) return;
+
+        const nextRectangles = applyLayerOperation(
+          currentImage.rectangles,
+          currentImage.gridGroups,
+          selectedIds,
+          operation,
+        );
+        if (!nextRectangles) return;
+
+        const before = currentImage.rectangles.map(rect => rect.id);
+        const after = nextRectangles.map(rect => rect.id);
+
+        pushHistory(templateId, {
+          type: 'reorderRectangles',
+          imageId: currentImageId,
+          before,
+          after,
+        });
+        reorderRectangles(templateId, currentImageId, after);
+      },
+      [templateId, currentImageId, getCurrentImage, pushHistory, reorderRectangles],
     );
 
     return {
@@ -243,6 +309,7 @@ export const useManageAreas = () => {
       moveAreas,
       updateAreaType,
       updatePageGridState,
+      reorderLayers,
     }
  
 }

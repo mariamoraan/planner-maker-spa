@@ -28,6 +28,9 @@ import {
   useGridGroupOps,
 } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import {
+  findTopmostRectangleAtPoint,
+} from '@/features/editor/domain/services/layer-order';
+import {
   expandSelectionToGridGroups,
   findGridGroupAtPoint,
   getGridGroupForSelection,
@@ -297,10 +300,13 @@ export const TemplateCanvas: React.FC = () => {
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
       const stage = stageRef.current;
-      if (isSelectMode && selectedRectangleIds.length === 1 && !isGridGroupFullySelected) {
+      if (isSelectMode && selectedRectangleIds.length === 1) {
         const selectedRect = currentImage?.rectangles.find(r => r.id === selectedRectangleIds[0]);
+        const isGridMember = selectedRect
+          ? Boolean(resolveGridGroupId(selectedRect.id, currentImage?.rectangles ?? [], currentImage?.gridGroups))
+          : false;
         const selectedNode =
-          selectedRect?.gridGroupId
+          isGridMember
             ? null
             : stage.findOne(`#rect-${selectedRectangleIds[0]}`);
         transformerRef.current.nodes(selectedNode ? [selectedNode] : []);
@@ -309,7 +315,7 @@ export const TemplateCanvas: React.FC = () => {
       }
       transformerRef.current.getLayer()?.batchDraw();
     }
-  }, [selectedRectangleIds, currentImage?.rectangles, isSelectMode, isGridGroupFullySelected]);
+  }, [selectedRectangleIds, currentImage?.rectangles, currentImage?.gridGroups, isSelectMode]);
 
   const pointerToImage = useCallback(
     (pos: { x: number; y: number }) => ({
@@ -511,8 +517,14 @@ export const TemplateCanvas: React.FC = () => {
       const groupAtPoint = findGridGroupAtPoint(imagePos, currentImage?.gridGroups);
 
       if (groupAtPoint) {
-        toggleGridGroupSelection(groupAtPoint, e.evt);
-        return;
+        const topRect = findTopmostRectangleAtPoint(imagePos, currentImage?.rectangles ?? []);
+        const topRectBelongsToGroup =
+          topRect !== null && groupAtPoint.rectIds.includes(topRect.id);
+
+        if (!topRect || topRectBelongsToGroup) {
+          toggleGridGroupSelection(groupAtPoint, e.evt);
+          return;
+        }
       }
 
       const wasGridSelected = isGridGroupFullySelected;
@@ -765,38 +777,26 @@ export const TemplateCanvas: React.FC = () => {
       if (delta.dx !== 0 || delta.dy !== 0) {
         const rects = currentImage?.rectangles ?? [];
         const gridGroups = currentImage?.gridGroups;
-        const groupIds = new Set(
-          startEntries
-            .map(entry => resolveGridGroupId(entry.id, rects, gridGroups))
-            .filter((id): id is string => Boolean(id)),
-        );
+        const translatedGroups = new Set<string>();
 
-        if (groupIds.size === 1) {
-          const groupId = [...groupIds][0];
-          const memberIds = getGridGroupMemberIds(groupId, rects, gridGroups);
-          const allMembersMoving =
-            memberIds.length === startEntries.length &&
-            memberIds.every(id => startEntries.some(entry => entry.id === id));
-
-          if (allMembersMoving) {
+        for (const entry of startEntries) {
+          const groupId = resolveGridGroupId(entry.id, rects, gridGroups);
+          if (groupId && !translatedGroups.has(groupId)) {
+            translatedGroups.add(groupId);
             translateGridGroup(groupId, delta.dx, delta.dy);
-          } else {
-            moveAreas(
-              startEntries.map(entry => ({
-                id: entry.id,
-                x: entry.x + delta.dx,
-                y: entry.y + delta.dy,
-              })),
-            );
           }
-        } else {
-          moveAreas(
-            startEntries.map(entry => ({
-              id: entry.id,
-              x: entry.x + delta.dx,
-              y: entry.y + delta.dy,
-            })),
-          );
+        }
+
+        const nonGridMoves = startEntries
+          .filter(entry => !resolveGridGroupId(entry.id, rects, gridGroups))
+          .map(entry => ({
+            id: entry.id,
+            x: entry.x + delta.dx,
+            y: entry.y + delta.dy,
+          }));
+
+        if (nonGridMoves.length > 0) {
+          moveAreas(nonGridMoves);
         }
       }
 
@@ -1133,29 +1133,6 @@ export const TemplateCanvas: React.FC = () => {
               />
             );
           })}
-
-          {isSelectMode &&
-            !isGridHandleDragging &&
-            currentImage?.gridGroups &&
-            Object.values(currentImage.gridGroups).map(group => {
-              const fullySelected = group.rectIds.every(id => selectedRectangleIds.includes(id));
-              if (fullySelected) return null;
-
-              return (
-                <Rect
-                  key={`grid-hit-${group.id}`}
-                  x={offset.x + group.bounds.x * scale}
-                  y={offset.y + group.bounds.y * scale}
-                  width={group.bounds.width * scale}
-                  height={group.bounds.height * scale}
-                  fill="rgba(0, 0, 0, 0.001)"
-                  onMouseDown={e => {
-                    e.cancelBubble = true;
-                    toggleGridGroupSelection(group, e.evt);
-                  }}
-                />
-              );
-            })}
 
           {drawingRect && (
             <Rect

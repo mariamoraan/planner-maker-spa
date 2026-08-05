@@ -1,26 +1,21 @@
 import './toolbar.scss'
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
-import {
-    LargeArrowLeftIcon,
-    LargeArrowRightIcon,
-} from '@/core/icons'
 import { useTranslation } from 'react-i18next'
-import { useHistoryStore } from '@/features/editor/ui/stores/history-store'
 import { FIELD_TYPE_CONFIG } from '@/features/template'
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas'
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image'
-import { useTemplateId } from '@/features/editor/ui/hooks/use-template-id'
 import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-style-controls'
 import { BlockDeleteButton } from '@/features/editor/ui/components/shared/block-delete-button'
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector'
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions'
+import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls'
+import { ToolbarHistoryButtons } from '@/features/editor/ui/components/shared/toolbar-history-buttons'
 import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group'
 import { GridToolbarControls } from './grid-toolbar-controls'
 
 export const Toolbar = () => {
     const { t } = useTranslation();
-    const templateId = useTemplateId();
     const currentImage = useCurrentImage();
     const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds)
     const currentSelectedBox =
@@ -32,15 +27,6 @@ export const Toolbar = () => {
       selectedRectangleIds,
       currentImage?.gridGroups,
     );
-
-    const canUndo = useHistoryStore(state =>
-      templateId ? (state.histories[templateId]?.past.length ?? 0) > 0 : false
-    )
-    const canRedo = useHistoryStore(state =>
-      templateId ? (state.histories[templateId]?.future.length ?? 0) > 0 : false
-    )
-    const undo = useHistoryStore(state => state.undo)
-    const redo = useHistoryStore(state => state.redo)
 
     const { updateAreaType, deleteAreas } = useManageAreas();
 
@@ -59,6 +45,8 @@ export const Toolbar = () => {
                     {t('editor.blocksSelected', { count: selectedRectangleIds.length })}
                 </p>
                 <div className="toolbar__divider" />
+                <LayerControls selectedIds={selectedRectangleIds} />
+                <div className="toolbar__divider" />
                 <button
                     type="button"
                     className="toolbar__delete-button toolbar__delete-selected"
@@ -73,22 +61,7 @@ export const Toolbar = () => {
     if(!currentSelectedBox) {
         return (
             <div className='base-toolbar'>
-                <button
-                  className='base-toolbar__undo'
-                  type="button"
-                  disabled={!canUndo}
-                  onClick={() => templateId && undo(templateId)}
-                >
-                  <LargeArrowLeftIcon />
-                </button>
-                <button
-                  className='base-toolbar__redo'
-                  type="button"
-                  disabled={!canRedo}
-                  onClick={() => templateId && redo(templateId)}
-                >
-                  <LargeArrowRightIcon />
-                </button>
+                <ToolbarHistoryButtons />
                 <EditorPlannerActions variant="toolbar" />
             </div>
         );
@@ -108,6 +81,8 @@ export const Toolbar = () => {
                 onSelect={type => updateAreaType(currentSelectedBox.id, type)}
                 variant="popover"
              />
+             <div className='toolbar__divider' />
+             <LayerControls selectedIds={selectedRectangleIds} />
              <BlockDeleteButton
                 rectangleId={currentSelectedBox.id}
                 className="toolbar__delete-button"

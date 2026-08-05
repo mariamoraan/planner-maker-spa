@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Rectangle, TemplateImage } from '@/features/template';
+import type { GridGroup, Rectangle, TemplateImage } from '@/features/template';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
@@ -34,6 +34,24 @@ export type HistoryAction =
       overId: string;
       fromIndex: number;
       toIndex: number;
+    }
+  | {
+      type: 'reorderRectangles';
+      imageId: string;
+      before: string[];
+      after: string[];
+    }
+  | {
+      type: 'updatePageGridState';
+      imageId: string;
+      before: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+      };
+      after: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+      };
     };
 
 type TemplateHistory = {
@@ -180,6 +198,16 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
       if (activeId && overId) {
         store.reorderImages(templateId, activeId, overId);
       }
+      break;
+    }
+    case 'reorderRectangles': {
+      const orderedIds = direction === 'undo' ? action.before : action.after;
+      store.reorderRectangles(templateId, action.imageId, orderedIds);
+      break;
+    }
+    case 'updatePageGridState': {
+      const snapshot = direction === 'undo' ? action.before : action.after;
+      store.updateImage(templateId, action.imageId, snapshot);
       break;
     }
   }

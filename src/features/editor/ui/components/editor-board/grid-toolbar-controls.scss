@@ -117,4 +117,18 @@
       min-width: 220px;
     }
   }
+
+  .base-toolbar__undo,
+  .base-toolbar__redo {
+    color: grey;
+    transition: 200ms ease;
+
+    &:hover {
+      opacity: 0.5;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
 }

@@ -159,6 +159,7 @@ interface TemplateState {
     updates: { rectangleId: string; changes: Partial<Rectangle> }[]
   ) => void;
   deleteRectangle: (templateId: string, imageId: string, rectangleId: string) => void;
+  reorderRectangles: (templateId: string, imageId: string, orderedIds: string[]) => void;
 
   insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
   normalizeImageOrder: (templateId: string) => void;
@@ -788,6 +789,39 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
               images: t.images.map(img => {
                 if (img.id !== imageId) return img;
                 rectangles = img.rectangles.filter(r => r.id !== rectangleId);
+                return { ...img, rectangles, updatedAt: new Date() };
+              }),
+              updatedAt: new Date(),
+            }
+          : t
+      ),
+    }));
+
+    const uid = get().syncUid;
+    if (uid) {
+      void getInfra().templates.updatePageRectangles(
+        uid,
+        templateId,
+        imageId,
+        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+      );
+    }
+  },
+
+  reorderRectangles: (templateId, imageId, orderedIds) => {
+    let rectangles: Rectangle[] = [];
+
+    set(state => ({
+      templates: state.templates.map(t =>
+        t.id === templateId
+          ? {
+              ...t,
+              images: t.images.map(img => {
+                if (img.id !== imageId) return img;
+                const byId = new Map(img.rectangles.map(rect => [rect.id, rect]));
+                rectangles = orderedIds
+                  .map(id => byId.get(id))
+                  .filter((rect): rect is Rectangle => rect !== undefined);
                 return { ...img, rectangles, updatedAt: new Date() };
               }),
               updatedAt: new Date(),
