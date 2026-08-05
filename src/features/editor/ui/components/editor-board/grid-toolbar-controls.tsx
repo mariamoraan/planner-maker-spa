@@ -21,6 +21,10 @@ function clampDimension(value: number, min = 1, max = 20): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function clampPadding(value: number, min = 0): number {
+  return Math.max(min, Math.round(value));
+}
+
 function useToolbarPopover() {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
@@ -90,11 +94,15 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup } = useGridGroupOps();
 
   const layoutPopover = useToolbarPopover();
+  const paddingPopover = useToolbarPopover();
 
   const groupFieldType = currentImage?.rectangles.find(r => r.id === group.rectIds[0])?.fieldType;
+  const padding = group.settings.padding ?? { x: 0, y: 0 };
+  const showPaddingControls = group.settings.align === 'top-left';
 
   useEffect(() => {
     layoutPopover.close();
+    paddingPopover.close();
   }, [group.id]);
 
   const adjustCols = (delta: number) => {
@@ -116,6 +124,32 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     const rows = clampDimension(value);
     if (rows !== group.settings.rows) {
       updateGroupSettings(group.id, { rows });
+    }
+  };
+
+  const adjustPaddingX = (delta: number) => {
+    updateGroupSettings(group.id, {
+      padding: { x: clampPadding(padding.x + delta), y: padding.y },
+    });
+  };
+
+  const adjustPaddingY = (delta: number) => {
+    updateGroupSettings(group.id, {
+      padding: { x: padding.x, y: clampPadding(padding.y + delta) },
+    });
+  };
+
+  const commitPaddingX = (value: number) => {
+    const x = clampPadding(value);
+    if (x !== padding.x) {
+      updateGroupSettings(group.id, { padding: { x, y: padding.y } });
+    }
+  };
+
+  const commitPaddingY = (value: number) => {
+    const y = clampPadding(value);
+    if (y !== padding.y) {
+      updateGroupSettings(group.id, { padding: { x: padding.x, y } });
     }
   };
 
@@ -198,6 +232,72 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
             document.body,
           )}
       </div>
+
+      {showPaddingControls && (
+        <div ref={paddingPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
+          <button
+            ref={paddingPopover.triggerRef}
+            type="button"
+            className={clsx('grid-toolbar-controls__menu-trigger', {
+              'grid-toolbar-controls__menu-trigger--open': paddingPopover.isOpen,
+            })}
+            onClick={paddingPopover.toggle}
+          >
+            {t('editor.gridEditPadding')}
+          </button>
+          {paddingPopover.isOpen && paddingPopover.menuPosition &&
+            createPortal(
+              <div
+                ref={paddingPopover.menuRef}
+                className="grid-toolbar-controls__popover grid-toolbar-controls__popover--padding"
+                {...blockSelectionZoneProps}
+                style={{
+                  top: paddingPopover.menuPosition.top,
+                  left: paddingPopover.menuPosition.left,
+                }}
+              >
+                <label className="grid-toolbar-controls__stepper">
+                  <span>{t('editor.gridPaddingX')}</span>
+                  <div className="grid-toolbar-controls__stepper-inputs">
+                    <button type="button" onClick={() => adjustPaddingX(-1)} aria-label="-">
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      defaultValue={padding.x}
+                      key={`pad-x-${group.id}-${padding.x}`}
+                      onBlur={e => commitPaddingX(Number(e.target.value) || 0)}
+                    />
+                    <button type="button" onClick={() => adjustPaddingX(1)} aria-label="+">
+                      +
+                    </button>
+                  </div>
+                </label>
+
+                <label className="grid-toolbar-controls__stepper">
+                  <span>{t('editor.gridPaddingY')}</span>
+                  <div className="grid-toolbar-controls__stepper-inputs">
+                    <button type="button" onClick={() => adjustPaddingY(-1)} aria-label="-">
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={0}
+                      defaultValue={padding.y}
+                      key={`pad-y-${group.id}-${padding.y}`}
+                      onBlur={e => commitPaddingY(Number(e.target.value) || 0)}
+                    />
+                    <button type="button" onClick={() => adjustPaddingY(1)} aria-label="+">
+                      +
+                    </button>
+                  </div>
+                </label>
+              </div>,
+              document.body,
+            )}
+        </div>
+      )}
 
       {groupFieldType && (
         <>

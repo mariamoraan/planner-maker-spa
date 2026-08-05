@@ -5,11 +5,13 @@ import {
   boundsFromInferredGrid,
   boundsFromPitch,
   boundsFromRectanglesWithPadding,
+  clampGridPadding,
   defaultGridBounds,
   expandGridRectIds,
   gridConfigFromBounds,
   inferGridDimensionsFromCount,
   inferGridFromRectangles,
+  inferPaddingFromRects,
   inferPitchFromRectangles,
   medianRectSize,
   orderRectIdsRowMajor,
@@ -42,6 +44,7 @@ function applyGridLayout(
     rows: settings.rows,
     rectSize: { width: settings.rectWidth, height: settings.rectHeight },
     align: settings.align,
+    padding: settings.padding,
   });
 
   let next = [...rectangles];
@@ -74,6 +77,7 @@ function syncGridCellCountLocal(
       settings.rows,
       { width: settings.rectWidth, height: settings.rectHeight },
       settings.align,
+      settings.padding,
     );
 
     const newRects = buildGridRectangles(
@@ -132,6 +136,7 @@ export function useGridGroupOps() {
         settings.rows,
         { width: settings.rectWidth, height: settings.rectHeight },
         settings.align,
+        settings.padding ?? { x: 0, y: 0 },
       );
 
       const rects = buildGridRectangles(config, fieldType, currentImage.rectangles.length);
@@ -164,6 +169,7 @@ export function useGridGroupOps() {
         align: 'top-left',
         rectWidth: DEFAULT_GRID_RECT_SIZE.width,
         rectHeight: DEFAULT_GRID_RECT_SIZE.height,
+        padding: { x: 0, y: 0 },
       };
 
       const bounds = defaultGridBounds(
@@ -216,6 +222,13 @@ export function useGridGroupOps() {
         align: inferred?.align ?? 'top-left',
         rectWidth: inferred?.rectSize.width ?? medianRectSize(selectedRects).width,
         rectHeight: inferred?.rectSize.height ?? medianRectSize(selectedRects).height,
+        padding: inferPaddingFromRects(bounds, {
+          cols: dims.cols,
+          rows: dims.rows,
+          align: inferred?.align ?? 'top-left',
+          rectWidth: inferred?.rectSize.width ?? medianRectSize(selectedRects).width,
+          rectHeight: inferred?.rectSize.height ?? medianRectSize(selectedRects).height,
+        }, selectedRects, rectIds),
       };
 
       const layoutRects = applyGridLayout(currentImage.rectangles, rectIds, bounds, settings);
@@ -258,6 +271,13 @@ export function useGridGroupOps() {
       if (!group) return;
 
       const nextSettings: GridEditSettings = { ...group.settings, ...updates };
+      if (updates.padding !== undefined) {
+        nextSettings.padding = clampGridPadding(
+          group.bounds,
+          nextSettings,
+          updates.padding,
+        );
+      }
       const templateRect = currentImage.rectangles.find(r => r.id === group.rectIds[0]);
 
       let rectIds = group.rectIds;
@@ -282,7 +302,8 @@ export function useGridGroupOps() {
         colsOrRowsChanged ||
         updates.rectWidth !== undefined ||
         updates.rectHeight !== undefined ||
-        updates.align !== undefined
+        updates.align !== undefined ||
+        updates.padding !== undefined
       ) {
         nextRects = applyGridLayout(nextRects, rectIds, group.bounds, nextSettings);
       }
@@ -388,6 +409,7 @@ export function computePreviewPositionsForBounds(
       height: group.settings.rectHeight,
     },
     align: group.settings.align,
+    padding: group.settings.padding,
   });
 
   const map: Record<string, { x: number; y: number }> = {};

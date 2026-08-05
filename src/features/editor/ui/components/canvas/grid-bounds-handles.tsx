@@ -1,5 +1,5 @@
 import React, { useRef, useCallback } from 'react';
-import { Group, Rect, Circle, Line, Text } from 'react-konva';
+import { Group, Rect, Circle, Line } from 'react-konva';
 import type Konva from 'konva';
 import {
   GRID_HANDLE_OUTSET,
@@ -30,8 +30,6 @@ const HANDLE_RADIUS = 9;
 const MIN_BOUNDS = 40;
 const MIN_PITCH = 8;
 const GUTTER_HIT = 18;
-const PILL_W = 28;
-const PILL_H = 18;
 
 function toStage(value: number, scale: number, offsetValue: number): number {
   return offsetValue + value * scale;
@@ -225,61 +223,6 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
     );
   };
 
-  const renderGutterPill = (
-    handle: 'gutterX' | 'gutterY',
-    centerX: number,
-    centerY: number,
-    label: string,
-    cursor: string,
-  ) => {
-    const cx = toStage(centerX, scale, offset.x);
-    const cy = toStage(centerY, scale, offset.y);
-
-    return (
-      <Group
-        key={handle}
-        x={cx}
-        y={cy}
-        draggable
-        dragBoundFunc={() => ({ x: cx, y: cy })}
-        onMouseDown={stopMouseDown}
-        onDragStart={beginDrag(handle)}
-        onDragMove={onHandleDrag(handle)}
-        onDragEnd={endDrag}
-        onMouseEnter={e => {
-          const container = e.target.getStage()?.container();
-          if (container) container.style.cursor = cursor;
-        }}
-        onMouseLeave={e => {
-          const container = e.target.getStage()?.container();
-          if (container) container.style.cursor = 'default';
-        }}
-      >
-        <Rect
-          x={-PILL_W / 2}
-          y={-PILL_H / 2}
-          width={PILL_W}
-          height={PILL_H}
-          fill="hsl(168, 76%, 42%)"
-          cornerRadius={9}
-          shadowColor="rgba(0,0,0,0.2)"
-          shadowBlur={4}
-          shadowOffsetY={1}
-        />
-        <Text
-          x={-PILL_W / 2}
-          y={-5}
-          width={PILL_W}
-          align="center"
-          text={label}
-          fontSize={12}
-          fill="white"
-          fontStyle="bold"
-        />
-      </Group>
-    );
-  };
-
   const showGutterX = cols >= 2;
   const showGutterY = rows >= 2;
   const gutterX = gutterXPosition();
@@ -313,63 +256,45 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
       />
 
       {showGutterX && (
-        <>
-          <Line
-            points={[
-              toStage(gutterX, scale, offset.x),
-              toStage(bounds.y, scale, offset.y),
-              toStage(gutterX, scale, offset.x),
-              toStage(bounds.y + bounds.height, scale, offset.y),
-            ]}
-            stroke="hsl(168, 90%, 38%)"
-            strokeWidth={3}
-            dash={[6, 4]}
-            hitStrokeWidth={GUTTER_HIT}
-            draggable
-            dragBoundFunc={() => ({ x: 0, y: 0 })}
-            onMouseDown={stopMouseDown}
-            onDragStart={beginDrag('gutterX')}
-            onDragMove={onHandleDrag('gutterX')}
-            onDragEnd={endDrag}
-          />
-          {renderGutterPill(
-            'gutterX',
-            gutterX,
-            bounds.y + bounds.height / 2,
-            '↔',
-            'ew-resize',
-          )}
-        </>
+        <Line
+          points={[
+            toStage(gutterX, scale, offset.x),
+            toStage(bounds.y, scale, offset.y),
+            toStage(gutterX, scale, offset.x),
+            toStage(bounds.y + bounds.height, scale, offset.y),
+          ]}
+          stroke="hsl(168, 90%, 38%)"
+          strokeWidth={3}
+          dash={[6, 4]}
+          hitStrokeWidth={GUTTER_HIT}
+          draggable
+          dragBoundFunc={() => ({ x: 0, y: 0 })}
+          onMouseDown={stopMouseDown}
+          onDragStart={beginDrag('gutterX')}
+          onDragMove={onHandleDrag('gutterX')}
+          onDragEnd={endDrag}
+        />
       )}
 
       {showGutterY && (
-        <>
-          <Line
-            points={[
-              toStage(bounds.x, scale, offset.x),
-              toStage(gutterY, scale, offset.y),
-              toStage(bounds.x + bounds.width, scale, offset.x),
-              toStage(gutterY, scale, offset.y),
-            ]}
-            stroke="hsl(168, 90%, 38%)"
-            strokeWidth={3}
-            dash={[6, 4]}
-            hitStrokeWidth={GUTTER_HIT}
-            draggable
-            dragBoundFunc={() => ({ x: 0, y: 0 })}
-            onMouseDown={stopMouseDown}
-            onDragStart={beginDrag('gutterY')}
-            onDragMove={onHandleDrag('gutterY')}
-            onDragEnd={endDrag}
-          />
-          {renderGutterPill(
-            'gutterY',
-            bounds.x + bounds.width / 2,
-            gutterY,
-            '↕',
-            'ns-resize',
-          )}
-        </>
+        <Line
+          points={[
+            toStage(bounds.x, scale, offset.x),
+            toStage(gutterY, scale, offset.y),
+            toStage(bounds.x + bounds.width, scale, offset.x),
+            toStage(gutterY, scale, offset.y),
+          ]}
+          stroke="hsl(168, 90%, 38%)"
+          strokeWidth={3}
+          dash={[6, 4]}
+          hitStrokeWidth={GUTTER_HIT}
+          draggable
+          dragBoundFunc={() => ({ x: 0, y: 0 })}
+          onMouseDown={stopMouseDown}
+          onDragStart={beginDrag('gutterY')}
+          onDragMove={onHandleDrag('gutterY')}
+          onDragEnd={endDrag}
+        />
       )}
 
       {CORNER_HANDLES.map(({ handle, cursor }) =>

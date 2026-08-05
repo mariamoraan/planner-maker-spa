@@ -5,6 +5,7 @@ import {
   boundsFromGap,
   boundsFromPitch,
   cellOrigin,
+  clampGridPadding,
   defaultGridBounds,
   detectGridMeasureAxis,
   expandGridRectIds,
@@ -16,6 +17,7 @@ import {
   gridPositionsFromConfig,
   inferGridDimensionsFromCount,
   inferGridFromRectangles,
+  inferPaddingFromRects,
   inferPitchFromRectangles,
   layoutGridRectangles,
   orderRectIdsRowMajor,
@@ -386,6 +388,92 @@ describe('defaultGridBounds', () => {
     expect(bounds.height).toBe(192);
     expect(bounds.x).toBe(480);
     expect(bounds.y).toBe(704);
+  });
+});
+
+describe('clampGridPadding', () => {
+  const bounds = { x: 100, y: 200, width: 306, height: 411 };
+  const settings = {
+    cols: 3,
+    rows: 2,
+    rectWidth: 48,
+    rectHeight: 36,
+    align: 'top-left' as const,
+  };
+
+  it('clamps negative values to zero', () => {
+    expect(clampGridPadding(bounds, settings, { x: -5, y: -10 })).toEqual({ x: 0, y: 0 });
+  });
+
+  it('clamps values that exceed cell interior', () => {
+    expect(clampGridPadding(bounds, settings, { x: 500, y: 500 })).toEqual({ x: 54, y: 170 });
+  });
+
+  it('keeps valid padding unchanged', () => {
+    expect(clampGridPadding(bounds, settings, { x: 12, y: 10 })).toEqual({ x: 12, y: 10 });
+  });
+});
+
+describe('inferPaddingFromRects', () => {
+  it('infers padding from the first rect relative to cell origin', () => {
+    const bounds = { x: 145, y: 450, width: 714, height: 685 };
+    const settings = {
+      cols: 7,
+      rows: 5,
+      rectWidth: 48,
+      rectHeight: 36,
+      align: 'top-left' as const,
+    };
+    const rects = layoutGridRectangles(2, baseConfig, (index, pos) => ({
+      id: `r-${index}`,
+      x: pos.x,
+      y: pos.y,
+      width: 48,
+      height: 36,
+    }));
+
+    expect(inferPaddingFromRects(bounds, settings, rects, ['r-0', 'r-1'])).toEqual({
+      x: 12,
+      y: 10,
+    });
+  });
+
+  it('returns zero padding for center alignment', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      align: 'center' as const,
+    };
+
+    expect(
+      inferPaddingFromRects(
+        bounds,
+        settings,
+        [{ id: 'a', x: 26, y: 22, width: 48, height: 36 }],
+        ['a'],
+      ),
+    ).toEqual({ x: 0, y: 0 });
+  });
+});
+
+describe('redistributeGridMoves with padding', () => {
+  it('offsets block positions without changing bounds or rect size', () => {
+    const bounds = { x: 145, y: 450, width: 714, height: 685 };
+    const moves = redistributeGridMoves(['a', 'b'], bounds, {
+      cols: 7,
+      rows: 5,
+      rectSize: { width: 48, height: 36 },
+      align: 'top-left',
+      padding: { x: 12, y: 10 },
+    });
+
+    expect(moves).toEqual([
+      { id: 'a', x: 157, y: 460 },
+      { id: 'b', x: 259, y: 460 },
+    ]);
   });
 });
 

@@ -15,6 +15,7 @@ export interface GridGroupSettings {
   align: 'top-left' | 'center';
   rectWidth: number;
   rectHeight: number;
+  padding?: { x: number; y: number };
 }
 
 export interface GridGroup {

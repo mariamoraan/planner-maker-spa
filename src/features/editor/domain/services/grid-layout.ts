@@ -223,6 +223,69 @@ export function gridConfigFromBounds(
   };
 }
 
+export interface GridSettingsInput {
+  cols: number;
+  rows: number;
+  align?: 'top-left' | 'center';
+  rectWidth: number;
+  rectHeight: number;
+  padding?: { x: number; y: number };
+}
+
+export function gridConfigFromGroup(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+): GridLayoutConfig {
+  return gridConfigFromBounds(
+    bounds,
+    settings.cols,
+    settings.rows,
+    { width: settings.rectWidth, height: settings.rectHeight },
+    settings.align ?? 'top-left',
+    settings.padding,
+  );
+}
+
+export function clampGridPadding(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+  padding: { x: number; y: number },
+): { x: number; y: number } {
+  const cellWidth = bounds.width / settings.cols;
+  const cellHeight = bounds.height / settings.rows;
+  const maxX = Math.max(0, Math.round(cellWidth - settings.rectWidth));
+  const maxY = Math.max(0, Math.round(cellHeight - settings.rectHeight));
+
+  return {
+    x: Math.min(maxX, Math.max(0, Math.round(padding.x))),
+    y: Math.min(maxY, Math.max(0, Math.round(padding.y))),
+  };
+}
+
+export function inferPaddingFromRects(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+  rects: GridRectInput[],
+  rectIds: string[],
+): { x: number; y: number } {
+  if (settings.align === 'center') {
+    return { x: 0, y: 0 };
+  }
+
+  const firstId = rectIds[0];
+  const firstRect = rects.find(rect => rect.id === firstId);
+  if (!firstRect) {
+    return { x: 0, y: 0 };
+  }
+
+  const padding = {
+    x: Math.round(firstRect.x - bounds.x),
+    y: Math.round(firstRect.y - bounds.y),
+  };
+
+  return clampGridPadding(bounds, settings, padding);
+}
+
 export function boundsFromRectangles(
   rects: Pick<GridRectInput, 'x' | 'y' | 'width' | 'height'>[],
 ): GridBounds | null {

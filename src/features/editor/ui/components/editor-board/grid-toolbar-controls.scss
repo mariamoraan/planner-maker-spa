@@ -116,6 +116,13 @@
       gap: 10px;
       min-width: 220px;
     }
+
+    &--padding {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 220px;
+    }
   }
 
   .base-toolbar__undo,

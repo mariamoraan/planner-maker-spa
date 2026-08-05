@@ -102,6 +102,7 @@ function buildMonthlyCalendarPage() {
         align: MONTHLY_DAY_GRID.align ?? 'top-left',
         rectWidth: MONTHLY_DAY_GRID.rectSize.width,
         rectHeight: MONTHLY_DAY_GRID.rectSize.height,
+        padding: MONTHLY_DAY_GRID.padding,
       },
     },
   };
