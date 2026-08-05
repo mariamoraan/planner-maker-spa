@@ -1,10 +1,12 @@
 import { PDFDocument } from 'pdf-lib';
-import { resolvePdfPageSize } from '@/features/export/domain/services/pdf-page-size';
+import { resolvePdfPageSizeForExport } from '@/features/export/domain/services/pdf-page-size';
+import type { PaperSize } from '@/features/template/domain/services/paper-size';
 
 type WorkerPage = {
   imageData: string;
   width?: number;
   height?: number;
+  paperSize?: PaperSize;
 };
 
 type WorkerMessage = {
@@ -30,7 +32,7 @@ self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
       const pngImage = await pdfDoc.embedPng(pngBytes);
       const widthPx = page.width ?? pngImage.width;
       const heightPx = page.height ?? pngImage.height;
-      const pageSize = resolvePdfPageSize(widthPx, heightPx);
+      const pageSize = resolvePdfPageSizeForExport(widthPx, heightPx, page.paperSize);
 
       const pdfPage = pdfDoc.addPage([pageSize.width, pageSize.height]);
       pdfPage.drawImage(pngImage, {

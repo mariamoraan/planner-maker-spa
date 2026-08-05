@@ -193,6 +193,20 @@
     "recent": "Recientes",
     "deleteConfirm": "¿Eliminar este proyecto?"
   },
+  "template": {
+    "createTitle": "Nuevo proyecto",
+    "createDescription": "Elige un nombre y el formato de página de tu planner.",
+    "createNameLabel": "Nombre del proyecto",
+    "createNamePlaceholder": "Mi planner 2026",
+    "createSubmit": "Crear proyecto",
+    "paperSize": {
+      "label": "Formato de página",
+      "a4Portrait": "A4",
+      "a4Landscape": "A4 horizontal",
+      "a5Portrait": "A5",
+      "a5Landscape": "A5 horizontal"
+    }
+  },
   "editor": {
     "editType": "Tipo",
     "currentPage": "Página actual",

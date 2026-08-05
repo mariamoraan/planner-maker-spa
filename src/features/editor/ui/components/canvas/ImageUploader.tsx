@@ -25,7 +25,10 @@ import { useManageImages } from '@/features/editor/ui/hooks/use-manage-images';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { TEMPLATE_TYPE_CONFIG, TemplateType } from '@/features/template';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { getEditorPath } from '@/core/routes/paths';
+import { PaperSizeSelector } from '@/features/template/ui/components/paper-size-selector/paper-size-selector';
+import { DEFAULT_PAPER_SIZE, type PaperSize } from '@/features/template/domain/services/paper-size';
 import './image-uploader.scss';
 
 interface ImageUploaderProps {
@@ -156,19 +159,22 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({ className, customB
 };
 
 const EmptyCanvasStateCreateTemplate: React.FC = () => {
+  const { t } = useTranslation();
   const { createTemplate } = useTemplateStore();
   const navigate = useNavigate();
   const [newTemplateName, setNewTemplateName] = useState('');
+  const [paperSize, setPaperSize] = useState<PaperSize>(DEFAULT_PAPER_SIZE);
   const [newTemplateDialogOpen, setNewTemplateDialogOpen] = useState(false);
 
   const handleCreateTemplate = useCallback(() => {
     if (newTemplateName.trim()) {
-      const templateId = createTemplate(newTemplateName.trim());
+      const templateId = createTemplate(newTemplateName.trim(), paperSize);
       setNewTemplateName('');
+      setPaperSize(DEFAULT_PAPER_SIZE);
       setNewTemplateDialogOpen(false);
       navigate(getEditorPath(templateId));
     }
-  }, [newTemplateName, createTemplate, navigate]);
+  }, [newTemplateName, paperSize, createTemplate, navigate]);
 
   return (
     <div className="image-uploader__empty-state canvas-workspace">
@@ -187,27 +193,28 @@ const EmptyCanvasStateCreateTemplate: React.FC = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Template</DialogTitle>
+              <DialogTitle>{t('template.createTitle')}</DialogTitle>
               <DialogDescription>
-                Give your planner template a name to get started.
+                {t('template.createDescription')}
               </DialogDescription>
             </DialogHeader>
             <div className="image-uploader__dialog-body">
-              <Label htmlFor="name">Template Name</Label>
+              <Label htmlFor="name">{t('template.createNameLabel')}</Label>
               <Input
                 id="name"
                 value={newTemplateName}
                 onChange={(e) => setNewTemplateName(e.target.value)}
-                placeholder="My Planner 2024"
+                placeholder={t('template.createNamePlaceholder')}
                 className="input--spaced-top"
               />
+              <PaperSizeSelector value={paperSize} onChange={setPaperSize} />
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setNewTemplateDialogOpen(false)}>
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button onClick={handleCreateTemplate} disabled={!newTemplateName.trim()}>
-                Create Template
+                {t('template.createSubmit')}
               </Button>
             </DialogFooter>
           </DialogContent>

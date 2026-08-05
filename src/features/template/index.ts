@@ -58,9 +58,15 @@ export {
 } from './domain/services/locale-config';
 export {
   detectPaperSize,
+  detectPaperSizeExact,
   formatPaperSizeLabel,
   getTemplatePaperSizeLabel,
+  inferTemplatePaperSize,
+  paperSizeToPixels,
   resolvePageSizeLabel,
+  DEFAULT_PAPER_DPI,
+  DEFAULT_PAPER_SIZE,
+  PAPER_SIZE_PRESETS,
 } from './domain/services/paper-size';
 export type { PaperSize, PaperSizeKind, PaperOrientation } from './domain/services/paper-size';
 

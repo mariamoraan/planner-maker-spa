@@ -5,8 +5,8 @@ export {
 
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
-export const createTemplate = (name: string, description?: string) =>
-  useTemplateStore.getState().createTemplate(name, description);
+export const createTemplate = (name: string, paperSize: Parameters<ReturnType<typeof useTemplateStore.getState>['createTemplate']>[1], description?: string) =>
+  useTemplateStore.getState().createTemplate(name, paperSize, description);
 
 export const updateTemplate = (id: string, updates: Parameters<ReturnType<typeof useTemplateStore.getState>['updateTemplate']>[1]) =>
   useTemplateStore.getState().updateTemplate(id, updates);

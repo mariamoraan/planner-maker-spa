@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolvePdfPageSize } from '@/features/export/domain/services/pdf-page-size';
+import { resolvePdfPageSize, resolvePdfPageSizeForExport } from '@/features/export/domain/services/pdf-page-size';
 
 describe('resolvePdfPageSize', () => {
   it('resolves A4 landscape at 300 DPI', () => {
@@ -43,5 +43,22 @@ describe('resolvePdfPageSize', () => {
     const result = resolvePdfPageSize(595, 420);
     expect(result.width).toBeCloseTo(595.28, 1);
     expect(result.height).toBeCloseTo(419.53, 1);
+  });
+});
+
+describe('resolvePdfPageSizeForExport', () => {
+  it('uses template paperSize instead of pixel dimensions for legacy pages', () => {
+    const result = resolvePdfPageSizeForExport(1200, 1600, {
+      kind: 'A4',
+      orientation: 'portrait',
+    });
+    expect(result.width).toBeCloseTo(595.28, 1);
+    expect(result.height).toBeCloseTo(841.89, 1);
+  });
+
+  it('falls back to pixel inference when paperSize is missing', () => {
+    const result = resolvePdfPageSizeForExport(1200, 800);
+    expect(result.width).toBeCloseTo(288, 1);
+    expect(result.height).toBeCloseTo(192, 1);
   });
 });

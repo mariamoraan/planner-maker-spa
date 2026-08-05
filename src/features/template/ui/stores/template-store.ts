@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import type { Template, TemplateImage, Rectangle, TemplateType } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import { detectPlannerLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
+import {
+  inferTemplatePaperSize,
+  paperSizeToPixels,
+  type PaperSize,
+} from '@/features/template/domain/services/paper-size';
 import { trackEvent } from '@/features/template/use-case/commands/analytics.commands';
 import {
   getInsertIndexForType,
@@ -124,7 +129,7 @@ interface TemplateState {
   hydrateFromRemote: (templates: Template[]) => void;
   resetSync: () => void;
 
-  createTemplate: (name: string, description?: string) => string;
+  createTemplate: (name: string, paperSize: PaperSize, description?: string) => string;
   updateTemplate: (id: string, updates: Partial<Template>) => void;
   deleteTemplate: (id: string) => Promise<void>;
   loadTemplateImages: (id: string) => Promise<void>;
@@ -135,8 +140,8 @@ interface TemplateState {
     templateId: string;
     imageData: string;
     type: TemplateType;
-    width: number;
-    height: number;
+    width?: number;
+    height?: number;
     name?: string;
   }) => Promise<string>;
   getImageData: (imageId: string) => Promise<string | undefined>;
@@ -249,9 +254,15 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
 
       return { templates, isSyncReady: true };
     });
+
+    for (const template of get().templates) {
+      if (template.paperSize) continue;
+      const paperSize = inferTemplatePaperSize(template);
+      get().updateTemplate(template.id, { paperSize });
+    }
   },
 
-  createTemplate: (name, description) => {
+  createTemplate: (name, paperSize, description) => {
     const id = generateId();
     const now = new Date();
     const template: Template = {
@@ -259,6 +270,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       name,
       description,
       images: [],
+      paperSize,
       createdAt: now,
       updatedAt: now,
       locale: detectPlannerLocale(),
@@ -291,6 +303,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
         endDate: updates.endDate,
         locale: updates.locale,
         weekStartsOn: updates.weekStartsOn,
+        paperSize: updates.paperSize,
       });
     }
   },
@@ -370,8 +383,17 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
 
   getTemplate: id => get().templates.find(t => t.id === id) ?? null,
 
-  addImage: async ({ templateId, imageData, name, type, width, height }) => {
+  addImage: async ({ templateId, imageData, name, type }) => {
     const uid = get().syncUid;
+    const template = get().templates.find(t => t.id === templateId);
+    const paperSize = template?.paperSize ?? inferTemplatePaperSize(template ?? {
+      id: templateId,
+      name: '',
+      images: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    const { width: pageWidth, height: pageHeight } = paperSizeToPixels(paperSize);
     const id = generateId();
     const now = new Date();
     const imageRef = resolveImageRef(uid, id);
@@ -379,8 +401,8 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       id,
       name: name ?? 'Untitled',
       type,
-      width,
-      height,
+      width: pageWidth,
+      height: pageHeight,
       rectangles: [],
       createdAt: now,
       updatedAt: now,

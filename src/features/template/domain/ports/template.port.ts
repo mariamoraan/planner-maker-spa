@@ -3,6 +3,7 @@ import type { TemplatePage } from '../entities/template-page';
 import type { Rectangle } from '../entities/rectangle';
 import type { PlannerLocale, WeekStartsOn } from '../value-objects/planner-locale';
 import type { ImageRef } from '../value-objects/image-ref';
+import type { PaperSize } from '../services/paper-size';
 
 export type TemplatePageRecord = Omit<TemplatePage, 'src'> & {
   imageRef: ImageRef;
@@ -19,6 +20,7 @@ export type TemplateRecord = {
   endDate?: Date;
   locale?: PlannerLocale;
   weekStartsOn?: WeekStartsOn;
+  paperSize?: PaperSize;
 };
 
 export type Unsubscribe = () => void;

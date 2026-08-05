@@ -1,4 +1,5 @@
 import type { PlannerLocale, WeekStartsOn } from '../value-objects/planner-locale';
+import type { PaperSize } from '../services/paper-size';
 import type { TemplatePage } from './template-page';
 
 export interface Template {
@@ -6,6 +7,7 @@ export interface Template {
   name: string;
   description?: string;
   images: TemplatePage[];
+  paperSize?: PaperSize;
   createdAt: Date;
   updatedAt: Date;
   startDate?: Date;

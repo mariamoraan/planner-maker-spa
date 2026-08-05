@@ -2,10 +2,28 @@ import {
   layoutGridRectangles,
   type GridLayoutConfig,
 } from '@/features/editor/domain/services/grid-layout';
+import {
+  paperSizeToPixels,
+  DEFAULT_PAPER_SIZE,
+} from '@/features/template/domain/services/paper-size';
 import type { GridGroup, Rectangle, Template } from '@/features/template';
 
 export const DEMO_TEMPLATE_ID = 'demo-planner';
 const DEMO_MONTHLY_DAY_GRID_ID = 'grid-demo-monthly-days';
+
+const DEMO_PAGE_SIZE = paperSizeToPixels(DEFAULT_PAPER_SIZE);
+const LEGACY_WIDTH = 1200;
+const LEGACY_HEIGHT = 1600;
+const SCALE_X = DEMO_PAGE_SIZE.width / LEGACY_WIDTH;
+const SCALE_Y = DEMO_PAGE_SIZE.height / LEGACY_HEIGHT;
+
+function sx(value: number): number {
+  return Math.round(value * SCALE_X);
+}
+
+function sy(value: number): number {
+  return Math.round(value * SCALE_Y);
+}
 
 const now = new Date();
 const coverSrc = '/demo/cover.png';
@@ -25,8 +43,8 @@ function page(
     id,
     name,
     type,
-    width: 1200,
-    height: 1600,
+    width: DEMO_PAGE_SIZE.width,
+    height: DEMO_PAGE_SIZE.height,
     src: pageSrc,
     rectangles,
     gridGroups,
@@ -37,23 +55,23 @@ function page(
 }
 
 const MONTHLY_DAY_GRID: GridLayoutConfig = {
-  origin: { x: 120, y: 430 },
+  origin: { x: sx(120), y: sy(430) },
   cols: 7,
   rows: 5,
-  cellSize: { width: 137, height: 211 },
-  rectSize: { width: 48, height: 36 },
+  cellSize: { width: sx(137), height: sy(211) },
+  rectSize: { width: sx(48), height: sy(36) },
   align: 'top-left',
-  padding: { x: 12, y: 10 },
+  padding: { x: sx(12), y: sy(10) },
 };
 
 const WEEKLY_DAY_GRID: GridLayoutConfig = {
-  origin: { x: 510, y: 420 },
+  origin: { x: sx(510), y: sy(420) },
   cols: 1,
   rows: 6,
-  cellSize: { width: 48, height: 175 },
-  rectSize: { width: 48, height: 36 },
+  cellSize: { width: sx(48), height: sy(175) },
+  rectSize: { width: sx(48), height: sy(36) },
   align: 'top-left',
-  padding: { x: 12, y: 0 },
+  padding: { x: sx(12), y: 0 },
 };
 
 const generateMonthlyCalendarDayRectangles = (): Rectangle[] =>
@@ -61,8 +79,8 @@ const generateMonthlyCalendarDayRectangles = (): Rectangle[] =>
     id: `rect-day-${index + 1}`,
     x,
     y,
-    width: 48,
-    height: 36,
+    width: MONTHLY_DAY_GRID.rectSize.width,
+    height: MONTHLY_DAY_GRID.rectSize.height,
     fieldType: 'day',
     order: index,
     formatVariant: 'name',
@@ -73,8 +91,8 @@ const generateWeeklyCalendarDayRectangles = (): Rectangle[] =>
     id: `rect-day-${index + 1}`,
     x,
     y,
-    width: 48,
-    height: 36,
+    width: WEEKLY_DAY_GRID.rectSize.width,
+    height: WEEKLY_DAY_GRID.rectSize.height,
     fieldType: 'day',
     order: index,
     formatVariant: 'name',
@@ -109,20 +127,20 @@ function buildMonthlyCalendarPage() {
   const rectangles: Rectangle[] = [
     {
       id: 'rect-month',
-      x: 420,
-      y: 220,
-      width: 360,
-      height: 106,
+      x: sx(420),
+      y: sy(220),
+      width: sx(360),
+      height: sy(106),
       fieldType: 'month',
       order: 0,
       formatVariant: 'name',
     },
     {
       id: 'rect-year',
-      x: 920,
-      y: 290,
-      width: 200,
-      height: 70,
+      x: sx(920),
+      y: sy(290),
+      width: sx(200),
+      height: sy(70),
       fieldType: 'year',
       order: 0,
       formatVariant: 'name',
@@ -148,6 +166,7 @@ export const DEMO_TEMPLATE: Template = {
   id: DEMO_TEMPLATE_ID,
   name: 'Agenda',
   description: 'Demo planner for marketing assets',
+  paperSize: { kind: 'A4', orientation: 'portrait' },
   images: [
     page('page-cover', 'Cover', 'cover', coverSrc),
     buildMonthlyCalendarPage(),
@@ -159,19 +178,19 @@ export const DEMO_TEMPLATE: Template = {
     page('page-daily', 'Daily Page', 'daily-page', dailyPageSrc, [
       {
         id: 'rect-day-daily',
-        x: 220,
-        y: 235,
-        width: 120,
-        height: 48,
+        x: sx(220),
+        y: sy(235),
+        width: sx(120),
+        height: sy(48),
         fieldType: 'day',
         order: 1,
       },
       {
         id: 'rect-day-month',
-        x: 355,
-        y: 235,
-        width: 120,
-        height: 48,
+        x: sx(355),
+        y: sy(235),
+        width: sx(120),
+        height: sy(48),
         fieldType: 'month',
         order: 1,
       },

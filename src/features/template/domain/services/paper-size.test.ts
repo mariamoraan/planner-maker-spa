@@ -4,9 +4,32 @@ import {
   detectPaperSizeExact,
   formatPaperSizeLabel,
   getTemplatePaperSizeLabel,
+  inferTemplatePaperSize,
+  paperSizeToPixels,
   resolvePageSizeLabel,
 } from '@/features/template/domain/services/paper-size';
 import type { Template } from '@/features/template/domain/entities/template';
+
+describe('paperSizeToPixels', () => {
+  it('returns canonical 300 DPI dimensions for all presets', () => {
+    expect(paperSizeToPixels({ kind: 'A4', orientation: 'portrait' })).toEqual({
+      width: 2480,
+      height: 3508,
+    });
+    expect(paperSizeToPixels({ kind: 'A4', orientation: 'landscape' })).toEqual({
+      width: 3508,
+      height: 2480,
+    });
+    expect(paperSizeToPixels({ kind: 'A5', orientation: 'portrait' })).toEqual({
+      width: 1748,
+      height: 2480,
+    });
+    expect(paperSizeToPixels({ kind: 'A5', orientation: 'landscape' })).toEqual({
+      width: 2480,
+      height: 1748,
+    });
+  });
+});
 
 describe('detectPaperSize', () => {
   it('detects A4 portrait at 300 DPI', () => {
@@ -63,8 +86,93 @@ describe('resolvePageSizeLabel', () => {
   });
 });
 
+describe('inferTemplatePaperSize', () => {
+  it('infers from the most common page dimensions', () => {
+    const template = {
+      id: 't1',
+      name: 'Planner',
+      images: [
+        {
+          id: 'cover',
+          name: 'Cover',
+          type: 'cover',
+          width: 1200,
+          height: 1600,
+          src: '',
+          rectangles: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'monthly-1',
+          name: 'Monthly 1',
+          type: 'monthly-calendar',
+          width: 2480,
+          height: 3508,
+          src: '',
+          rectangles: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        {
+          id: 'monthly-2',
+          name: 'Monthly 2',
+          type: 'monthly-calendar',
+          width: 2480,
+          height: 3508,
+          src: '',
+          rectangles: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } satisfies Template;
+
+    expect(inferTemplatePaperSize(template)).toEqual({ kind: 'A4', orientation: 'portrait' });
+  });
+
+  it('defaults to A4 portrait when there are no pages', () => {
+    const template = {
+      id: 't2',
+      name: 'Empty',
+      images: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } satisfies Template;
+
+    expect(inferTemplatePaperSize(template)).toEqual({ kind: 'A4', orientation: 'portrait' });
+  });
+});
+
 describe('getTemplatePaperSizeLabel', () => {
-  it('uses the most common page dimensions across the template', () => {
+  it('prioritizes stored paperSize over pixel inference', () => {
+    const template = {
+      id: 't3',
+      name: 'Stored',
+      paperSize: { kind: 'A5', orientation: 'landscape' as const },
+      images: [
+        {
+          id: 'page',
+          name: 'Page',
+          type: 'cover',
+          width: 2480,
+          height: 3508,
+          src: '',
+          rectangles: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } satisfies Template;
+
+    expect(getTemplatePaperSizeLabel(template)).toBe('A5 horizontal');
+  });
+
+  it('uses the most common page dimensions when paperSize is missing', () => {
     const template = {
       id: 't1',
       name: 'Planner',

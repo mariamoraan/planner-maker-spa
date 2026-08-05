@@ -9,6 +9,17 @@ export interface PaperSize {
   orientation: PaperOrientation;
 }
 
+export const DEFAULT_PAPER_DPI = 300;
+
+export const DEFAULT_PAPER_SIZE: PaperSize = { kind: 'A4', orientation: 'portrait' };
+
+export const PAPER_SIZE_PRESETS: PaperSize[] = [
+  { kind: 'A4', orientation: 'portrait' },
+  { kind: 'A4', orientation: 'landscape' },
+  { kind: 'A5', orientation: 'portrait' },
+  { kind: 'A5', orientation: 'landscape' },
+];
+
 const PAPER_SIZES_PT = {
   A4: { width: 595.28, height: 841.89 },
   A5: { width: 419.53, height: 595.28 },
@@ -138,6 +149,17 @@ export function paperSizeToPoints(size: PaperSize): { width: number; height: num
     : { width: Math.min(paper.width, paper.height), height: Math.max(paper.width, paper.height) };
 }
 
+export function paperSizeToPixels(
+  size: PaperSize,
+  dpi: number = DEFAULT_PAPER_DPI,
+): { width: number; height: number } {
+  const points = paperSizeToPoints(size);
+  return {
+    width: Math.round((points.width * dpi) / 72),
+    height: Math.round((points.height * dpi) / 72),
+  };
+}
+
 export function formatPaperSizeLabel(size: PaperSize): string {
   return size.orientation === 'landscape' ? `${size.kind} horizontal` : size.kind;
 }
@@ -189,7 +211,19 @@ function pickRepresentativePage(pages: TemplatePage[]): TemplatePage | null {
   return bestPage;
 }
 
+export function inferTemplatePaperSize(template: Template): PaperSize {
+  const page = pickRepresentativePage(template.images);
+  if (page?.width && page?.height) {
+    const detected = detectPaperSize(page.width, page.height);
+    if (detected) return detected;
+  }
+
+  return DEFAULT_PAPER_SIZE;
+}
+
 export function getTemplatePaperSizeLabel(template: Template): string | null {
+  if (template.paperSize) return formatPaperSizeLabel(template.paperSize);
+
   const page = pickRepresentativePage(template.images);
   if (!page?.width || !page?.height) return null;
 

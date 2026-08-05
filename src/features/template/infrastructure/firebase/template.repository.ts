@@ -14,6 +14,7 @@ import {
 import type { Template, TemplateImage, Rectangle, TemplatePage } from '@/features/template';
 import { repairGridMetadata } from '@/features/editor/domain/services/grid-group';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
+import type { PaperSize } from '@/features/template/domain/services/paper-size';
 import type {
   TemplatePageRecord,
   TemplateRecord,
@@ -57,6 +58,14 @@ function stripUndefined<T>(value: T): T {
     ) as T;
   }
   return value;
+}
+
+function normalizePaperSize(value: unknown): PaperSize | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const data = value as Record<string, unknown>;
+  if (data.kind !== 'A4' && data.kind !== 'A5') return undefined;
+  if (data.orientation !== 'portrait' && data.orientation !== 'landscape') return undefined;
+  return { kind: data.kind, orientation: data.orientation };
 }
 
 function buildPageWriteData(page: TemplatePageRecord): Record<string, unknown> {
@@ -134,6 +143,7 @@ function mapTemplate(
     endDate: data.endDate ? toDate(data.endDate) : undefined,
     locale: data.locale as Template['locale'],
     weekStartsOn: data.weekStartsOn as Template['weekStartsOn'],
+    paperSize: normalizePaperSize(data.paperSize),
   };
 }
 
@@ -215,6 +225,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       endDate: template.endDate ?? null,
       locale: template.locale ?? null,
       weekStartsOn: template.weekStartsOn ?? null,
+      paperSize: template.paperSize ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -233,6 +244,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     if (updates.endDate !== undefined) payload.endDate = updates.endDate ?? null;
     if (updates.locale !== undefined) payload.locale = updates.locale ?? null;
     if (updates.weekStartsOn !== undefined) payload.weekStartsOn = updates.weekStartsOn ?? null;
+    if (updates.paperSize !== undefined) payload.paperSize = updates.paperSize ?? null;
     await updateDoc(templateRef(uid, templateId), payload);
   }
 

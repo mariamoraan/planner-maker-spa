@@ -1,5 +1,10 @@
 import type { Template, GeneratedPage } from '@/features/template';
 import {
+  inferTemplatePaperSize,
+  paperSizeToPixels,
+  type PaperSize,
+} from '@/features/template/domain/services/paper-size';
+import {
   getFieldValue,
   loadImage,
   WeekData,
@@ -84,18 +89,25 @@ async function generatePage(
     days?: Date[];
     date?: Date;
   },
-  plannerLocale: Template['locale'] = 'es'
-): Promise<{ imageData: string; width: number; height: number }> {
+  plannerLocale: Template['locale'] = 'es',
+  paperSize?: PaperSize,
+): Promise<{ imageData: string; width: number; height: number; paperSize?: PaperSize }> {
   const img = await loadImage(templateImage.src);
 
+  const outputSize = paperSize
+    ? paperSizeToPixels(paperSize)
+    : { width: templateImage.width, height: templateImage.height };
+  const scaleX = outputSize.width / templateImage.width;
+  const scaleY = outputSize.height / templateImage.height;
+
   const canvas = document.createElement('canvas');
-  canvas.width = templateImage.width;
-  canvas.height = templateImage.height;
+  canvas.width = outputSize.width;
+  canvas.height = outputSize.height;
   const ctx = canvas.getContext('2d')!;
 
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, templateImage.width, templateImage.height);
+  ctx.drawImage(img, 0, 0, outputSize.width, outputSize.height);
 
   const dateLocale = resolveLocale(plannerLocale ?? 'es');
 
@@ -111,14 +123,15 @@ async function generatePage(
     });
 
     if (fieldValue) {
-      await renderFieldOnCanvas(ctx, rect, fieldValue, fieldColor);
+      await renderFieldOnCanvas(ctx, rect, fieldValue, fieldColor, scaleX, scaleY);
     }
   }
 
   return {
     imageData: canvas.toDataURL('image/png'),
-    width: templateImage.width,
-    height: templateImage.height,
+    width: outputSize.width,
+    height: outputSize.height,
+    paperSize,
   };
 }
 
@@ -143,9 +156,10 @@ export async function generatePlannerPages(
   const coverImages = template.images.filter(img => img.type === 'cover');
   const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
   const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
+  const exportPaperSize = template.paperSize ?? inferTemplatePaperSize(template);
 
   for (const coverImage of coverImages) {
-    const page = await generatePage(coverImage, {}, plannerLocale);
+    const page = await generatePage(coverImage, {}, plannerLocale, exportPaperSize);
     pages.push({ ...page, pageNumber: pages.length + 1, type: 'cover' });
     reportProgress();
   }
@@ -157,7 +171,7 @@ export async function generatePlannerPages(
         year: month.year,
         month: month.month,
         days: month.days,
-      }, plannerLocale);
+      }, plannerLocale, exportPaperSize);
       pages.push({ ...page, pageNumber: pages.length + 1, type: 'month-cover' });
       reportProgress();
     }
@@ -168,7 +182,7 @@ export async function generatePlannerPages(
         year: month.year,
         month: month.month,
         days: month.days,
-      }, plannerLocale);
+      }, plannerLocale, exportPaperSize);
       pages.push({ ...page, pageNumber: pages.length + 1, type: 'monthly-calendar' });
       reportProgress();
     }
@@ -183,7 +197,7 @@ export async function generatePlannerPages(
         year: date.getFullYear(),
         month: date.getMonth(),
         date,
-      }, plannerLocale);
+      }, plannerLocale, exportPaperSize);
       pages.push({
         ...page,
         pageNumber: pages.length + 1,
@@ -203,7 +217,7 @@ export async function generatePlannerPages(
             year: month.year,
             month: month.month,
             week,
-          }, plannerLocale);
+          }, plannerLocale, exportPaperSize);
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
@@ -232,7 +246,7 @@ export async function generatePlannerPages(
             year: month.year,
             month: month.month,
             week,
-          }, plannerLocale);
+          }, plannerLocale, exportPaperSize);
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
@@ -256,7 +270,7 @@ export async function generatePlannerPages(
 
   const extraPages = template.images.filter(img => img.type === 'extra');
   for (const extra of extraPages) {
-    const page = await generatePage(extra, {}, plannerLocale);
+    const page = await generatePage(extra, {}, plannerLocale, exportPaperSize);
     pages.push({ ...page, pageNumber: pages.length + 1, type: 'extra' });
     reportProgress();
   }
@@ -326,6 +340,7 @@ export async function runExport({
   const fileName = `${template.name}.pdf`;
 
   let pages: GeneratedPage[];
+  const exportPaperSize = template.paperSize ?? inferTemplatePaperSize(template);
 
   if (cachedPages && cachedPages.length > 0 && cachedKey === exportKey) {
     pages = cachedPages;
@@ -337,7 +352,12 @@ export async function runExport({
     });
   }
 
-  const pdfBytes = await buildPdfFromPages(pages, (current, total) => {
+  const pagesForPdf = pages.map(page => ({
+    ...page,
+    paperSize: page.paperSize ?? exportPaperSize,
+  }));
+
+  const pdfBytes = await buildPdfFromPages(pagesForPdf, (current, total) => {
     const phaseProgress = total > 0 ? current / total : 1;
     onProgress(
       clampProgress(PAGES_WEIGHT * 100 + phaseProgress * PDF_WEIGHT * 100),
@@ -345,5 +365,5 @@ export async function runExport({
     );
   });
 
-  return { pdfBytes, fileName, pages };
+  return { pdfBytes, fileName, pages: pagesForPdf };
 }
