@@ -3,9 +3,20 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 import { getAnalytics, type Analytics, isSupported } from 'firebase/analytics';
 
+function getAuthDomain(): string {
+  if (typeof window !== 'undefined') {
+    const { hostname } = window.location;
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return hostname;
+    }
+  }
+
+  return import.meta.env.VITE_FIREBASE_AUTH_DOMAIN;
+}
+
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  authDomain: getAuthDomain(),
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
