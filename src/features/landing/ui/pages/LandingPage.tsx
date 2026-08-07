@@ -22,6 +22,7 @@ export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
+    console.log('env', process.env.VITE_FIREBASE_API_KEY);
     trackPageView('landing');
   }, []);
 
