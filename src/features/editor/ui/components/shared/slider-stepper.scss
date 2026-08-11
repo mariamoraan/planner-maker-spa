@@ -1,0 +1,44 @@
+.slider-stepper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(220, 10%, 35%);
+  }
+
+  &__value {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: hsl(220, 10%, 25%);
+    min-width: 40px;
+    text-align: right;
+  }
+
+  &__controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__range {
+    flex: 1;
+    height: 4px;
+    accent-color: hsl(168, 76%, 42%);
+    cursor: pointer;
+  }
+
+  &__fine {
+    flex-shrink: 0;
+  }
+}

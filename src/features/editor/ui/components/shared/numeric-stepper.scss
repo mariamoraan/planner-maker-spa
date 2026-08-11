@@ -1,0 +1,40 @@
+.numeric-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &__button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    color: hsl(220, 10%, 30%);
+    flex-shrink: 0;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    &:active {
+      background: rgba(0, 0, 0, 0.08);
+    }
+  }
+
+  &__input {
+    width: 48px;
+    min-width: 48px;
+    height: 32px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    padding-inline: 4px;
+    color: hsl(220, 10%, 20%);
+  }
+}
