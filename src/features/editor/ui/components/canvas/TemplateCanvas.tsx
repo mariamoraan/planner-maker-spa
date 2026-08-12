@@ -14,6 +14,10 @@ import {
   translateGridBounds,
 } from '@/features/editor/domain/services/grid-layout';
 import { computeSnap, computeGroupSnap, computeGroupBounds, rectsIntersect, normalizeCoord, type SnapGuide } from '@/features/editor/domain/services/canvas-snap';
+import {
+  resolveDragAxisLock,
+  type DragAxisLock,
+} from '@/features/editor/domain/services/drag-axis-lock';
 import { canPanCanvas, clampCanvasPan, type CanvasPanContext } from '@/features/editor/domain/services/canvas-pan';
 import {
   clampZoom,
@@ -95,6 +99,14 @@ function getBlockIdFromTarget(target: Konva.Node): string | undefined {
 
 const PADDING = 16;
 
+function filterSnapGuidesForAxisLock(guides: SnapGuide[], lock: DragAxisLock): SnapGuide[] {
+  const allowed =
+    lock === 'x'
+      ? new Set<SnapGuide['type']>(['align-x', 'distance-h', 'spacing-h'])
+      : new Set<SnapGuide['type']>(['align-y', 'distance-v', 'spacing-v']);
+  return guides.filter(guide => allowed.has(guide.type));
+}
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
@@ -107,6 +119,7 @@ export const TemplateCanvas: React.FC = () => {
   const dragGroupStartRef = useRef<DragStartEntry[] | null>(null);
   const dragGroupBoundsRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const dragDeltaRef = useRef<{ dx: number; dy: number } | null>(null);
+  const dragAxisLockRef = useRef<DragAxisLock | null>(null);
   const marqueeStartRef = useRef<{ x: number; y: number } | null>(null);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const spacePressedRef = useRef(false);
@@ -796,6 +809,7 @@ export const TemplateCanvas: React.FC = () => {
             )
           : null;
       dragDeltaRef.current = { dx: 0, dy: 0 };
+      dragAxisLockRef.current = null;
       setDragState({ leaderId: rectId, movingIds });
       setDragOverlay({
         guides: [],
@@ -866,6 +880,7 @@ export const TemplateCanvas: React.FC = () => {
       dragGroupStartRef.current = null;
       dragGroupBoundsRef.current = null;
       dragDeltaRef.current = null;
+      dragAxisLockRef.current = null;
       setDragState(null);
       setDragOverlay(null);
     },
@@ -887,6 +902,17 @@ export const TemplateCanvas: React.FC = () => {
       const leaderDx = newX - leaderStart.x;
       const leaderDy = newY - leaderStart.y;
 
+      const axisLocked = resolveDragAxisLock(
+        leaderDx,
+        leaderDy,
+        e.evt.shiftKey,
+        dragAxisLockRef.current,
+      );
+      dragAxisLockRef.current = axisLocked.lock;
+
+      const constrainedX = leaderStart.x + axisLocked.dx;
+      const constrainedY = leaderStart.y + axisLocked.dy;
+
       const excludeIds = new Set(startEntries.map(entry => entry.id));
       const allBounds = (currentImage?.rectangles ?? []).map(r => ({
         id: r.id,
@@ -897,7 +923,7 @@ export const TemplateCanvas: React.FC = () => {
       }));
 
       const snapOptions = {
-        enabled: !e.evt.shiftKey,
+        enabled: true,
         canvasBounds: currentImage
           ? { width: currentImage.width, height: currentImage.height }
           : undefined,
@@ -917,8 +943,8 @@ export const TemplateCanvas: React.FC = () => {
         });
         snapResult = computeGroupSnap(
           members,
-          leaderDx,
-          leaderDy,
+          axisLocked.dx,
+          axisLocked.dy,
           allBounds,
           excludeIds,
           scale,
@@ -934,13 +960,27 @@ export const TemplateCanvas: React.FC = () => {
         };
         snapResult = computeSnap(
           movingBounds,
-          newX,
-          newY,
+          constrainedX,
+          constrainedY,
           allBounds,
           excludeIds,
           scale,
           snapOptions,
         );
+      }
+
+      if (axisLocked.lock === 'x') {
+        snapResult = {
+          ...snapResult,
+          y: groupBounds?.y ?? leaderStart.y,
+          guides: filterSnapGuidesForAxisLock(snapResult.guides, 'x'),
+        };
+      } else if (axisLocked.lock === 'y') {
+        snapResult = {
+          ...snapResult,
+          x: groupBounds?.x ?? leaderStart.x,
+          guides: filterSnapGuidesForAxisLock(snapResult.guides, 'y'),
+        };
       }
 
       const deltaX = groupBounds ? snapResult.x - groupBounds.x : snapResult.x - leaderStart.x;

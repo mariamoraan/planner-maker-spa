@@ -15,6 +15,10 @@ import {
 } from '@/features/editor/domain/services/grid-layout';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
 import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
+import {
+  resolveDragAxisLock,
+  type DragAxisLock,
+} from '@/features/editor/domain/services/drag-axis-lock';
 
 export type GridBlockHandle = GridBlockResizeHandle | 'move';
 
@@ -121,6 +125,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
   const dragStartBlock = useRef(block);
   const dragStartSettings = useRef(normalized);
   const dragStartPointer = useRef<{ x: number; y: number } | null>(null);
+  const dragAxisLockRef = useRef<DragAxisLock | null>(null);
 
   const beginDrag = useCallback(
     (handle: GridBlockHandle) => (event: Konva.KonvaEventObject<DragEvent>) => {
@@ -128,6 +133,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
       setIsDragging(true);
       dragStartBlock.current = { ...block };
       dragStartSettings.current = { ...normalized };
+      dragAxisLockRef.current = null;
       const stage = event.target.getStage();
       const pointer = stage?.getPointerPosition();
       dragStartPointer.current = pointer
@@ -143,6 +149,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
       event.cancelBubble = true;
       setIsDragging(false);
       dragStartPointer.current = null;
+      dragAxisLockRef.current = null;
       onDragEnd?.();
     },
     [onDragEnd],
@@ -165,10 +172,19 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
         x: fromStage(pointer.x, scale, offset.x),
         y: fromStage(pointer.y, scale, offset.y),
       };
-      const dx = currentPointer.x - startPointer.x;
-      const dy = currentPointer.y - startPointer.y;
+      let dx = currentPointer.x - startPointer.x;
+      let dy = currentPointer.y - startPointer.y;
 
       if (handle === 'move') {
+        const axisLocked = resolveDragAxisLock(
+          dx,
+          dy,
+          event.evt.shiftKey,
+          dragAxisLockRef.current,
+        );
+        dragAxisLockRef.current = axisLocked.lock;
+        dx = axisLocked.dx;
+        dy = axisLocked.dy;
         onSettingsChange(
           blockPaddingFromPosition(bounds, startSettings, {
             x: startBlock.x + dx,
