@@ -2,11 +2,12 @@ import React from 'react';
 import { Group, Line, Rect } from 'react-konva';
 import {
   cellOrigin,
-  gridConfigFromBounds,
+  gridConfigFromGroup,
   gridLinePositions,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
+import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
 
 interface GridOverlayProps {
   bounds: GridBounds;
@@ -27,16 +28,10 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
   offset,
   mode = 'edit',
 }) => {
+  const normalized = normalizeGridSettings(settings);
   const isEditMode = mode === 'edit';
-  const rectSize = { width: settings.rectWidth, height: settings.rectHeight };
-  const config = gridConfigFromBounds(
-    bounds,
-    settings.cols,
-    settings.rows,
-    rectSize,
-    settings.align,
-    settings.padding,
-  );
+  const rectSize = { width: normalized.rectWidth, height: normalized.rectHeight };
+  const config = gridConfigFromGroup(bounds, normalized);
   const lines = gridLinePositions(config);
 
   const frameX = toStage(bounds.x, scale, offset.x);
@@ -72,9 +67,9 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
     );
   });
 
-  const cellPreviews = Array.from({ length: settings.cols * settings.rows }, (_, index) => {
-    const col = index % settings.cols;
-    const row = Math.floor(index / settings.cols);
+  const cellPreviews = Array.from({ length: normalized.cols * normalized.rows }, (_, index) => {
+    const col = index % normalized.cols;
+    const row = Math.floor(index / normalized.cols);
     const position = cellOrigin(col, row, config);
     return (
       <Rect

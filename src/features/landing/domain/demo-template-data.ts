@@ -117,7 +117,8 @@ function buildMonthlyCalendarPage() {
       settings: {
         cols: MONTHLY_DAY_GRID.cols,
         rows: MONTHLY_DAY_GRID.rows,
-        align: MONTHLY_DAY_GRID.align ?? 'top-left',
+        alignH: 'left',
+        alignV: 'top',
         rectWidth: MONTHLY_DAY_GRID.rectSize.width,
         rectHeight: MONTHLY_DAY_GRID.rectSize.height,
         padding: MONTHLY_DAY_GRID.padding,

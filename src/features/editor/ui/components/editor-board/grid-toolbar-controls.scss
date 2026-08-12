@@ -19,6 +19,37 @@
     flex-shrink: 0;
   }
 
+  &__focus-toggle {
+    display: inline-flex;
+    padding: 2px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.03);
+    flex-shrink: 0;
+  }
+
+  &__focus-btn {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 12px;
+    font-weight: 500;
+    color: hsl(220, 10%, 35%);
+    cursor: pointer;
+    white-space: nowrap;
+
+    &--active {
+      background: white;
+      color: hsl(168, 76%, 32%);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    &:hover:not(&--active) {
+      background: rgba(255, 255, 255, 0.6);
+    }
+  }
+
   &__stepper {
     display: flex;
     align-items: center;

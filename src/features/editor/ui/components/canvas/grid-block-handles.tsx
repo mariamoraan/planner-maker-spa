@@ -3,9 +3,8 @@ import { Group, Rect, Circle } from 'react-konva';
 import type Konva from 'konva';
 import {
   cellOrigin,
-  cellSlotOrigin,
-  clampGridPadding,
   gridConfigFromGroup,
+  paddingFromBlockPosition,
   resizeGridBlockFromHandle,
   type GridBlockResizeHandle,
   type GridBounds,
@@ -87,25 +86,12 @@ function handlePosition(
   }
 }
 
-function paddingFromBlockPosition(
+function blockPaddingFromPosition(
   bounds: GridBounds,
   settings: GridEditSettings,
   blockPos: { x: number; y: number },
 ): Partial<GridEditSettings> {
-  const config = gridConfigFromGroup(bounds, settings);
-  const slotOrigin = cellSlotOrigin(0, 0, config);
-  const offsetX = Math.round(blockPos.x - slotOrigin.x);
-  const offsetY = Math.round(blockPos.y - slotOrigin.y);
-
-  return {
-    alignH: 'left',
-    alignV: 'top',
-    padding: clampGridPadding(
-      bounds,
-      { ...settings, alignH: 'left', alignV: 'top' },
-      { x: offsetX, y: offsetY },
-    ),
-  };
+  return paddingFromBlockPosition(bounds, settings, blockPos);
 }
 
 export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
@@ -182,7 +168,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
 
       if (handle === 'move') {
         onSettingsChange(
-          paddingFromBlockPosition(bounds, startSettings, {
+          blockPaddingFromPosition(bounds, startSettings, {
             x: startBlock.x + dx,
             y: startBlock.y + dy,
           }),

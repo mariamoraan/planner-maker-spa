@@ -9,13 +9,19 @@ export interface GridGroupBounds {
   height: number;
 }
 
+export type GridAlignH = 'left' | 'center' | 'right';
+export type GridAlignV = 'top' | 'center' | 'bottom';
+
 export interface GridGroupSettings {
   cols: number;
   rows: number;
-  align: 'top-left' | 'center';
   rectWidth: number;
   rectHeight: number;
+  alignH: GridAlignH;
+  alignV: GridAlignV;
   padding?: { x: number; y: number };
+  /** @deprecated Legacy — use alignH/alignV. Kept for loading old templates. */
+  align?: 'top-left' | 'center';
 }
 
 export interface GridGroup {

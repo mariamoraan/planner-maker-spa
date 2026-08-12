@@ -7,9 +7,11 @@ import { useTranslation } from 'react-i18next';
 import type { FieldType, GridGroup } from '@/features/template';
 import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-style-controls';
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector';
+import { GridAlignmentPicker } from '@/features/editor/ui/components/shared/grid-alignment-picker';
 import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { getGridGroupFieldType } from '@/features/editor/domain/services/grid-group';
+import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
@@ -161,43 +163,48 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const { t } = useTranslation();
   const currentImage = useCurrentImage();
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
+  const gridEditFocus = useEditorStore(state => state.gridEditFocus);
+  const setGridEditFocus = useEditorStore(state => state.setGridEditFocus);
   const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup } = useGridGroupOps();
   const gridStyleEditing = useGridStyleEditing(group, currentImage?.rectangles ?? []);
 
   const layoutPopover = useToolbarPopover();
   const paddingPopover = useToolbarPopover();
+  const blockSizePopover = useToolbarPopover();
 
+  const settings = normalizeGridSettings(group.settings);
   const groupFieldType = currentImage
     ? getGridGroupFieldType(group, currentImage.rectangles, currentImage.gridGroups)
     : undefined;
   const representativeRect = currentImage?.rectangles.find(rect => rect.id === group.rectIds[0]);
-  const padding = group.settings.padding ?? { x: 0, y: 0 };
-  const showPaddingControls = group.settings.align === 'top-left';
-  const maxRectWidth = Math.round(group.bounds.width / group.settings.cols);
+  const padding = settings.padding ?? { x: 0, y: 0 };
+  const maxRectWidth = Math.round(group.bounds.width / settings.cols);
+  const isGridMode = gridEditFocus === 'grid';
 
   useEffect(() => {
     layoutPopover.close();
     paddingPopover.close();
+    blockSizePopover.close();
   }, [group.id]);
 
   const adjustCols = (delta: number) => {
-    updateGroupSettings(group.id, { cols: clampDimension(group.settings.cols + delta) });
+    updateGroupSettings(group.id, { cols: clampDimension(settings.cols + delta) });
   };
 
   const adjustRows = (delta: number) => {
-    updateGroupSettings(group.id, { rows: clampDimension(group.settings.rows + delta) });
+    updateGroupSettings(group.id, { rows: clampDimension(settings.rows + delta) });
   };
 
   const commitCols = (value: number) => {
     const cols = clampDimension(value);
-    if (cols !== group.settings.cols) {
+    if (cols !== settings.cols) {
       updateGroupSettings(group.id, { cols });
     }
   };
 
   const commitRows = (value: number) => {
     const rows = clampDimension(value);
-    if (rows !== group.settings.rows) {
+    if (rows !== settings.rows) {
       updateGroupSettings(group.id, { rows });
     }
   };
@@ -230,26 +237,26 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
 
   const adjustRectWidth = (delta: number) => {
     updateGroupSettings(group.id, {
-      rectWidth: clampBlockSize(group.settings.rectWidth + delta, 20, maxRectWidth),
+      rectWidth: clampBlockSize(settings.rectWidth + delta, 20, maxRectWidth),
     });
   };
 
   const adjustRectHeight = (delta: number) => {
     updateGroupSettings(group.id, {
-      rectHeight: clampBlockSize(group.settings.rectHeight + delta, 20),
+      rectHeight: clampBlockSize(settings.rectHeight + delta, 20),
     });
   };
 
   const commitRectWidth = (value: number) => {
     const rectWidth = clampBlockSize(value, 20, maxRectWidth);
-    if (rectWidth !== group.settings.rectWidth) {
+    if (rectWidth !== settings.rectWidth) {
       updateGroupSettings(group.id, { rectWidth });
     }
   };
 
   const commitRectHeight = (value: number) => {
     const rectHeight = clampBlockSize(value, 20);
-    if (rectHeight !== group.settings.rectHeight) {
+    if (rectHeight !== settings.rectHeight) {
       updateGroupSettings(group.id, { rectHeight });
     }
   };
@@ -264,186 +271,255 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
       </p>
       <div className="grid-toolbar-controls__divider" />
 
-      <div ref={layoutPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
+      <div
+        className="grid-toolbar-controls__focus-toggle"
+        role="group"
+        aria-label={t('editor.gridEditFocusLabel')}
+      >
         <button
-          ref={layoutPopover.triggerRef}
           type="button"
-          className={clsx('grid-toolbar-controls__menu-trigger', {
-            'grid-toolbar-controls__menu-trigger--open': layoutPopover.isOpen,
+          className={clsx('grid-toolbar-controls__focus-btn', {
+            'grid-toolbar-controls__focus-btn--active': isGridMode,
           })}
-          onClick={layoutPopover.toggle}
-          title={t('editor.gridEditLayout')}
-          aria-label={t('editor.gridEditLayout')}
+          onClick={() => setGridEditFocus('grid')}
+          aria-pressed={isGridMode}
         >
-          <GridIcon size={16} />
+          {t('editor.gridEditFocusGrid')}
         </button>
-        {layoutPopover.isOpen && layoutPopover.menuPosition &&
-          createPortal(
-            <div
-              ref={layoutPopover.menuRef}
-              className="grid-toolbar-controls__popover grid-toolbar-controls__popover--layout"
-              {...blockSelectionZoneProps}
-              style={{
-                top: layoutPopover.menuPosition.top,
-                left: layoutPopover.menuPosition.left,
-              }}
-            >
-              <label className="grid-toolbar-controls__stepper">
-                <span>{t('editor.gridColumns')}</span>
-                <div className="grid-toolbar-controls__stepper-inputs">
-                  <button type="button" onClick={() => adjustCols(-1)} aria-label="-">
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    defaultValue={group.settings.cols}
-                    key={`cols-${group.id}-${group.settings.cols}`}
-                    onBlur={e => commitCols(Number(e.target.value) || 1)}
-                  />
-                  <button type="button" onClick={() => adjustCols(1)} aria-label="+">
-                    +
-                  </button>
-                </div>
-              </label>
-
-              <label className="grid-toolbar-controls__stepper">
-                <span>{t('editor.gridRows')}</span>
-                <div className="grid-toolbar-controls__stepper-inputs">
-                  <button type="button" onClick={() => adjustRows(-1)} aria-label="-">
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    defaultValue={group.settings.rows}
-                    key={`rows-${group.id}-${group.settings.rows}`}
-                    onBlur={e => commitRows(Number(e.target.value) || 1)}
-                  />
-                  <button type="button" onClick={() => adjustRows(1)} aria-label="+">
-                    +
-                  </button>
-                </div>
-              </label>
-
-              <label className="grid-toolbar-controls__stepper">
-                <span>{t('editor.gridBlockWidth')}</span>
-                <div className="grid-toolbar-controls__stepper-inputs">
-                  <DimensionStepperInput
-                    value={group.settings.rectWidth}
-                    min={20}
-                    max={maxRectWidth}
-                    onCommit={commitRectWidth}
-                    onAdjust={adjustRectWidth}
-                  />
-                </div>
-              </label>
-
-              <label className="grid-toolbar-controls__stepper">
-                <span>{t('editor.gridBlockHeight')}</span>
-                <div className="grid-toolbar-controls__stepper-inputs">
-                  <DimensionStepperInput
-                    value={group.settings.rectHeight}
-                    min={20}
-                    onCommit={commitRectHeight}
-                    onAdjust={adjustRectHeight}
-                  />
-                </div>
-              </label>
-            </div>,
-            document.body,
-          )}
+        <button
+          type="button"
+          className={clsx('grid-toolbar-controls__focus-btn', {
+            'grid-toolbar-controls__focus-btn--active': !isGridMode,
+          })}
+          onClick={() => setGridEditFocus('block')}
+          aria-pressed={!isGridMode}
+        >
+          {t('editor.gridEditFocusBlock')}
+        </button>
       </div>
 
-      {showPaddingControls && (
-        <div ref={paddingPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
-          <button
-            ref={paddingPopover.triggerRef}
-            type="button"
-            className={clsx('grid-toolbar-controls__menu-trigger', {
-              'grid-toolbar-controls__menu-trigger--open': paddingPopover.isOpen,
-            })}
-            onClick={paddingPopover.toggle}
-            title={t('editor.gridEditPadding')}
-            aria-label={t('editor.gridEditPadding')}
-          >
-            <PaddingIcon size={16} />
-          </button>
-          {paddingPopover.isOpen && paddingPopover.menuPosition &&
-            createPortal(
-              <div
-                ref={paddingPopover.menuRef}
-                className="grid-toolbar-controls__popover grid-toolbar-controls__popover--padding"
-                {...blockSelectionZoneProps}
-                style={{
-                  top: paddingPopover.menuPosition.top,
-                  left: paddingPopover.menuPosition.left,
-                }}
-              >
-                <label className="grid-toolbar-controls__stepper">
-                  <span>{t('editor.gridPaddingX')}</span>
-                  <div className="grid-toolbar-controls__stepper-inputs">
-                    <button type="button" onClick={() => adjustPaddingX(-1)} aria-label="-">
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      defaultValue={padding.x}
-                      key={`pad-x-${group.id}-${padding.x}`}
-                      onBlur={e => commitPaddingX(Number(e.target.value) || 0)}
-                    />
-                    <button type="button" onClick={() => adjustPaddingX(1)} aria-label="+">
-                      +
-                    </button>
-                  </div>
-                </label>
+      <div className="grid-toolbar-controls__divider" />
 
-                <label className="grid-toolbar-controls__stepper">
-                  <span>{t('editor.gridPaddingY')}</span>
-                  <div className="grid-toolbar-controls__stepper-inputs">
-                    <button type="button" onClick={() => adjustPaddingY(-1)} aria-label="-">
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      defaultValue={padding.y}
-                      key={`pad-y-${group.id}-${padding.y}`}
-                      onBlur={e => commitPaddingY(Number(e.target.value) || 0)}
-                    />
-                    <button type="button" onClick={() => adjustPaddingY(1)} aria-label="+">
-                      +
-                    </button>
-                  </div>
-                </label>
-              </div>,
-              document.body,
-            )}
-        </div>
-      )}
-
-      {groupFieldType && (
+      {isGridMode ? (
         <>
-          <div className="grid-toolbar-controls__divider" />
-          <BlockTypeSelector
-            currentType={groupFieldType}
-            onSelect={(type: FieldType) => updateGroupFieldType(group.id, type)}
-            variant="popover"
-          />
+          <div ref={layoutPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
+            <button
+              ref={layoutPopover.triggerRef}
+              type="button"
+              className={clsx('grid-toolbar-controls__menu-trigger', {
+                'grid-toolbar-controls__menu-trigger--open': layoutPopover.isOpen,
+              })}
+              onClick={layoutPopover.toggle}
+              title={t('editor.gridEditLayout')}
+              aria-label={t('editor.gridEditLayout')}
+            >
+              <GridIcon size={16} />
+            </button>
+            {layoutPopover.isOpen && layoutPopover.menuPosition &&
+              createPortal(
+                <div
+                  ref={layoutPopover.menuRef}
+                  className="grid-toolbar-controls__popover grid-toolbar-controls__popover--layout"
+                  {...blockSelectionZoneProps}
+                  style={{
+                    top: layoutPopover.menuPosition.top,
+                    left: layoutPopover.menuPosition.left,
+                  }}
+                >
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridColumns')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <button type="button" onClick={() => adjustCols(-1)} aria-label="-">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={settings.cols}
+                        key={`cols-${group.id}-${settings.cols}`}
+                        onBlur={e => commitCols(Number(e.target.value) || 1)}
+                      />
+                      <button type="button" onClick={() => adjustCols(1)} aria-label="+">
+                        +
+                      </button>
+                    </div>
+                  </label>
+
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridRows')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <button type="button" onClick={() => adjustRows(-1)} aria-label="-">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={settings.rows}
+                        key={`rows-${group.id}-${settings.rows}`}
+                        onBlur={e => commitRows(Number(e.target.value) || 1)}
+                      />
+                      <button type="button" onClick={() => adjustRows(1)} aria-label="+">
+                        +
+                      </button>
+                    </div>
+                  </label>
+                </div>,
+                document.body,
+              )}
+          </div>
+
+          <div ref={paddingPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
+            <button
+              ref={paddingPopover.triggerRef}
+              type="button"
+              className={clsx('grid-toolbar-controls__menu-trigger', {
+                'grid-toolbar-controls__menu-trigger--open': paddingPopover.isOpen,
+              })}
+              onClick={paddingPopover.toggle}
+              title={t('editor.gridCellPadding')}
+              aria-label={t('editor.gridCellPadding')}
+            >
+              <PaddingIcon size={16} />
+            </button>
+            {paddingPopover.isOpen && paddingPopover.menuPosition &&
+              createPortal(
+                <div
+                  ref={paddingPopover.menuRef}
+                  className="grid-toolbar-controls__popover grid-toolbar-controls__popover--padding"
+                  {...blockSelectionZoneProps}
+                  style={{
+                    top: paddingPopover.menuPosition.top,
+                    left: paddingPopover.menuPosition.left,
+                  }}
+                >
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridPaddingX')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <button type="button" onClick={() => adjustPaddingX(-1)} aria-label="-">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={padding.x}
+                        key={`pad-x-${group.id}-${padding.x}`}
+                        onBlur={e => commitPaddingX(Number(e.target.value) || 0)}
+                      />
+                      <button type="button" onClick={() => adjustPaddingX(1)} aria-label="+">
+                        +
+                      </button>
+                    </div>
+                  </label>
+
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridPaddingY')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <button type="button" onClick={() => adjustPaddingY(-1)} aria-label="-">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={padding.y}
+                        key={`pad-y-${group.id}-${padding.y}`}
+                        onBlur={e => commitPaddingY(Number(e.target.value) || 0)}
+                      />
+                      <button type="button" onClick={() => adjustPaddingY(1)} aria-label="+">
+                        +
+                      </button>
+                    </div>
+                  </label>
+                </div>,
+                document.body,
+              )}
+          </div>
         </>
-      )}
-
-      {representativeRect && gridStyleEditing && (
+      ) : (
         <>
-          <div className="grid-toolbar-controls__divider" />
-          <AreaStyleControls
-            rectangle={representativeRect}
-            variant="toolbar"
-            editing={gridStyleEditing}
+          <GridAlignmentPicker
+            alignH={settings.alignH}
+            alignV={settings.alignV}
+            label={t('editor.gridAlignment')}
+            variant="dropdown"
+            onChange={(alignH, alignV) => updateGroupSettings(group.id, { alignH, alignV })}
           />
+
+          <div ref={blockSizePopover.containerRef} className="grid-toolbar-controls__popover-anchor">
+            <button
+              ref={blockSizePopover.triggerRef}
+              type="button"
+              className={clsx('grid-toolbar-controls__menu-trigger', {
+                'grid-toolbar-controls__menu-trigger--open': blockSizePopover.isOpen,
+              })}
+              onClick={blockSizePopover.toggle}
+              title={t('editor.gridBlockSize')}
+              aria-label={t('editor.gridBlockSize')}
+            >
+              <GridIcon size={16} />
+            </button>
+            {blockSizePopover.isOpen && blockSizePopover.menuPosition &&
+              createPortal(
+                <div
+                  ref={blockSizePopover.menuRef}
+                  className="grid-toolbar-controls__popover grid-toolbar-controls__popover--layout"
+                  {...blockSelectionZoneProps}
+                  style={{
+                    top: blockSizePopover.menuPosition.top,
+                    left: blockSizePopover.menuPosition.left,
+                  }}
+                >
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridBlockWidth')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <DimensionStepperInput
+                        value={settings.rectWidth}
+                        min={20}
+                        max={maxRectWidth}
+                        onCommit={commitRectWidth}
+                        onAdjust={adjustRectWidth}
+                      />
+                    </div>
+                  </label>
+
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridBlockHeight')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <DimensionStepperInput
+                        value={settings.rectHeight}
+                        min={20}
+                        onCommit={commitRectHeight}
+                        onAdjust={adjustRectHeight}
+                      />
+                    </div>
+                  </label>
+                </div>,
+                document.body,
+              )}
+          </div>
+
+          {groupFieldType && (
+            <>
+              <div className="grid-toolbar-controls__divider" />
+              <BlockTypeSelector
+                currentType={groupFieldType}
+                onSelect={(type: FieldType) => updateGroupFieldType(group.id, type)}
+                variant="popover"
+              />
+            </>
+          )}
+
+          {representativeRect && gridStyleEditing && (
+            <>
+              <div className="grid-toolbar-controls__divider" />
+              <AreaStyleControls
+                rectangle={representativeRect}
+                variant="toolbar"
+                editing={gridStyleEditing}
+              />
+            </>
+          )}
         </>
       )}
 

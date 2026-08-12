@@ -33,7 +33,8 @@ describe('layer-order', () => {
         settings: {
           cols: 2,
           rows: 1,
-          align: 'top-left',
+          alignH: 'left',
+          alignV: 'top',
           rectWidth: 10,
           rectHeight: 10,
         },
@@ -65,7 +66,8 @@ describe('layer-order', () => {
         settings: {
           cols: 2,
           rows: 1,
-          align: 'top-left',
+          alignH: 'left',
+          alignV: 'top',
           rectWidth: 10,
           rectHeight: 10,
         },

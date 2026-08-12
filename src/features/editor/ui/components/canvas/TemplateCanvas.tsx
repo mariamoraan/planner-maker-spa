@@ -21,11 +21,17 @@ import {
   ZOOM_STEP,
 } from '@/features/editor/domain/services/canvas-viewport';
 import { SnapGuidesOverlay } from './snap-guides-overlay';
+import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
+import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
 import { GridOverlay } from './grid-overlay';
 import { GridBoundsHandles } from './grid-bounds-handles';
+import { GridBlockHandles } from './grid-block-handles';
+import { GridGapHandles } from './grid-gap-handles';
+import { GridFocusZones } from './grid-focus-zones';
 import { CanvasFloatingControls } from './canvas-floating-controls';
 import {
   computePreviewPositionsForBounds,
+  computePreviewPositionsForSettings,
   useGridGroupOps,
 } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import {
@@ -130,8 +136,9 @@ export const TemplateCanvas: React.FC = () => {
   const [isMarqueeSelecting, setIsMarqueeSelecting] = useState(false);
   const [marqueePreviewIds, setMarqueePreviewIds] = useState<string[]>([]);
   const [gridBoundsPreview, setGridBoundsPreview] = useState<GridBounds | null>(null);
+  const [gridSettingsPreview, setGridSettingsPreview] = useState<Partial<GridEditSettings> | null>(null);
 
-  const { updateGroupBounds, translateGridGroup } = useGridGroupOps();
+  const { updateGroupBounds, updateGroupSettings, translateGridGroup } = useGridGroupOps();
 
   const selectedFieldType = useEditorStore(state => state.selectedFieldType);
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
@@ -140,6 +147,8 @@ export const TemplateCanvas: React.FC = () => {
   const showRectangleGuides = useEditorStore(state => state.showRectangleGuides);
   const canvasTool = useEditorStore(state => state.canvasTool);
   const setCanvasTool = useEditorStore(state => state.setCanvasTool);
+  const gridEditFocus = useEditorStore(state => state.gridEditFocus);
+  const setGridEditFocus = useEditorStore(state => state.setGridEditFocus);
 
   const isSelectMode = canvasTool === 'select';
   const isPanMode = canvasTool === 'pan';
@@ -255,6 +264,11 @@ export const TemplateCanvas: React.FC = () => {
     return computePreviewPositionsForBounds(lockedGridGroup, gridBoundsPreview);
   }, [lockedGridGroup, gridBoundsPreview]);
 
+  const activeGridSettings = useMemo(() => {
+    if (!lockedGridGroup) return null;
+    return normalizeGridSettings({ ...lockedGridGroup.settings, ...gridSettingsPreview });
+  }, [lockedGridGroup, gridSettingsPreview]);
+
   const activeGridBounds = useMemo(() => {
     if (gridBoundsPreview) return gridBoundsPreview;
     if (!lockedGridGroup) return null;
@@ -266,7 +280,19 @@ export const TemplateCanvas: React.FC = () => {
 
     return lockedGridGroup.bounds;
   }, [gridBoundsPreview, lockedGridGroup, dragState, dragOverlay]);
-  const isGridHandleDragging = gridBoundsPreview !== null;
+
+  const gridSettingsPreviewPositions = useMemo(() => {
+    if (!lockedGridGroup || !activeGridBounds || !gridSettingsPreview || !activeGridSettings) {
+      return {};
+    }
+    return computePreviewPositionsForSettings(
+      lockedGridGroup,
+      activeGridBounds,
+      activeGridSettings,
+    );
+  }, [lockedGridGroup, activeGridBounds, gridSettingsPreview, activeGridSettings]);
+
+  const isGridHandleDragging = gridBoundsPreview !== null || gridSettingsPreview !== null;
 
   useEffect(() => {
     if (!containerRef?.current || !currentImage?.width || !currentImage?.height) return;
@@ -324,8 +350,10 @@ export const TemplateCanvas: React.FC = () => {
   useEffect(() => {
     if (!lockedGridGroup) {
       setGridBoundsPreview(null);
+      setGridSettingsPreview(null);
+      setGridEditFocus('grid');
     }
-  }, [lockedGridGroup?.id]);
+  }, [lockedGridGroup?.id, setGridEditFocus]);
 
   useEffect(() => {
     if (transformerRef.current && stageRef.current) {
@@ -1013,6 +1041,7 @@ export const TemplateCanvas: React.FC = () => {
   ]);
 
   const gridBoundsPreviewRef = useRef<GridBounds | null>(null);
+  const gridSettingsPreviewRef = useRef<Partial<GridEditSettings> | null>(null);
 
   const handleGridBoundsPreview = useCallback((bounds: GridBounds) => {
     gridBoundsPreviewRef.current = bounds;
@@ -1030,6 +1059,30 @@ export const TemplateCanvas: React.FC = () => {
     setGridBoundsPreview(null);
     gridBoundsPreviewRef.current = null;
   }, [lockedGridGroup, updateGroupBounds]);
+
+  const handleGridSettingsPreview = useCallback(
+    (updates: Partial<GridEditSettings> & { gapX?: number; gapY?: number }) => {
+      const { gapX: _gapX, gapY: _gapY, ...settingsUpdates } = updates;
+      gridSettingsPreviewRef.current = {
+        ...gridSettingsPreviewRef.current,
+        ...settingsUpdates,
+      };
+      setGridSettingsPreview(prev => ({ ...prev, ...settingsUpdates }));
+    },
+    [],
+  );
+
+  const handleGridSettingsCommit = useCallback(() => {
+    const updates = gridSettingsPreviewRef.current;
+    if (!updates || !lockedGridGroup) {
+      setGridSettingsPreview(null);
+      gridSettingsPreviewRef.current = null;
+      return;
+    }
+    updateGroupSettings(lockedGridGroup.id, updates);
+    setGridSettingsPreview(null);
+    gridSettingsPreviewRef.current = null;
+  }, [lockedGridGroup, updateGroupSettings]);
 
   const containerClassName = [
     'template-canva',
@@ -1085,7 +1138,9 @@ export const TemplateCanvas: React.FC = () => {
             const draggable =
               isSelectMode && !isGridHandleDragging && (!isGroupDragging || isDragLeader);
             const previewPosition =
-              gridPreviewPositions[rect.id] ?? dragOverlay?.previewPositions[rect.id];
+              gridPreviewPositions[rect.id] ??
+              gridSettingsPreviewPositions[rect.id] ??
+              dragOverlay?.previewPositions[rect.id];
             return (
               <TemplateRectangle
                 key={`${currentImage.id}-${rect.id}`}
@@ -1167,22 +1222,52 @@ export const TemplateCanvas: React.FC = () => {
           />
         </Layer>
 
-        {lockedGridGroup && activeGridBounds && (
+        {lockedGridGroup && activeGridBounds && activeGridSettings && (
           <Layer>
             <GridOverlay
               bounds={activeGridBounds}
-              settings={lockedGridGroup.settings}
+              settings={activeGridSettings}
               scale={scale}
               offset={offset}
-              mode="edit"
+              mode={gridEditFocus === 'grid' ? 'edit' : 'preview'}
             />
-            <GridBoundsHandles
+            <GridFocusZones
               bounds={activeGridBounds}
+              settings={activeGridSettings}
               scale={scale}
               offset={offset}
-              onBoundsChange={handleGridBoundsPreview}
-              onDragEnd={handleGridBoundsCommit}
+              focus={gridEditFocus}
+              onFocusChange={setGridEditFocus}
             />
+            {gridEditFocus === 'grid' && (
+              <>
+                <GridBoundsHandles
+                  bounds={activeGridBounds}
+                  scale={scale}
+                  offset={offset}
+                  onBoundsChange={handleGridBoundsPreview}
+                  onDragEnd={handleGridBoundsCommit}
+                />
+                <GridGapHandles
+                  bounds={activeGridBounds}
+                  settings={activeGridSettings}
+                  scale={scale}
+                  offset={offset}
+                  onGapPreview={handleGridSettingsPreview}
+                  onDragEnd={handleGridSettingsCommit}
+                />
+              </>
+            )}
+            {gridEditFocus === 'block' && (
+              <GridBlockHandles
+                bounds={activeGridBounds}
+                settings={activeGridSettings}
+                scale={scale}
+                offset={offset}
+                onSettingsChange={handleGridSettingsPreview}
+                onDragEnd={handleGridSettingsCommit}
+              />
+            )}
           </Layer>
         )}
       </Stage>

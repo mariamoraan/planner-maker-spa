@@ -5,14 +5,17 @@ import {
   boundsFromGap,
   boundsFromPitch,
   cellOrigin,
+  cellSlotOrigin,
   clampGridPadding,
   clampGridRectSize,
   defaultGridBounds,
   detectGridMeasureAxis,
   expandGridRectIds,
   gapFromPitch,
+  getGridGap,
   gridBoundsFromAnchorBlock,
   gridConfigFromBounds,
+  gridConfigFromGroup,
   gridDimensionLabels,
   gridLinePositions,
   gridPositionsFromConfig,
@@ -22,13 +25,17 @@ import {
   inferPitchFromRectangles,
   layoutGridRectangles,
   orderRectIdsRowMajor,
+  paddingFromBlockPosition,
   pitchFromBounds,
   redistributeGridMoves,
+  resizeGridBlockFromHandle,
   resizeGridBounds,
   resizeGridPitch,
+  scaleGridSettingsForGapChange,
   translateGridBounds,
   type GridLayoutConfig,
 } from './grid-layout';
+import { normalizeGridSettings } from './grid-edit-types';
 import { buildGridRectangles } from './grid-rectangle-builder';
 
 const baseConfig: GridLayoutConfig = {
@@ -37,7 +44,8 @@ const baseConfig: GridLayoutConfig = {
   rows: 5,
   cellSize: { width: 102, height: 137 },
   rectSize: { width: 48, height: 36 },
-  align: 'top-left',
+  alignH: 'left',
+  alignV: 'top',
   padding: { x: 12, y: 10 },
 };
 
@@ -51,7 +59,8 @@ describe('cellOrigin', () => {
   it('centers rects within cells when align is center', () => {
     const centered: GridLayoutConfig = {
       ...baseConfig,
-      align: 'center',
+      alignH: 'center',
+      alignV: 'center',
       padding: undefined,
     };
     expect(cellOrigin(0, 0, centered)).toEqual({ x: 172, y: 501 });
@@ -530,5 +539,162 @@ describe('gridLinePositions / gridDimensionLabels', () => {
     expect(labels.gapX?.x).toBe((cell00.x + 48 + cell10.x) / 2);
     expect(labels.gapX?.text).toBe('52px');
     expect(labels.pitchX?.text).toBe('100px');
+  });
+});
+
+describe('cellSlotOrigin', () => {
+  it('returns cell corner without block padding', () => {
+    expect(cellSlotOrigin(0, 0, baseConfig)).toEqual({ x: 145, y: 450 });
+    expect(cellSlotOrigin(1, 0, baseConfig)).toEqual({ x: 247, y: 450 });
+  });
+});
+
+describe('normalizeGridSettings', () => {
+  it('migrates legacy center align', () => {
+    expect(
+      normalizeGridSettings({
+        cols: 2,
+        rows: 2,
+        rectWidth: 48,
+        rectHeight: 36,
+        align: 'center',
+      }),
+    ).toEqual({
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'center',
+      alignV: 'center',
+      padding: { x: 0, y: 0 },
+    });
+  });
+
+  it('migrates legacy top-left align with padding', () => {
+    expect(
+      normalizeGridSettings({
+        cols: 2,
+        rows: 2,
+        rectWidth: 48,
+        rectHeight: 36,
+        align: 'top-left',
+        padding: { x: 8, y: 4 },
+      }),
+    ).toMatchObject({
+      alignH: 'left',
+      alignV: 'top',
+      padding: { x: 8, y: 4 },
+    });
+  });
+});
+
+describe('nine-point alignment padding', () => {
+  it('offsets from right and bottom edges', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const config = gridConfigFromBounds(
+      bounds,
+      2,
+      2,
+      { width: 48, height: 36 },
+      { alignH: 'right', alignV: 'bottom' },
+      { x: 10, y: 8 },
+    );
+
+    expect(cellOrigin(0, 0, config)).toEqual({
+      x: 42,
+      y: 36,
+    });
+  });
+});
+
+describe('getGridGap / scaleGridSettingsForGapChange', () => {
+  it('derives gap from bounds and block size', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+    };
+
+    expect(getGridGap(bounds, settings)).toEqual({ gapX: 52, gapY: 44 });
+  });
+
+  it('shrinks block size when gap increases', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+    };
+
+    const result = scaleGridSettingsForGapChange(bounds, settings, { gapX: 60, gapY: 44 });
+    expect(result.rectWidth).toBe(40);
+    expect(result.gapX).toBe(60);
+  });
+});
+
+describe('resizeGridBlockFromHandle', () => {
+  it('increases block size from south-east handle', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+    };
+    const block = { x: 0, y: 0, width: 48, height: 36 };
+
+    const result = resizeGridBlockFromHandle(block, 'se', { dx: 10, dy: 8 }, bounds, settings);
+    expect(result.settings.rectWidth).toBe(58);
+    expect(result.settings.rectHeight).toBe(44);
+  });
+});
+
+describe('paddingFromBlockPosition', () => {
+  it('converts dragged position to top-left padding', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+    };
+
+    expect(
+      paddingFromBlockPosition(bounds, settings, { x: 12, y: 10 }),
+    ).toEqual({
+      alignH: 'left',
+      alignV: 'top',
+      padding: { x: 12, y: 10 },
+    });
+  });
+
+  it('switches to top-left alignment when dragging from center', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'center' as const,
+      alignV: 'center' as const,
+      padding: { x: 0, y: 0 },
+    };
+
+    expect(paddingFromBlockPosition(bounds, settings, { x: 12, y: 10 }).alignH).toBe('left');
+    expect(paddingFromBlockPosition(bounds, settings, { x: 12, y: 10 }).alignV).toBe('top');
   });
 });

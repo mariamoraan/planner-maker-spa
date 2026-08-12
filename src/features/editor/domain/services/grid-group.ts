@@ -1,6 +1,7 @@
 import type { FieldType, GridGroup, Rectangle } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import type { GridEditSettings } from './grid-edit-types';
+import { normalizeGridSettings, toPersistedGridSettings } from './grid-edit-types';
 import { translateGridBounds, type GridBounds } from './grid-layout';
 
 export function createGridGroupId(): string {
@@ -106,6 +107,33 @@ export function expandSelectionToGridGroups(
   return [...expanded];
 }
 
+export function repairGridGroupSettings(
+  gridGroups: Record<string, GridGroup> | undefined,
+): Record<string, GridGroup> | undefined {
+  if (!gridGroups) return gridGroups;
+
+  let changed = false;
+  const next: Record<string, GridGroup> = {};
+
+  for (const [id, group] of Object.entries(gridGroups)) {
+    const normalized = toPersistedGridSettings(normalizeGridSettings(group.settings));
+    const hasLegacyAlign = group.settings.align !== undefined;
+    const needsUpdate =
+      hasLegacyAlign ||
+      group.settings.alignH !== normalized.alignH ||
+      group.settings.alignV !== normalized.alignV;
+
+    if (needsUpdate) {
+      changed = true;
+      next[id] = { ...group, settings: normalized };
+    } else {
+      next[id] = group;
+    }
+  }
+
+  return changed ? next : gridGroups;
+}
+
 export function repairGridMetadata(
   rectangles: Rectangle[],
   gridGroups: Record<string, GridGroup> | undefined,
@@ -178,7 +206,7 @@ export function buildGridGroup(
     cols: settings.cols,
     rows: settings.rows,
     bounds: { ...bounds },
-    settings: { ...settings },
+    settings: toPersistedGridSettings(normalizeGridSettings(settings)),
   };
 }
 

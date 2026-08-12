@@ -1,9 +1,17 @@
+import type { GridAlignH, GridAlignV, GridEditSettings } from './grid-edit-types';
+import { normalizeGridSettings } from './grid-edit-types';
+
+export type { GridAlignH, GridAlignV };
+
 export interface GridLayoutConfig {
   origin: { x: number; y: number };
   cols: number;
   rows: number;
   cellSize: { width: number; height: number };
   rectSize: { width: number; height: number };
+  alignH?: GridAlignH;
+  alignV?: GridAlignV;
+  /** @deprecated Legacy — use alignH/alignV */
   align?: 'top-left' | 'center';
   padding?: { x: number; y: number };
 }
@@ -23,14 +31,51 @@ export interface InferredGrid extends GridLayoutConfig {
 
 const DEFAULT_PADDING = { x: 0, y: 0 };
 
-function resolvePadding(config: GridLayoutConfig): { x: number; y: number } {
-  if (config.align === 'center') {
-    return {
-      x: (config.cellSize.width - config.rectSize.width) / 2,
-      y: (config.cellSize.height - config.rectSize.height) / 2,
-    };
+function resolveAlignment(config: GridLayoutConfig): { alignH: GridAlignH; alignV: GridAlignV } {
+  if (config.alignH && config.alignV) {
+    return { alignH: config.alignH, alignV: config.alignV };
   }
-  return config.padding ?? DEFAULT_PADDING;
+  if (config.align === 'center') {
+    return { alignH: 'center', alignV: 'center' };
+  }
+  return { alignH: 'left', alignV: 'top' };
+}
+
+function resolvePadding(config: GridLayoutConfig): { x: number; y: number } {
+  const { alignH, alignV } = resolveAlignment(config);
+  const padding = config.padding ?? DEFAULT_PADDING;
+  const { cellSize, rectSize } = config;
+
+  let x: number;
+  if (alignH === 'left') {
+    x = padding.x;
+  } else if (alignH === 'center') {
+    x = (cellSize.width - rectSize.width) / 2 + padding.x;
+  } else {
+    x = cellSize.width - rectSize.width - padding.x;
+  }
+
+  let y: number;
+  if (alignV === 'top') {
+    y = padding.y;
+  } else if (alignV === 'center') {
+    y = (cellSize.height - rectSize.height) / 2 + padding.y;
+  } else {
+    y = cellSize.height - rectSize.height - padding.y;
+  }
+
+  return { x: Math.round(x), y: Math.round(y) };
+}
+
+export function cellSlotOrigin(
+  col: number,
+  row: number,
+  config: GridLayoutConfig,
+): { x: number; y: number } {
+  return {
+    x: Math.round(config.origin.x + col * config.cellSize.width),
+    y: Math.round(config.origin.y + row * config.cellSize.height),
+  };
 }
 
 export function cellOrigin(
@@ -144,7 +189,8 @@ export function inferGridFromRectangles(
     rows: rows.length,
     cellSize: { width: cellWidth, height: cellHeight },
     rectSize,
-    align: 'top-left',
+    alignH: 'left',
+    alignV: 'top',
     padding: { x: 0, y: 0 },
     rectIds: sortedByOrder.map(rect => rect.id),
   };
@@ -206,9 +252,23 @@ export function gridConfigFromBounds(
   cols: number,
   rows: number,
   rectSize: { width: number; height: number },
-  align: 'top-left' | 'center' = 'top-left',
+  alignment: 'top-left' | 'center' | { alignH: GridAlignH; alignV: GridAlignV } = 'top-left',
   padding?: { x: number; y: number },
 ): GridLayoutConfig {
+  let alignH: GridAlignH;
+  let alignV: GridAlignV;
+
+  if (typeof alignment === 'object') {
+    alignH = alignment.alignH;
+    alignV = alignment.alignV;
+  } else if (alignment === 'center') {
+    alignH = 'center';
+    alignV = 'center';
+  } else {
+    alignH = 'left';
+    alignV = 'top';
+  }
+
   return {
     origin: { x: bounds.x, y: bounds.y },
     cols,
@@ -218,7 +278,8 @@ export function gridConfigFromBounds(
       height: bounds.height / rows,
     },
     rectSize,
-    align,
+    alignH,
+    alignV,
     padding,
   };
 }
@@ -226,9 +287,12 @@ export function gridConfigFromBounds(
 export interface GridSettingsInput {
   cols: number;
   rows: number;
-  align?: 'top-left' | 'center';
   rectWidth: number;
   rectHeight: number;
+  alignH?: GridAlignH;
+  alignV?: GridAlignV;
+  /** @deprecated Legacy — use alignH/alignV */
+  align?: 'top-left' | 'center';
   padding?: { x: number; y: number };
 }
 
@@ -236,13 +300,14 @@ export function gridConfigFromGroup(
   bounds: GridBounds,
   settings: GridSettingsInput,
 ): GridLayoutConfig {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
   return gridConfigFromBounds(
     bounds,
-    settings.cols,
-    settings.rows,
-    { width: settings.rectWidth, height: settings.rectHeight },
-    settings.align ?? 'top-left',
-    settings.padding,
+    normalized.cols,
+    normalized.rows,
+    { width: normalized.rectWidth, height: normalized.rectHeight },
+    { alignH: normalized.alignH, alignV: normalized.alignV },
+    normalized.padding,
   );
 }
 
@@ -283,7 +348,8 @@ export function inferPaddingFromRects(
   rects: GridRectInput[],
   rectIds: string[],
 ): { x: number; y: number } {
-  if (settings.align === 'center') {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  if (normalized.alignH === 'center' && normalized.alignV === 'center') {
     return { x: 0, y: 0 };
   }
 
@@ -293,12 +359,37 @@ export function inferPaddingFromRects(
     return { x: 0, y: 0 };
   }
 
-  const padding = {
-    x: Math.round(firstRect.x - bounds.x),
-    y: Math.round(firstRect.y - bounds.y),
-  };
+  const config = gridConfigFromGroup(bounds, normalized);
+  const slot = cellSlotOrigin(0, 0, config);
+  const blockOffsetX = Math.round(firstRect.x - slot.x);
+  const blockOffsetY = Math.round(firstRect.y - slot.y);
+  const cellW = config.cellSize.width;
+  const cellH = config.cellSize.height;
+  const rectW = normalized.rectWidth;
+  const rectH = normalized.rectHeight;
 
-  return clampGridPadding(bounds, settings, padding);
+  let paddingX: number;
+  if (normalized.alignH === 'left') {
+    paddingX = blockOffsetX;
+  } else if (normalized.alignH === 'center') {
+    paddingX = blockOffsetX - (cellW - rectW) / 2;
+  } else {
+    paddingX = cellW - rectW - blockOffsetX;
+  }
+
+  let paddingY: number;
+  if (normalized.alignV === 'top') {
+    paddingY = blockOffsetY;
+  } else if (normalized.alignV === 'center') {
+    paddingY = blockOffsetY - (cellH - rectH) / 2;
+  } else {
+    paddingY = cellH - rectH - blockOffsetY;
+  }
+
+  return clampGridPadding(bounds, normalized, {
+    x: Math.round(paddingX),
+    y: Math.round(paddingY),
+  });
 }
 
 export function boundsFromRectangles(
@@ -322,14 +413,18 @@ export function boundsFromRectangles(
 export function redistributeGridMoves(
   rectIds: string[],
   bounds: GridBounds,
-  config: Pick<GridLayoutConfig, 'cols' | 'rows' | 'rectSize' | 'align' | 'padding'>,
+  config: Pick<GridLayoutConfig, 'cols' | 'rows' | 'rectSize' | 'alignH' | 'alignV' | 'align' | 'padding'>,
 ): { id: string; x: number; y: number }[] {
   const gridConfig = gridConfigFromBounds(
     bounds,
     config.cols,
     config.rows,
     config.rectSize,
-    config.align,
+    config.alignH && config.alignV
+      ? { alignH: config.alignH, alignV: config.alignV }
+      : config.align === 'center'
+        ? 'center'
+        : 'top-left',
     config.padding,
   );
   return gridPositionsFromConfig(rectIds, gridConfig);
@@ -532,17 +627,185 @@ export function boundsFromPitch(
 export function gapFromPitch(
   pitch: { pitchX: number; pitchY: number },
   rectSize: { width: number; height: number },
-  align: 'top-left' | 'center' = 'top-left',
 ): { gapX: number; gapY: number } {
-  if (align === 'center') {
-    return {
-      gapX: Math.round(pitch.pitchX - rectSize.width),
-      gapY: Math.round(pitch.pitchY - rectSize.height),
-    };
-  }
   return {
     gapX: Math.round(pitch.pitchX - rectSize.width),
     gapY: Math.round(pitch.pitchY - rectSize.height),
+  };
+}
+
+export function getGridGap(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+): { gapX: number; gapY: number } {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const pitch = pitchFromBounds(bounds, normalized.cols, normalized.rows);
+  return gapFromPitch(pitch, {
+    width: normalized.rectWidth,
+    height: normalized.rectHeight,
+  });
+}
+
+export function scaleGridSettingsForGapChange(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+  targetGap: { gapX: number; gapY: number },
+): {
+  gapX: number;
+  gapY: number;
+  rectWidth: number;
+  rectHeight: number;
+  padding: { x: number; y: number };
+} {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const pitch = pitchFromBounds(bounds, normalized.cols, normalized.rows);
+
+  const rectWidth = clampGridRectSize(bounds, normalized, {
+    width: Math.round(pitch.pitchX - targetGap.gapX),
+    height: normalized.rectHeight,
+  }).width;
+
+  const rectHeight = clampGridRectSize(bounds, normalized, {
+    width: rectWidth,
+    height: Math.round(pitch.pitchY - targetGap.gapY),
+  }).height;
+
+  const padding = clampGridPadding(
+    bounds,
+    { ...normalized, rectWidth, rectHeight },
+    normalized.padding ?? { x: 0, y: 0 },
+  );
+
+  const nextGap = gapFromPitch(pitch, { width: rectWidth, height: rectHeight });
+
+  return {
+    gapX: nextGap.gapX,
+    gapY: nextGap.gapY,
+    rectWidth,
+    rectHeight,
+    padding,
+  };
+}
+
+export function paddingFromBlockPosition(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+  blockPos: { x: number; y: number },
+): Partial<GridEditSettings> {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const config = gridConfigFromGroup(bounds, normalized);
+  const slotOrigin = cellSlotOrigin(0, 0, config);
+  const blockOffsetX = blockPos.x - slotOrigin.x;
+  const blockOffsetY = blockPos.y - slotOrigin.y;
+  const cellW = config.cellSize.width;
+  const cellH = config.cellSize.height;
+  const rectW = normalized.rectWidth;
+  const rectH = normalized.rectHeight;
+
+  let paddingX: number;
+  if (normalized.alignH === 'left') {
+    paddingX = blockOffsetX;
+  } else if (normalized.alignH === 'center') {
+    paddingX = blockOffsetX - (cellW - rectW) / 2;
+  } else {
+    paddingX = cellW - rectW - blockOffsetX;
+  }
+
+  let paddingY: number;
+  if (normalized.alignV === 'top') {
+    paddingY = blockOffsetY;
+  } else if (normalized.alignV === 'center') {
+    paddingY = blockOffsetY - (cellH - rectH) / 2;
+  } else {
+    paddingY = cellH - rectH - blockOffsetY;
+  }
+
+  return {
+    alignH: 'left',
+    alignV: 'top',
+    padding: clampGridPadding(bounds, normalized, {
+      x: Math.round(paddingX),
+      y: Math.round(paddingY),
+    }),
+  };
+}
+
+export type GridBlockResizeHandle = GridBoundsHandle;
+
+export function resizeGridBlockFromHandle(
+  startBlock: { x: number; y: number; width: number; height: number },
+  handle: GridBlockResizeHandle,
+  delta: { dx: number; dy: number },
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+): { settings: Partial<GridEditSettings> } {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const { dx, dy } = delta;
+  let x = startBlock.x;
+  let y = startBlock.y;
+  let width = startBlock.width;
+  let height = startBlock.height;
+
+  switch (handle) {
+    case 'e':
+      width = startBlock.width + dx;
+      break;
+    case 'w':
+      width = startBlock.width - dx;
+      x = startBlock.x + dx;
+      break;
+    case 's':
+      height = startBlock.height + dy;
+      break;
+    case 'n':
+      height = startBlock.height - dy;
+      y = startBlock.y + dy;
+      break;
+    case 'se':
+      width = startBlock.width + dx;
+      height = startBlock.height + dy;
+      break;
+    case 'sw':
+      width = startBlock.width - dx;
+      height = startBlock.height + dy;
+      x = startBlock.x + dx;
+      break;
+    case 'ne':
+      width = startBlock.width + dx;
+      height = startBlock.height - dy;
+      y = startBlock.y + dy;
+      break;
+    case 'nw':
+      width = startBlock.width - dx;
+      height = startBlock.height - dy;
+      x = startBlock.x + dx;
+      y = startBlock.y + dy;
+      break;
+  }
+
+  const clampedSize = clampGridRectSize(bounds, normalized, { width, height });
+
+  if (handle.includes('w') || handle === 'w') {
+    x = startBlock.x + startBlock.width - clampedSize.width;
+  }
+  if (handle.includes('n') || handle === 'n') {
+    y = startBlock.y + startBlock.height - clampedSize.height;
+  }
+
+  const nextSettings: GridEditSettings = {
+    ...normalized,
+    rectWidth: clampedSize.width,
+    rectHeight: clampedSize.height,
+  };
+
+  const positionUpdates = paddingFromBlockPosition(bounds, nextSettings, { x, y });
+
+  return {
+    settings: {
+      rectWidth: clampedSize.width,
+      rectHeight: clampedSize.height,
+      ...positionUpdates,
+    },
   };
 }
 
@@ -577,7 +840,7 @@ export function gridDimensionLabels(
   pitchY: GridDimensionLabelSpec | null;
 } {
   const pitch = { pitchX: config.cellSize.width, pitchY: config.cellSize.height };
-  const gap = gapFromPitch(pitch, rectSize, config.align);
+  const gap = gapFromPitch(pitch, rectSize);
   const cell00 = cellOrigin(0, 0, config);
 
   let gapX: GridDimensionLabelSpec | null = null;

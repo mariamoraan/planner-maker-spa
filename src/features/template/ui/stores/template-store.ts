@@ -18,7 +18,7 @@ import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImag
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import type { TemplatePageRecord } from '@/features/template/domain/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/canvas-snap';
-import { repairGridMetadata } from '@/features/editor/domain/services/grid-group';
+import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/domain/services/grid-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
 const RECTANGLE_SYNC_DELAY_MS = 500;
@@ -95,9 +95,10 @@ function needsImageLoad(image: TemplateImage): boolean {
 }
 
 function withRepairedGridMetadata(image: TemplateImage): TemplateImage {
-  const rectangles = repairGridMetadata(image.rectangles, image.gridGroups);
-  if (rectangles === image.rectangles) return image;
-  return { ...image, rectangles };
+  const gridGroups = repairGridGroupSettings(image.gridGroups);
+  const rectangles = repairGridMetadata(image.rectangles, gridGroups);
+  if (rectangles === image.rectangles && gridGroups === image.gridGroups) return image;
+  return { ...image, rectangles, gridGroups };
 }
 
 function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {

@@ -28,7 +28,8 @@ const sampleGroup: GridGroup = {
   settings: {
     cols: 3,
     rows: 1,
-    align: 'top-left',
+    alignH: 'left',
+    alignV: 'top',
     rectWidth: 48,
     rectHeight: 36,
   },
@@ -141,7 +142,7 @@ describe('buildGridGroup', () => {
     const group = buildGridGroup(
       ['a', 'b'],
       { x: 0, y: 0, width: 200, height: 36 },
-      { cols: 2, rows: 1, align: 'top-left', rectWidth: 48, rectHeight: 36 },
+      { cols: 2, rows: 1, alignH: 'left', alignV: 'top', rectWidth: 48, rectHeight: 36 },
     );
     expect(group.rectIds).toEqual(['a', 'b']);
     expect(group.cols).toBe(2);
@@ -191,7 +192,8 @@ describe('translateGridGroupState', () => {
         width: group.settings.rectWidth,
         height: group.settings.rectHeight,
       },
-      align: group.settings.align,
+      alignH: group.settings.alignH,
+      alignV: group.settings.alignV,
     });
 
     for (const move of moves) {

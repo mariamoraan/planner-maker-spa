@@ -21,6 +21,7 @@ import {
 } from '@/features/editor/domain/services/grid-layout';
 import { buildGridRectangles } from '@/features/editor/domain/services/grid-rectangle-builder';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
+import { normalizeGridSettings, toPersistedGridSettings } from '@/features/editor/domain/services/grid-edit-types';
 import {
   assignRectsToGroup,
   buildGridGroup,
@@ -44,7 +45,8 @@ function applyGridLayout(
     cols: settings.cols,
     rows: settings.rows,
     rectSize: { width: settings.rectWidth, height: settings.rectHeight },
-    align: settings.align,
+    alignH: settings.alignH,
+    alignV: settings.alignV,
     padding: settings.padding,
   });
 
@@ -85,7 +87,7 @@ function syncGridCellCountLocal(
       settings.cols,
       settings.rows,
       { width: settings.rectWidth, height: settings.rectHeight },
-      settings.align,
+      { alignH: settings.alignH, alignV: settings.alignV },
       settings.padding,
     );
 
@@ -139,13 +141,14 @@ export function useGridGroupOps() {
     (bounds: GridBounds, settings: GridEditSettings, fieldType: FieldType) => {
       if (!currentImage) return;
 
+      const normalized = normalizeGridSettings(settings);
       const config = gridConfigFromBounds(
         bounds,
-        settings.cols,
-        settings.rows,
-        { width: settings.rectWidth, height: settings.rectHeight },
-        settings.align,
-        settings.padding ?? { x: 0, y: 0 },
+        normalized.cols,
+        normalized.rows,
+        { width: normalized.rectWidth, height: normalized.rectHeight },
+        { alignH: normalized.alignH, alignV: normalized.alignV },
+        normalized.padding ?? { x: 0, y: 0 },
       );
 
       const rects = buildGridRectangles(config, fieldType, currentImage.rectangles.length);
@@ -175,7 +178,8 @@ export function useGridGroupOps() {
       const settings: GridEditSettings = {
         cols: DEFAULT_GRID_COLS,
         rows: DEFAULT_GRID_ROWS,
-        align: 'top-left',
+        alignH: 'left',
+        alignV: 'top',
         rectWidth: DEFAULT_GRID_RECT_SIZE.width,
         rectHeight: DEFAULT_GRID_RECT_SIZE.height,
         padding: { x: 0, y: 0 },
@@ -228,13 +232,15 @@ export function useGridGroupOps() {
       const settings: GridEditSettings = {
         cols: dims.cols,
         rows: dims.rows,
-        align: inferred?.align ?? 'top-left',
+        alignH: inferred?.alignH ?? 'left',
+        alignV: inferred?.alignV ?? 'top',
         rectWidth: inferred?.rectSize.width ?? medianRectSize(selectedRects).width,
         rectHeight: inferred?.rectSize.height ?? medianRectSize(selectedRects).height,
         padding: inferPaddingFromRects(bounds, {
           cols: dims.cols,
           rows: dims.rows,
-          align: inferred?.align ?? 'top-left',
+          alignH: inferred?.alignH ?? 'left',
+          alignV: inferred?.alignV ?? 'top',
           rectWidth: inferred?.rectSize.width ?? medianRectSize(selectedRects).width,
           rectHeight: inferred?.rectSize.height ?? medianRectSize(selectedRects).height,
         }, selectedRects, rectIds),
@@ -279,7 +285,8 @@ export function useGridGroupOps() {
       const group = currentImage.gridGroups?.[groupId];
       if (!group) return;
 
-      const nextSettings: GridEditSettings = { ...group.settings, ...updates };
+      const merged = normalizeGridSettings({ ...group.settings, ...updates });
+      const nextSettings: GridEditSettings = toPersistedGridSettings(merged);
       if (updates.rectWidth !== undefined || updates.rectHeight !== undefined) {
         const clampedSize = clampGridRectSize(group.bounds, nextSettings, {
           width: updates.rectWidth ?? nextSettings.rectWidth,
@@ -324,7 +331,8 @@ export function useGridGroupOps() {
         colsOrRowsChanged ||
         updates.rectWidth !== undefined ||
         updates.rectHeight !== undefined ||
-        updates.align !== undefined ||
+        updates.alignH !== undefined ||
+        updates.alignV !== undefined ||
         updates.padding !== undefined
       ) {
         nextRects = applyGridLayout(nextRects, rectIds, group.bounds, nextSettings);
@@ -461,19 +469,46 @@ export function useGridGroupOps() {
   };
 }
 
+export function computePreviewPositionsForSettings(
+  group: GridGroup,
+  bounds: GridBounds,
+  settings: GridEditSettings,
+): Record<string, { x: number; y: number }> {
+  const normalized = normalizeGridSettings(settings);
+  const moves = redistributeGridMoves(group.rectIds, bounds, {
+    cols: normalized.cols,
+    rows: normalized.rows,
+    rectSize: {
+      width: normalized.rectWidth,
+      height: normalized.rectHeight,
+    },
+    alignH: normalized.alignH,
+    alignV: normalized.alignV,
+    padding: normalized.padding,
+  });
+
+  const map: Record<string, { x: number; y: number }> = {};
+  for (const move of moves) {
+    map[move.id] = { x: move.x, y: move.y };
+  }
+  return map;
+}
+
 export function computePreviewPositionsForBounds(
   group: GridGroup,
   bounds: GridBounds,
 ): Record<string, { x: number; y: number }> {
+  const settings = normalizeGridSettings(group.settings);
   const moves = redistributeGridMoves(group.rectIds, bounds, {
-    cols: group.settings.cols,
-    rows: group.settings.rows,
+    cols: settings.cols,
+    rows: settings.rows,
     rectSize: {
-      width: group.settings.rectWidth,
-      height: group.settings.rectHeight,
+      width: settings.rectWidth,
+      height: settings.rectHeight,
     },
-    align: group.settings.align,
-    padding: group.settings.padding,
+    alignH: settings.alignH,
+    alignV: settings.alignV,
+    padding: settings.padding,
   });
 
   const map: Record<string, { x: number; y: number }> = {};

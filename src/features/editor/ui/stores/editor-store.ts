@@ -3,12 +3,15 @@ import type { FieldType } from '@/features/template';
 
 export type CanvasTool = 'select' | 'pan';
 
+export type GridEditFocus = 'grid' | 'block';
+
 interface EditorState {
   currentImageId: string | null;
   selectedRectangleIds: string[];
   selectedFieldType?: FieldType;
   showRectangleGuides: boolean;
   canvasTool: CanvasTool;
+  gridEditFocus: GridEditFocus;
 
   setCurrentImageId: (id: string | null) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
@@ -18,6 +21,7 @@ interface EditorState {
   clearSelection: () => void;
   setShowRectangleGuides: (showRectangleGuides: boolean) => void;
   setCanvasTool: (canvasTool: CanvasTool) => void;
+  setGridEditFocus: (gridEditFocus: GridEditFocus) => void;
   resetEditorSession: () => void;
 }
 
@@ -27,6 +31,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   selectedFieldType: undefined,
   showRectangleGuides: true,
   canvasTool: 'select',
+  gridEditFocus: 'grid',
 
   setCurrentImageId: (currentImageId) => set({ currentImageId }),
   setSelectedFieldType: (selectedFieldType) => set({ selectedFieldType }),
@@ -49,6 +54,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   clearSelection: () => set({ selectedRectangleIds: [] }),
   setShowRectangleGuides: (showRectangleGuides) => set({ showRectangleGuides }),
   setCanvasTool: (canvasTool) => set({ canvasTool }),
+  setGridEditFocus: (gridEditFocus) => set({ gridEditFocus }),
 
   resetEditorSession: () =>
     set({
@@ -57,5 +63,6 @@ export const useEditorStore = create<EditorState>((set) => ({
       selectedFieldType: undefined,
       showRectangleGuides: true,
       canvasTool: 'select',
+      gridEditFocus: 'grid',
     }),
 }));
