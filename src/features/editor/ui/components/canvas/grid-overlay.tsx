@@ -1,9 +1,9 @@
 import React from 'react';
-import { Group, Rect } from 'react-konva';
+import { Group, Line, Rect } from 'react-konva';
 import {
   cellOrigin,
   cellSlotOrigin,
-  cellSlotSize,
+  gapLinePositions,
   gridConfigFromGroup,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
@@ -17,6 +17,8 @@ interface GridOverlayProps {
   offset: { x: number; y: number };
   mode?: 'edit' | 'preview';
 }
+
+const GRID_STROKE = 'hsl(168, 76%, 42%)';
 
 function toStage(value: number, scale: number, offsetValue: number): number {
   return offsetValue + value * scale;
@@ -37,39 +39,50 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
   const frameY = toStage(bounds.y, scale, offset.y);
   const frameW = bounds.width * scale;
   const frameH = bounds.height * scale;
+  const frameRight = frameX + frameW;
+  const frameBottom = frameY + frameH;
 
-  const gap = normalized.gap ?? { x: 0, y: 0 };
-  const slotSize = cellSlotSize(bounds, normalized.cols, normalized.rows, gap);
+  const { vertical, horizontal } = gapLinePositions(config);
 
   const cellPreviews = Array.from({ length: normalized.cols * normalized.rows }, (_, index) => {
     const col = index % normalized.cols;
     const row = Math.floor(index / normalized.cols);
-    const slotPosition = cellSlotOrigin(col, row, config);
     const blockPosition = cellOrigin(col, row, config);
     return (
-      <React.Fragment key={`cell-${index}`}>
-        <Rect
-          x={toStage(slotPosition.x, scale, offset.x)}
-          y={toStage(slotPosition.y, scale, offset.y)}
-          width={slotSize.width * scale}
-          height={slotSize.height * scale}
-          stroke="hsl(168, 76%, 42%)"
-          strokeWidth={1}
-          dash={[4, 4]}
-          cornerRadius={3}
-          listening={false}
-        />
-        <Rect
-          x={toStage(blockPosition.x, scale, offset.x)}
-          y={toStage(blockPosition.y, scale, offset.y)}
-          width={settings.rectWidth * scale}
-          height={settings.rectHeight * scale}
-          fill="rgba(0, 200, 180, 0.12)"
-          listening={false}
-        />
-      </React.Fragment>
+      <Rect
+        key={`cell-${index}`}
+        x={toStage(blockPosition.x, scale, offset.x)}
+        y={toStage(blockPosition.y, scale, offset.y)}
+        width={settings.rectWidth * scale}
+        height={settings.rectHeight * scale}
+        fill="rgba(0, 200, 180, 0.12)"
+        listening={false}
+      />
     );
   });
+
+  const gridLines = isEditMode ? (
+    <>
+      {vertical.map(x => (
+        <Line
+          key={`grid-v-${x}`}
+          points={[toStage(x, scale, offset.x), frameY, toStage(x, scale, offset.x), frameBottom]}
+          stroke={GRID_STROKE}
+          strokeWidth={1}
+          listening={false}
+        />
+      ))}
+      {horizontal.map(y => (
+        <Line
+          key={`grid-h-${y}`}
+          points={[frameX, toStage(y, scale, offset.y), frameRight, toStage(y, scale, offset.y)]}
+          stroke={GRID_STROKE}
+          strokeWidth={1}
+          listening={false}
+        />
+      ))}
+    </>
+  ) : null;
 
   return (
     <Group listening={false}>
@@ -79,12 +92,13 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
         width={frameW}
         height={frameH}
         fill={isEditMode ? 'transparent' : 'rgba(0, 200, 180, 0.06)'}
-        stroke="hsl(168, 76%, 42%)"
-        strokeWidth={isEditMode ? 1.5 : 1.5}
+        stroke={GRID_STROKE}
+        strokeWidth={1.5}
         dash={isEditMode ? undefined : [6, 4]}
         listening={false}
       />
       {isEditMode && cellPreviews}
+      {gridLines}
     </Group>
   );
 };

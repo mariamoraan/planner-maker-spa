@@ -730,6 +730,19 @@ export function resizeGridBounds(
 
 export const GRID_HANDLE_OUTSET = 12;
 
+export function adaptiveHandleRadius(
+  width: number,
+  height: number,
+  scale: number,
+  options?: { min?: number; max?: number; ratio?: number },
+): number {
+  const min = options?.min ?? 4;
+  const max = options?.max ?? 9;
+  const ratio = options?.ratio ?? 0.14;
+  const minDim = Math.min(width, height) * scale;
+  return Math.min(max, Math.max(min, minDim * ratio));
+}
+
 export function pitchFromBounds(
   bounds: GridBounds,
   cols: number,
@@ -822,6 +835,29 @@ export function getGridGap(
   return { gapX: legacy.x, gapY: legacy.y };
 }
 
+export function maxGridGap(
+  bounds: GridBounds,
+  settings: Pick<GridSettingsInput, 'cols' | 'rows'>,
+): { x: number; y: number } {
+  return {
+    x: clampGridGapAxis(Number.MAX_SAFE_INTEGER, bounds.width, settings.cols, MIN_GRID_RECT_SIZE),
+    y: clampGridGapAxis(Number.MAX_SAFE_INTEGER, bounds.height, settings.rows, MIN_GRID_RECT_SIZE),
+  };
+}
+
+export function maxGridPadding(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+): { x: number; y: number } {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const gap = normalized.gap ?? DEFAULT_GAP;
+  const slot = maxBlockSize(bounds, normalized.cols, normalized.rows, gap);
+  return {
+    x: Math.max(0, slot.width - MIN_GRID_RECT_SIZE),
+    y: Math.max(0, slot.height - MIN_GRID_RECT_SIZE),
+  };
+}
+
 export function scaleGridSettingsForGapChange(
   bounds: GridBounds,
   settings: GridSettingsInput,
@@ -837,30 +873,33 @@ export function scaleGridSettingsForGapChange(
   const normalized = normalizeGridSettings(settings as GridEditSettings);
 
   const gap = {
-    x: clampGridGapForRectSize(
-      targetGap.gapX,
-      bounds.width,
-      normalized.cols,
-      normalized.rectWidth,
-    ),
-    y: clampGridGapForRectSize(
-      targetGap.gapY,
-      bounds.height,
-      normalized.rows,
-      normalized.rectHeight,
-    ),
+    x: clampGridGapAxis(targetGap.gapX, bounds.width, normalized.cols, MIN_GRID_RECT_SIZE),
+    y: clampGridGapAxis(targetGap.gapY, bounds.height, normalized.rows, MIN_GRID_RECT_SIZE),
   };
 
-  const clampedSize = clampGridRectSize(bounds, { ...normalized, gap }, {
-    width: normalized.rectWidth,
-    height: normalized.rectHeight,
-  });
+  const requiredWidth =
+    normalized.cols <= 1
+      ? normalized.rectWidth
+      : Math.round((bounds.width - (normalized.cols - 1) * gap.x) / normalized.cols);
+  const requiredHeight =
+    normalized.rows <= 1
+      ? normalized.rectHeight
+      : Math.round((bounds.height - (normalized.rows - 1) * gap.y) / normalized.rows);
+
+  const rectWidth = Math.max(
+    MIN_GRID_RECT_SIZE,
+    Math.min(normalized.rectWidth, requiredWidth),
+  );
+  const rectHeight = Math.max(
+    MIN_GRID_RECT_SIZE,
+    Math.min(normalized.rectHeight, requiredHeight),
+  );
 
   const nextSettings: GridSettingsInput = {
     ...normalized,
     gap,
-    rectWidth: clampedSize.width,
-    rectHeight: clampedSize.height,
+    rectWidth,
+    rectHeight,
   };
 
   const padding = clampGridPadding(
@@ -873,9 +912,52 @@ export function scaleGridSettingsForGapChange(
     gap,
     gapX: gap.x,
     gapY: gap.y,
-    rectWidth: clampedSize.width,
-    rectHeight: clampedSize.height,
+    rectWidth,
+    rectHeight,
     padding,
+  };
+}
+
+export function scaleGridSettingsForPaddingChange(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+  targetPadding: { x: number; y: number },
+): {
+  padding: { x: number; y: number };
+  rectWidth: number;
+  rectHeight: number;
+} {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const gap = normalized.gap ?? DEFAULT_GAP;
+  const slot = maxBlockSize(bounds, normalized.cols, normalized.rows, gap);
+
+  const targetX = Math.max(0, Math.round(targetPadding.x));
+  const targetY = Math.max(0, Math.round(targetPadding.y));
+
+  const requiredWidth = Math.round(slot.width - targetX);
+  const requiredHeight = Math.round(slot.height - targetY);
+
+  const rectWidth = Math.max(
+    MIN_GRID_RECT_SIZE,
+    Math.min(normalized.rectWidth, requiredWidth),
+  );
+  const rectHeight = Math.max(
+    MIN_GRID_RECT_SIZE,
+    Math.min(normalized.rectHeight, requiredHeight),
+  );
+
+  const nextSettings: GridSettingsInput = {
+    ...normalized,
+    rectWidth,
+    rectHeight,
+  };
+
+  const padding = clampGridPadding(bounds, nextSettings, { x: targetX, y: targetY });
+
+  return {
+    padding,
+    rectWidth,
+    rectHeight,
   };
 }
 

@@ -2,6 +2,7 @@ import React, { useRef, useCallback, useState } from 'react';
 import { Group, Rect, Circle } from 'react-konva';
 import type Konva from 'konva';
 import {
+  adaptiveHandleRadius,
   cellOrigin,
   gridConfigFromGroup,
   paddingFromBlockPosition,
@@ -24,8 +25,6 @@ interface GridBlockHandlesProps {
   onDragEnd?: () => void;
 }
 
-const HANDLE_RADIUS = 7;
-const HANDLE_RADIUS_HOVER = 9;
 const GRID_COLOR = 'hsl(168, 76%, 42%)';
 
 function toStage(value: number, scale: number, offsetValue: number): number {
@@ -194,6 +193,10 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
   const frameW = block.width * scale;
   const frameH = block.height * scale;
 
+  const baseRadius = adaptiveHandleRadius(block.width, block.height, scale);
+  const hoverRadius = Math.min(9, baseRadius + 2);
+  const hitStrokeWidth = Math.max(8, baseRadius * 1.6);
+
   const renderHandle = (
     handle: GridBlockHandle,
     cursor: string,
@@ -202,7 +205,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
     const cx = toStage(pos.x, scale, offset.x);
     const cy = toStage(pos.y, scale, offset.y);
     const isHovered = hoveredHandle === handle;
-    const radius = isHovered || isDragging ? HANDLE_RADIUS_HOVER : HANDLE_RADIUS;
+    const radius = isHovered || isDragging ? hoverRadius : baseRadius;
 
     return (
       <Circle
@@ -210,7 +213,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
         x={cx}
         y={cy}
         radius={radius}
-        hitStrokeWidth={14}
+        hitStrokeWidth={hitStrokeWidth}
         fill="white"
         stroke={GRID_COLOR}
         strokeWidth={isHovered ? 2.5 : 2}

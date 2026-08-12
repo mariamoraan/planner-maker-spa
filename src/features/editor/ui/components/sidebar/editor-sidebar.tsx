@@ -116,6 +116,7 @@ export const EditorSidebar: React.FC = () => {
             </button>
           </div>
         )}
+        <EditorPlannerActions variant="sidebar" />
       </div>
       <div className="editor-sidebar__main">
         <EditorSidebarSection
@@ -222,7 +223,6 @@ export const EditorSidebar: React.FC = () => {
             <GridStylePanel group={lockedGridGroup} />
           </EditorSidebarSection>
         )}
-        <EditorPlannerActions variant="sidebar" />
       </div>
     </aside>
   );

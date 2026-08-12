@@ -18,6 +18,7 @@ import {
   minBoundsForContent,
   orderRectIdsRowMajor,
   redistributeGridMoves,
+  scaleGridSettingsForPaddingChange,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
 import { getGridToolPreset } from '@/features/editor/domain/services/grid-tool-presets';
@@ -314,11 +315,14 @@ export function useGridGroupOps() {
         );
       }
       if (updates.padding !== undefined) {
-        nextSettings.padding = clampGridPadding(
+        const scaled = scaleGridSettingsForPaddingChange(
           group.bounds,
           nextSettings,
           updates.padding,
         );
+        nextSettings.padding = scaled.padding;
+        nextSettings.rectWidth = scaled.rectWidth;
+        nextSettings.rectHeight = scaled.rectHeight;
       }
       const templateRect = currentImage.rectangles.find(r => r.id === group.rectIds[0]);
 

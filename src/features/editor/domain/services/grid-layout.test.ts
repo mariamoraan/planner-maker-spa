@@ -31,6 +31,8 @@ import {
   orderRectIdsRowMajor,
   rectSizeFromGap,
   gapLinePositions,
+  maxGridGap,
+  maxGridPadding,
   paddingFromBlockPosition,
   pitchFromBounds,
   redistributeGridMoves,
@@ -38,6 +40,8 @@ import {
   resizeGridBounds,
   resizeGridPitch,
   scaleGridSettingsForGapChange,
+  scaleGridSettingsForPaddingChange,
+  adaptiveHandleRadius,
   translateGridBounds,
   type GridLayoutConfig,
 } from './grid-layout';
@@ -680,7 +684,7 @@ describe('getGridGap / scaleGridSettingsForGapChange', () => {
     expect(result.gap).toEqual({ x: 60, y: 44 });
   });
 
-  it('clamps gap when block size does not fit', () => {
+  it('shrinks block when gap increases beyond fit', () => {
     const bounds = { x: 0, y: 0, width: 120, height: 100 };
     const settings = {
       cols: 2,
@@ -694,8 +698,114 @@ describe('getGridGap / scaleGridSettingsForGapChange', () => {
     };
 
     const result = scaleGridSettingsForGapChange(bounds, settings, { gapX: 60, gapY: 44 });
+    expect(result.gapX).toBe(60);
+    expect(result.gapY).toBe(44);
+    expect(result.rectWidth).toBe(30);
+    expect(result.rectHeight).toBe(28);
+  });
+
+  it('clamps gap at physical maximum when block is at minimum size', () => {
+    const bounds = { x: 0, y: 0, width: 120, height: 100 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+      gap: { x: 0, y: 0 },
+    };
+
+    const result = scaleGridSettingsForGapChange(bounds, settings, { gapX: 200, gapY: 200 });
+    expect(result.rectWidth).toBe(20);
+    expect(result.rectHeight).toBe(20);
+    expect(result.gapX).toBe(80);
+    expect(result.gapY).toBe(60);
+  });
+});
+
+describe('scaleGridSettingsForPaddingChange', () => {
+  it('shrinks block when padding increases beyond free space', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+      gap: { x: 60, y: 44 },
+    };
+
+    const result = scaleGridSettingsForPaddingChange(bounds, settings, { x: 40, y: 30 });
+    expect(result.padding).toEqual({ x: 40, y: 30 });
+    expect(result.rectWidth).toBe(30);
+    expect(result.rectHeight).toBe(28);
+  });
+
+  it('keeps block size when padding fits', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+      gap: { x: 60, y: 44 },
+    };
+
+    const result = scaleGridSettingsForPaddingChange(bounds, settings, { x: 10, y: 8 });
+    expect(result.padding).toEqual({ x: 10, y: 8 });
     expect(result.rectWidth).toBe(48);
-    expect(result.gapX).toBe(24);
+    expect(result.rectHeight).toBe(36);
+  });
+});
+
+describe('maxGridGap / maxGridPadding', () => {
+  it('computes max gap at minimum block size', () => {
+    const bounds = { x: 0, y: 0, width: 120, height: 100 };
+    expect(maxGridGap(bounds, { cols: 2, rows: 2 })).toEqual({ x: 80, y: 60 });
+  });
+
+  it('computes max padding from slot minus minimum block size', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      gap: { x: 60, y: 44 },
+    };
+    expect(maxGridPadding(bounds, settings)).toEqual({ x: 50, y: 38 });
+  });
+});
+
+describe('adaptiveHandleRadius', () => {
+  it('scales with block size and clamps to min/max', () => {
+    expect(adaptiveHandleRadius(20, 20, 1)).toBe(4);
+    expect(adaptiveHandleRadius(200, 150, 1)).toBe(9);
+    expect(adaptiveHandleRadius(80, 60, 1)).toBeCloseTo(8.4, 1);
+  });
+});
+
+describe('gapLinePositions with zero gap', () => {
+  it('places dividers at shared slot edges when gap is zero', () => {
+    const config = gridConfigFromBounds(
+      { x: 0, y: 0, width: 300, height: 100 },
+      3,
+      1,
+      { width: 100, height: 100 },
+      'top-left',
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    );
+    const lines = gapLinePositions(config);
+    expect(lines.vertical).toEqual([100, 200]);
+    expect(lines.horizontal).toEqual([]);
   });
 });
 
