@@ -15,6 +15,7 @@ interface GridBoundsHandlesProps {
   bounds: GridBounds;
   scale: number;
   offset: { x: number; y: number };
+  minBounds?: { width: number; height: number };
   onBoundsChange: (bounds: GridBounds) => void;
   onDragStart?: () => void;
   onDragEnd?: () => void;
@@ -81,6 +82,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
   bounds,
   scale,
   offset,
+  minBounds,
   onBoundsChange,
   onDragStart,
   onDragEnd,
@@ -139,13 +141,13 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
 
       onBoundsChange(
         resizeGridBounds(startBounds, handle, { dx, dy }, {
-          minWidth: MIN_BOUNDS,
-          minHeight: MIN_BOUNDS,
+          minWidth: minBounds?.width ?? MIN_BOUNDS,
+          minHeight: minBounds?.height ?? MIN_BOUNDS,
           symmetric,
         }),
       );
     },
-    [scale, offset, onBoundsChange],
+    [scale, offset, onBoundsChange, minBounds],
   );
 
   const frameX = toStage(bounds.x, scale, offset.x);

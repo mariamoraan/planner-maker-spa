@@ -20,6 +20,7 @@ export interface GridGroupSettings {
   alignH: GridAlignH;
   alignV: GridAlignV;
   padding?: { x: number; y: number };
+  gap?: { x: number; y: number };
   /** @deprecated Legacy — use alignH/alignV. Kept for loading old templates. */
   align?: 'top-left' | 'center';
 }

@@ -32,13 +32,14 @@ const sampleGroup: GridGroup = {
     alignV: 'top',
     rectWidth: 48,
     rectHeight: 36,
+    gap: { x: 52, y: 0 },
   },
 };
 
 const rectangles: Rectangle[] = [
   { id: 'a', x: 0, y: 0, width: 48, height: 36, fieldType: 'day', order: 0, gridGroupId: 'grid-1', gridCellIndex: 0 },
-  { id: 'b', x: 100, y: 0, width: 48, height: 36, fieldType: 'day', order: 1, gridGroupId: 'grid-1', gridCellIndex: 1 },
-  { id: 'c', x: 200, y: 0, width: 48, height: 36, fieldType: 'day', order: 2, gridGroupId: 'grid-1', gridCellIndex: 2 },
+  { id: 'b', x: 117, y: 0, width: 48, height: 36, fieldType: 'day', order: 1, gridGroupId: 'grid-1', gridCellIndex: 1 },
+  { id: 'c', x: 234, y: 0, width: 48, height: 36, fieldType: 'day', order: 2, gridGroupId: 'grid-1', gridCellIndex: 2 },
   { id: 'd', x: 0, y: 100, width: 48, height: 36, fieldType: 'day', order: 3 },
 ];
 
@@ -176,8 +177,8 @@ describe('translateGridGroupState', () => {
       height: 100,
     });
     expect(result!.rectangles.find(rect => rect.id === 'a')).toMatchObject({ x: 20, y: 30 });
-    expect(result!.rectangles.find(rect => rect.id === 'b')).toMatchObject({ x: 120, y: 30 });
-    expect(result!.rectangles.find(rect => rect.id === 'c')).toMatchObject({ x: 220, y: 30 });
+    expect(result!.rectangles.find(rect => rect.id === 'b')).toMatchObject({ x: 137, y: 30 });
+    expect(result!.rectangles.find(rect => rect.id === 'c')).toMatchObject({ x: 254, y: 30 });
     expect(result!.rectangles.find(rect => rect.id === 'd')).toMatchObject({ x: 0, y: 100 });
   });
 
@@ -194,6 +195,7 @@ describe('translateGridGroupState', () => {
       },
       alignH: group.settings.alignH,
       alignV: group.settings.alignV,
+      gap: group.settings.gap,
     });
 
     for (const move of moves) {

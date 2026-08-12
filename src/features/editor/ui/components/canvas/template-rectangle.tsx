@@ -20,6 +20,7 @@ interface TemplateRectangleProps {
     isSelected?: boolean;
     isMarqueePreview?: boolean;
     previewPosition?: { x: number; y: number };
+    previewSize?: { width: number; height: number };
     draggable?: boolean;
     listening?: boolean;
     onClick: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
@@ -41,6 +42,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     isSelected = false,
     isMarqueePreview = false,
     previewPosition,
+    previewSize,
     draggable = true,
     listening = true,
     onClick,
@@ -86,8 +88,10 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     const fontFamily = resolveFontFamily(style.fontId);
     const fontStyle = buildKonvaFontStyle(style);
   
-    const width = rect.width * scale;
-    const height = rect.height * scale;
+    const displayWidth = previewSize?.width ?? rect.width;
+    const displayHeight = previewSize?.height ?? rect.height;
+    const width = displayWidth * scale;
+    const height = displayHeight * scale;
     const displayX = previewPosition?.x ?? rect.x;
     const displayY = previewPosition?.y ?? rect.y;
   

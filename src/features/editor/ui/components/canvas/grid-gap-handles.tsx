@@ -3,9 +3,9 @@ import { Group, Rect, Text } from 'react-konva';
 import type Konva from 'konva';
 import {
   getGridGap,
+  gapLinePositions,
   gridConfigFromGroup,
   gridDimensionLabels,
-  gridLinePositions,
   scaleGridSettingsForGapChange,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
@@ -54,7 +54,7 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
 }) => {
   const normalized = normalizeGridSettings(settings);
   const config = gridConfigFromGroup(bounds, normalized);
-  const lines = gridLinePositions(config);
+  const gapLines = gapLinePositions(config);
   const currentGap = getGridGap(bounds, normalized);
   const labels = gridDimensionLabels(config, {
     width: normalized.rectWidth,
@@ -118,6 +118,7 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
           gapY: startGap.gapY,
         });
         onGapPreview({
+          gap: { x: nextSettings.gapX, y: nextSettings.gapY },
           gapX: nextSettings.gapX,
           gapY: nextSettings.gapY,
           rectWidth: nextSettings.rectWidth,
@@ -133,6 +134,7 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
         gapY: startGap.gapY + dy,
       });
       onGapPreview({
+        gap: { x: nextSettings.gapX, y: nextSettings.gapY },
         gapX: nextSettings.gapX,
         gapY: nextSettings.gapY,
         rectWidth: nextSettings.rectWidth,
@@ -271,8 +273,8 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
 
   return (
     <Group>
-      {canDragX && lines.vertical.length >= 2 && renderGapHandle('x', lines.vertical[1]!, 'ew-resize')}
-      {canDragY && lines.horizontal.length >= 2 && renderGapHandle('y', lines.horizontal[1]!, 'ns-resize')}
+      {canDragX && gapLines.vertical[0] !== undefined && renderGapHandle('x', gapLines.vertical[0]!, 'ew-resize')}
+      {canDragY && gapLines.horizontal[0] !== undefined && renderGapHandle('y', gapLines.horizontal[0]!, 'ns-resize')}
       {showLabels && (
         <>
           {activeAxis === 'x' && renderLabel(labels.gapX, 'gap-x-label')}

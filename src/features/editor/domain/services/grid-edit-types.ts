@@ -11,6 +11,7 @@ export interface GridEditSettings {
   alignH: GridAlignH;
   alignV: GridAlignV;
   padding?: { x: number; y: number };
+  gap?: { x: number; y: number };
   /** @deprecated Legacy — use alignH/alignV. Kept for loading old templates. */
   align?: 'top-left' | 'center';
 }
@@ -29,6 +30,7 @@ type GridSettingsLike = {
   alignH?: GridAlignH;
   alignV?: GridAlignV;
   padding?: { x: number; y: number };
+  gap?: { x: number; y: number };
   align?: 'top-left' | 'center';
 };
 
@@ -42,6 +44,7 @@ export function normalizeGridSettings(settings: GridSettingsLike): GridEditSetti
       alignH: settings.alignH,
       alignV: settings.alignV,
       padding: settings.padding,
+      ...(settings.gap !== undefined ? { gap: settings.gap } : {}),
     };
   }
 
@@ -54,6 +57,7 @@ export function normalizeGridSettings(settings: GridSettingsLike): GridEditSetti
       alignH: 'center',
       alignV: 'center',
       padding: { x: 0, y: 0 },
+      ...(settings.gap !== undefined ? { gap: settings.gap } : {}),
     };
   }
 
@@ -65,6 +69,7 @@ export function normalizeGridSettings(settings: GridSettingsLike): GridEditSetti
     alignH: 'left',
     alignV: 'top',
     padding: settings.padding ?? { x: 0, y: 0 },
+    ...(settings.gap !== undefined ? { gap: settings.gap } : {}),
   };
 }
 

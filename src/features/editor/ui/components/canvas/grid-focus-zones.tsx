@@ -3,7 +3,6 @@ import { Group, Rect } from 'react-konva';
 import type Konva from 'konva';
 import {
   cellOrigin,
-  cellSlotOrigin,
   gridConfigFromGroup,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
@@ -82,14 +81,14 @@ export const GridFocusZones: React.FC<GridFocusZonesProps> = ({
     const isAnchorCell = col === 0 && row === 0;
     if (isAnchorCell) return null;
 
-    const slot = cellSlotOrigin(col, row, config);
+    const block = cellOrigin(col, row, config);
     return (
       <Rect
         key={`focus-${index}`}
-        x={toStage(slot.x, scale, offset.x)}
-        y={toStage(slot.y, scale, offset.y)}
-        width={config.cellSize.width * scale}
-        height={config.cellSize.height * scale}
+        x={toStage(block.x, scale, offset.x)}
+        y={toStage(block.y, scale, offset.y)}
+        width={settings.rectWidth * scale}
+        height={settings.rectHeight * scale}
         fill="transparent"
         onMouseDown={stopMouseDown}
         onClick={e => switchToGrid(e, onFocusChange)}
@@ -99,11 +98,11 @@ export const GridFocusZones: React.FC<GridFocusZonesProps> = ({
     );
   });
 
-  const anchorSlot = cellSlotOrigin(0, 0, config);
-  const sx = toStage(anchorSlot.x, scale, offset.x);
-  const sy = toStage(anchorSlot.y, scale, offset.y);
-  const sw = config.cellSize.width * scale;
-  const sh = config.cellSize.height * scale;
+  const anchorBlock = cellOrigin(0, 0, config);
+  const sx = toStage(anchorBlock.x, scale, offset.x);
+  const sy = toStage(anchorBlock.y, scale, offset.y);
+  const sw = settings.rectWidth * scale;
+  const sh = settings.rectHeight * scale;
 
   return (
     <Group>

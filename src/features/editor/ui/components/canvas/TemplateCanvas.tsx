@@ -32,6 +32,8 @@ import { CanvasFloatingControls } from './canvas-floating-controls';
 import {
   computePreviewPositionsForBounds,
   computePreviewPositionsForSettings,
+  computePreviewRectSizesForSettings,
+  minBoundsForContent,
   useGridGroupOps,
 } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import {
@@ -291,6 +293,19 @@ export const TemplateCanvas: React.FC = () => {
       activeGridSettings,
     );
   }, [lockedGridGroup, activeGridBounds, gridSettingsPreview, activeGridSettings]);
+
+  const gridSettingsPreviewSizes = useMemo(() => {
+    if (!lockedGridGroup || !gridSettingsPreview || !activeGridSettings) {
+      return {};
+    }
+    return computePreviewRectSizesForSettings(lockedGridGroup, activeGridSettings);
+  }, [lockedGridGroup, gridSettingsPreview, activeGridSettings]);
+
+  const gridMinBounds = useMemo(() => {
+    if (!lockedGridGroup) return null;
+    const settings = activeGridSettings ?? normalizeGridSettings(lockedGridGroup.settings);
+    return minBoundsForContent(settings);
+  }, [lockedGridGroup, activeGridSettings]);
 
   const isGridHandleDragging = gridBoundsPreview !== null || gridSettingsPreview !== null;
 
@@ -1141,6 +1156,7 @@ export const TemplateCanvas: React.FC = () => {
               gridPreviewPositions[rect.id] ??
               gridSettingsPreviewPositions[rect.id] ??
               dragOverlay?.previewPositions[rect.id];
+            const previewSize = gridSettingsPreviewSizes[rect.id];
             return (
               <TemplateRectangle
                 key={`${currentImage.id}-${rect.id}`}
@@ -1155,6 +1171,7 @@ export const TemplateCanvas: React.FC = () => {
                 isSelected={isSelected}
                 isMarqueePreview={isMarqueePreview}
                 previewPosition={previewPosition}
+                previewSize={previewSize}
                 draggable={draggable}
                 listening
                 onClick={e => handleRectClick(rect.id, e)}
@@ -1245,6 +1262,7 @@ export const TemplateCanvas: React.FC = () => {
                   bounds={activeGridBounds}
                   scale={scale}
                   offset={offset}
+                  minBounds={gridMinBounds ?? undefined}
                   onBoundsChange={handleGridBoundsPreview}
                   onDragEnd={handleGridBoundsCommit}
                 />

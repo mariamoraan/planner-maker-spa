@@ -8,6 +8,7 @@ import {
   cellSlotOrigin,
   clampGridPadding,
   clampGridRectSize,
+  clampBoundsToMinContent,
   defaultGridBounds,
   detectGridMeasureAxis,
   expandGridRectIds,
@@ -24,7 +25,12 @@ import {
   inferPaddingFromRects,
   inferPitchFromRectangles,
   layoutGridRectangles,
+  migrateGridSettingsToGapBetween,
+  minBoundsForContent,
+  maxBlockSize,
   orderRectIdsRowMajor,
+  rectSizeFromGap,
+  gapLinePositions,
   paddingFromBlockPosition,
   pitchFromBounds,
   redistributeGridMoves,
@@ -40,30 +46,38 @@ import { buildGridRectangles } from './grid-rectangle-builder';
 
 const baseConfig: GridLayoutConfig = {
   origin: { x: 145, y: 450 },
+  bounds: { x: 145, y: 450, width: 714, height: 685 },
   cols: 7,
   rows: 5,
-  cellSize: { width: 102, height: 137 },
+  cellSize: { width: 110, height: 157 },
   rectSize: { width: 48, height: 36 },
+  gap: { x: 54, y: 101 },
   alignH: 'left',
   alignV: 'top',
   padding: { x: 12, y: 10 },
 };
 
 describe('cellOrigin', () => {
-  it('places top-left aligned cells with padding', () => {
-    expect(cellOrigin(0, 0, baseConfig)).toEqual({ x: 157, y: 460 });
-    expect(cellOrigin(1, 0, baseConfig)).toEqual({ x: 259, y: 460 });
-    expect(cellOrigin(0, 1, baseConfig)).toEqual({ x: 157, y: 597 });
+  it('places top-left aligned blocks inside cell slots with padding', () => {
+    expect(cellOrigin(0, 0, baseConfig)).toEqual({ x: 153, y: 460 });
+    expect(cellOrigin(1, 0, baseConfig)).toEqual({ x: 263, y: 460 });
+    expect(cellOrigin(0, 1, baseConfig)).toEqual({ x: 153, y: 617 });
   });
 
-  it('centers rects within cells when align is center', () => {
+  it('centers blocks within each cell when align is center', () => {
     const centered: GridLayoutConfig = {
       ...baseConfig,
+      cols: 2,
+      rows: 2,
+      bounds: { x: 0, y: 0, width: 200, height: 160 },
+      origin: { x: 0, y: 0 },
+      cellSize: { width: 100, height: 80 },
+      gap: { x: 0, y: 0 },
       alignH: 'center',
       alignV: 'center',
       padding: undefined,
     };
-    expect(cellOrigin(0, 0, centered)).toEqual({ x: 172, y: 501 });
+    expect(cellOrigin(0, 0, centered)).toEqual({ x: 26, y: 22 });
   });
 });
 
@@ -75,13 +89,13 @@ describe('layoutGridRectangles', () => {
     }));
 
     expect(positions).toHaveLength(35);
-    expect(positions[0]).toMatchObject({ x: 157, y: 460, col: 0, row: 0 });
-    expect(positions[6]).toMatchObject({ x: 769, y: 460, col: 6, row: 0 });
-    expect(positions[7]).toMatchObject({ x: 157, y: 597, col: 0, row: 1 });
+    expect(positions[0]).toMatchObject({ x: 153, y: 460, col: 0, row: 0 });
+    expect(positions[6]).toMatchObject({ x: 813, y: 460, col: 6, row: 0 });
+    expect(positions[7]).toMatchObject({ x: 153, y: 617, col: 0, row: 1 });
 
     const row0Xs = positions.slice(0, 7).map(p => p.x);
-    const gaps = row0Xs.slice(1).map((x, i) => x - row0Xs[i]);
-    expect(new Set(gaps)).toEqual(new Set([102]));
+    const blockGaps = row0Xs.slice(1).map((x, i) => x - (row0Xs[i]! + 48));
+    expect(new Set(blockGaps)).toEqual(new Set([62]));
   });
 });
 
@@ -100,8 +114,8 @@ describe('inferGridFromRectangles', () => {
     expect(inferred).not.toBeNull();
     expect(inferred?.cols).toBe(3);
     expect(inferred?.rows).toBe(2);
-    expect(inferred?.cellSize.width).toBe(102);
-    expect(inferred?.cellSize.height).toBe(137);
+    expect(inferred?.cellSize.width).toBe(256);
+    expect(inferred?.cellSize.height).toBe(393);
   });
 
   it('returns null for non-grid layouts', () => {
@@ -126,8 +140,8 @@ describe('gridPositionsFromConfig', () => {
 
     expect(moves).toEqual([
       { id: 'a', x: 100, y: 200 },
-      { id: 'b', x: 202, y: 200 },
-      { id: 'c', x: 304, y: 200 },
+      { id: 'b', x: 356, y: 200 },
+      { id: 'c', x: 612, y: 200 },
     ]);
   });
 });
@@ -149,12 +163,13 @@ describe('gridConfigFromBounds', () => {
       { width: 48, height: 36 },
       'top-left',
       { x: 12, y: 10 },
+      { x: 54, y: 101 },
     );
 
     expect(config.origin).toEqual({ x: 100, y: 200 });
-    expect(config.cellSize.width).toBeCloseTo(102, 0);
-    expect(config.cellSize.height).toBeCloseTo(137, 0);
-    expect(cellOrigin(0, 0, config)).toEqual({ x: 112, y: 210 });
+    expect(config.cellSize.width).toBeCloseTo(110, 0);
+    expect(config.cellSize.height).toBeCloseTo(157, 0);
+    expect(cellOrigin(0, 0, config)).toEqual({ x: 108, y: 210 });
   });
 });
 
@@ -191,6 +206,26 @@ describe('redistributeGridMoves', () => {
       { id: 'a', x: 100, y: 200 },
       { id: 'b', x: 202, y: 200 },
       { id: 'c', x: 304, y: 200 },
+    ]);
+  });
+});
+
+describe('redistributeGridMoves with 2 blocks', () => {
+  it('reposiciona 2 bloques en fila dentro de celdas', () => {
+    const moves = redistributeGridMoves(
+      ['a', 'b'],
+      { x: 0, y: 0, width: 204, height: 36 },
+      {
+        cols: 2,
+        rows: 1,
+        rectSize: { width: 48, height: 36 },
+        align: 'top-left',
+      },
+    );
+
+    expect(moves).toEqual([
+      { id: 'a', x: 0, y: 0 },
+      { id: 'b', x: 102, y: 0 },
     ]);
   });
 });
@@ -310,26 +345,6 @@ describe('resizeGridBounds', () => {
   });
 });
 
-describe('redistributeGridMoves with 2 blocks', () => {
-  it('reposiciona 2 bloques en fila', () => {
-    const moves = redistributeGridMoves(
-      ['a', 'b'],
-      { x: 0, y: 0, width: 204, height: 36 },
-      {
-        cols: 2,
-        rows: 1,
-        rectSize: { width: 48, height: 36 },
-        align: 'top-left',
-      },
-    );
-
-    expect(moves).toEqual([
-      { id: 'a', x: 0, y: 0 },
-      { id: 'b', x: 102, y: 0 },
-    ]);
-  });
-});
-
 describe('pitchFromBounds / boundsFromPitch', () => {
   it('roundtrips pitch and bounds', () => {
     const bounds = boundsFromPitch({ x: 100, y: 200 }, 3, 2, 102, 137);
@@ -348,15 +363,15 @@ describe('gapFromPitch', () => {
 });
 
 describe('boundsFromGap', () => {
-  it('rebuilds bounds from gap values', () => {
+  it('rebuilds bounds from gap-between values', () => {
     const bounds = boundsFromGap(
-      { x: 0, y: 0, width: 306, height: 274 },
+      { x: 0, y: 0, width: 0, height: 0 },
       3,
       2,
       { gapX: 54, gapY: 101 },
       { width: 48, height: 36 },
     );
-    expect(pitchFromBounds(bounds, 3, 2)).toEqual({ pitchX: 102, pitchY: 137 });
+    expect(bounds).toEqual({ x: 0, y: 0, width: 252, height: 173 });
   });
 });
 
@@ -371,8 +386,8 @@ describe('inferPitchFromRectangles', () => {
     }));
 
     const inferred = inferPitchFromRectangles(rects, 3, 2);
-    expect(inferred?.pitchX).toBe(102);
-    expect(inferred?.pitchY).toBe(137);
+    expect(inferred?.pitchX).toBe(256);
+    expect(inferred?.pitchY).toBe(393);
     expect(inferred?.origin).toEqual({ x: 157, y: 460 });
   });
 });
@@ -392,12 +407,23 @@ describe('resizeGridPitch', () => {
 });
 
 describe('defaultGridBounds', () => {
-  it('centers a 4x4 grid on the page', () => {
-    const bounds = defaultGridBounds(1200, 1600, 4, 4, { width: 48, height: 36 });
-    expect(bounds.width).toBe(240);
-    expect(bounds.height).toBe(192);
-    expect(bounds.x).toBe(480);
-    expect(bounds.y).toBe(704);
+  it('centers a 4x4 grid on the page with zero gap by default', () => {
+    const rectSize = { width: 48, height: 36 };
+    const bounds = defaultGridBounds(1200, 1600, 4, 4, rectSize);
+    expect(bounds.width).toBe(192);
+    expect(bounds.height).toBe(144);
+    expect(bounds.x).toBe(504);
+    expect(bounds.y).toBe(728);
+    expect(
+      getGridGap(bounds, {
+        cols: 4,
+        rows: 4,
+        rectWidth: rectSize.width,
+        rectHeight: rectSize.height,
+        alignH: 'left',
+        alignV: 'top',
+      }),
+    ).toEqual({ gapX: 0, gapY: 0 });
   });
 });
 
@@ -412,10 +438,10 @@ describe('clampGridRectSize', () => {
     });
   });
 
-  it('clamps width to maximum cell size but not height', () => {
+  it('clamps width and height to maximum block size', () => {
     expect(clampGridRectSize(bounds, settings, { width: 500, height: 500 })).toEqual({
       width: 102,
-      height: 500,
+      height: 206,
     });
   });
 
@@ -441,8 +467,11 @@ describe('clampGridPadding', () => {
     expect(clampGridPadding(bounds, settings, { x: -5, y: -10 })).toEqual({ x: 0, y: 0 });
   });
 
-  it('clamps values that exceed cell interior', () => {
-    expect(clampGridPadding(bounds, settings, { x: 500, y: 500 })).toEqual({ x: 54, y: 170 });
+  it('clamps values that exceed free space in bounds', () => {
+    expect(clampGridPadding(bounds, { ...settings, gap: { x: 0, y: 0 } }, { x: 500, y: 500 })).toEqual({
+      x: 54,
+      y: 170,
+    });
   });
 
   it('keeps valid padding unchanged', () => {
@@ -469,7 +498,7 @@ describe('inferPaddingFromRects', () => {
     }));
 
     expect(inferPaddingFromRects(bounds, settings, rects, ['r-0', 'r-1'])).toEqual({
-      x: 12,
+      x: 8,
       y: 10,
     });
   });
@@ -504,48 +533,56 @@ describe('redistributeGridMoves with padding', () => {
       rectSize: { width: 48, height: 36 },
       align: 'top-left',
       padding: { x: 12, y: 10 },
+      gap: { x: 54, y: 101 },
     });
 
     expect(moves).toEqual([
-      { id: 'a', x: 157, y: 460 },
-      { id: 'b', x: 259, y: 460 },
+      { id: 'a', x: 153, y: 460 },
+      { id: 'b', x: 263, y: 460 },
     ]);
   });
 });
 
 describe('gridLinePositions / gridDimensionLabels', () => {
-  it('aligns grid lines with cellOrigin positions', () => {
+  it('returns only the outer frame lines', () => {
     const config: GridLayoutConfig = {
       ...baseConfig,
       cols: 3,
       rows: 2,
-      cellSize: { width: 102, height: 137 },
+      bounds: { x: 145, y: 450, width: 306, height: 274 },
       padding: { x: 12, y: 10 },
     };
     const lines = gridLinePositions(config);
 
-    expect(lines.vertical[0]).toBe(cellOrigin(0, 0, config).x - 12);
-    expect(lines.vertical[1]).toBe(Math.round(config.origin.x + config.cellSize.width));
-    expect(lines.horizontal[1]).toBe(Math.round(config.origin.y + config.cellSize.height));
+    expect(lines.vertical).toEqual([145, 451]);
+    expect(lines.horizontal).toEqual([450, 724]);
   });
 
-  it('centers gap labels in the actual gutter for center alignment', () => {
+  it('centers gap labels in the actual gutter', () => {
     const bounds = boundsFromPitch({ x: 0, y: 0 }, 2, 2, 100, 80);
-    const config = gridConfigFromBounds(bounds, 2, 2, { width: 48, height: 36 }, 'center');
+    const config = gridConfigFromBounds(
+      bounds,
+      2,
+      2,
+      { width: 48, height: 36 },
+      'center',
+      undefined,
+      { x: 52, y: 44 },
+    );
     const labels = gridDimensionLabels(config, { width: 48, height: 36 });
 
     const cell00 = cellOrigin(0, 0, config);
     const cell10 = cellOrigin(1, 0, config);
     expect(labels.gapX?.x).toBe((cell00.x + 48 + cell10.x) / 2);
     expect(labels.gapX?.text).toBe('52px');
-    expect(labels.pitchX?.text).toBe('100px');
+    expect(labels.pitchX?.text).toBe('126px');
   });
 });
 
 describe('cellSlotOrigin', () => {
   it('returns cell corner without block padding', () => {
     expect(cellSlotOrigin(0, 0, baseConfig)).toEqual({ x: 145, y: 450 });
-    expect(cellSlotOrigin(1, 0, baseConfig)).toEqual({ x: 247, y: 450 });
+    expect(cellSlotOrigin(1, 0, baseConfig)).toEqual({ x: 255, y: 450 });
   });
 });
 
@@ -589,7 +626,7 @@ describe('normalizeGridSettings', () => {
 });
 
 describe('nine-point alignment padding', () => {
-  it('offsets from right and bottom edges', () => {
+  it('offsets content origin from right and bottom edges', () => {
     const bounds = { x: 0, y: 0, width: 200, height: 160 };
     const config = gridConfigFromBounds(
       bounds,
@@ -598,6 +635,7 @@ describe('nine-point alignment padding', () => {
       { width: 48, height: 36 },
       { alignH: 'right', alignV: 'bottom' },
       { x: 10, y: 8 },
+      { x: 0, y: 0 },
     );
 
     expect(cellOrigin(0, 0, config)).toEqual({
@@ -622,7 +660,7 @@ describe('getGridGap / scaleGridSettingsForGapChange', () => {
     expect(getGridGap(bounds, settings)).toEqual({ gapX: 52, gapY: 44 });
   });
 
-  it('shrinks block size when gap increases', () => {
+  it('keeps block size when gap increases', () => {
     const bounds = { x: 0, y: 0, width: 200, height: 160 };
     const settings = {
       cols: 2,
@@ -632,11 +670,108 @@ describe('getGridGap / scaleGridSettingsForGapChange', () => {
       alignH: 'left' as const,
       alignV: 'top' as const,
       padding: { x: 0, y: 0 },
+      gap: { x: 0, y: 0 },
     };
 
     const result = scaleGridSettingsForGapChange(bounds, settings, { gapX: 60, gapY: 44 });
-    expect(result.rectWidth).toBe(40);
+    expect(result.rectWidth).toBe(48);
+    expect(result.rectHeight).toBe(36);
     expect(result.gapX).toBe(60);
+    expect(result.gap).toEqual({ x: 60, y: 44 });
+  });
+
+  it('clamps gap when block size does not fit', () => {
+    const bounds = { x: 0, y: 0, width: 120, height: 100 };
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left' as const,
+      alignV: 'top' as const,
+      padding: { x: 0, y: 0 },
+      gap: { x: 0, y: 0 },
+    };
+
+    const result = scaleGridSettingsForGapChange(bounds, settings, { gapX: 60, gapY: 44 });
+    expect(result.rectWidth).toBe(48);
+    expect(result.gapX).toBe(24);
+  });
+});
+
+describe('maxBlockSize / minBoundsForContent', () => {
+  it('computes max block size from bounds and gap', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    expect(maxBlockSize(bounds, 2, 2, { x: 60, y: 44 })).toEqual({
+      width: 70,
+      height: 58,
+    });
+  });
+
+  it('computes minimum bounds for content', () => {
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      gap: { x: 60, y: 44 },
+    };
+    expect(minBoundsForContent(settings)).toEqual({ width: 156, height: 116 });
+  });
+});
+
+describe('independent block size on bounds resize', () => {
+  it('recenters blocks without changing rect size when bounds grow', () => {
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'center' as const,
+      alignV: 'center' as const,
+      padding: { x: 0, y: 0 },
+      gap: { x: 0, y: 0 },
+    };
+    const smallBounds = { x: 0, y: 0, width: 96, height: 72 };
+    const largeBounds = { x: 0, y: 0, width: 200, height: 160 };
+
+    const smallMoves = redistributeGridMoves(['a', 'b', 'c', 'd'], smallBounds, {
+      cols: 2,
+      rows: 2,
+      rectSize: { width: 48, height: 36 },
+      alignH: 'center',
+      alignV: 'center',
+      gap: { x: 0, y: 0 },
+    });
+    const largeMoves = redistributeGridMoves(['a', 'b', 'c', 'd'], largeBounds, {
+      cols: 2,
+      rows: 2,
+      rectSize: { width: 48, height: 36 },
+      alignH: 'center',
+      alignV: 'center',
+      gap: { x: 0, y: 0 },
+    });
+
+    expect(largeMoves[0]).toEqual({ id: 'a', x: 26, y: 22 });
+    expect(largeMoves[1]).toEqual({ id: 'b', x: 126, y: 22 });
+    expect(smallMoves[0]).toEqual({ id: 'a', x: 0, y: 0 });
+  });
+
+  it('clamps bounds to minimum content size', () => {
+    const settings = {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      gap: { x: 0, y: 0 },
+    };
+    const bounds = { x: 10, y: 20, width: 50, height: 40 };
+    expect(clampBoundsToMinContent(bounds, settings)).toEqual({
+      x: 10,
+      y: 20,
+      width: 96,
+      height: 72,
+    });
   });
 });
 
@@ -696,5 +831,72 @@ describe('paddingFromBlockPosition', () => {
 
     expect(paddingFromBlockPosition(bounds, settings, { x: 12, y: 10 }).alignH).toBe('left');
     expect(paddingFromBlockPosition(bounds, settings, { x: 12, y: 10 }).alignV).toBe('top');
+  });
+});
+
+describe('gap-between block layout', () => {
+  it('places blocks touching when gap is 0', () => {
+    const bounds = { x: 0, y: 0, width: 300, height: 100 };
+    const config = gridConfigFromBounds(
+      bounds,
+      3,
+      1,
+      { width: 100, height: 100 },
+      'top-left',
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    );
+    const positions = gridPositionsFromConfig(['a', 'b', 'c'], config);
+    expect(positions[1]!.x - positions[0]!.x).toBe(100);
+    expect(positions[2]!.x - positions[1]!.x).toBe(100);
+  });
+
+  it('leaves exact gap space between blocks', () => {
+    const bounds = { x: 0, y: 0, width: 300, height: 100 };
+    const gap = { x: 10, y: 0 };
+    const rectSize = rectSizeFromGap(bounds, 3, 1, gap);
+    expect(rectSize.width).toBe(93);
+
+    const config = gridConfigFromBounds(bounds, 3, 1, rectSize, 'top-left', { x: 0, y: 0 }, gap);
+    const positions = gridPositionsFromConfig(['a', 'b', 'c'], config);
+    expect(positions[1]!.x - (positions[0]!.x + rectSize.width)).toBe(10);
+    expect(positions[2]!.x - (positions[1]!.x + rectSize.width)).toBe(10);
+  });
+
+  it('fills bounds with large gap and smaller blocks', () => {
+    const bounds = { x: 0, y: 0, width: 300, height: 100 };
+    const gap = { x: 100, y: 0 };
+    const rectSize = rectSizeFromGap(bounds, 3, 1, gap);
+    expect(rectSize.width).toBe(33);
+    expect(3 * rectSize.width + 2 * gap.x).toBe(299);
+  });
+
+  it('migrates legacy settings to explicit gap', () => {
+    const bounds = { x: 0, y: 0, width: 200, height: 160 };
+    const migrated = migrateGridSettingsToGapBetween(bounds, {
+      cols: 2,
+      rows: 2,
+      rectWidth: 48,
+      rectHeight: 36,
+      alignH: 'left',
+      alignV: 'top',
+    });
+    expect(migrated.gap).toEqual({ x: 52, y: 44 });
+    expect(migrated.rectWidth).toBe(74);
+    expect(migrated.rectHeight).toBe(58);
+  });
+
+  it('places gap handles between adjacent blocks', () => {
+    const config = gridConfigFromBounds(
+      { x: 0, y: 0, width: 300, height: 100 },
+      3,
+      1,
+      { width: 93, height: 100 },
+      'top-left',
+      { x: 0, y: 0 },
+      { x: 10, y: 0 },
+    );
+    const lines = gapLinePositions(config);
+    expect(lines.vertical).toHaveLength(2);
   });
 });

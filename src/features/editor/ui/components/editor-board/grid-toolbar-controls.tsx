@@ -12,11 +12,16 @@ import { LayerControls } from '@/features/editor/ui/components/shared/layer-cont
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { getGridGroupFieldType } from '@/features/editor/domain/services/grid-group';
 import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
+import {
+  getGridGap,
+  maxBlockSize,
+  scaleGridSettingsForGapChange,
+} from '@/features/editor/domain/services/grid-layout';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { useGridStyleEditing } from '@/features/editor/ui/hooks/use-grid-style-editing';
-import { GridIcon, PaddingIcon } from '@/core/icons';
+import { GridIcon, GapIcon, PaddingIcon, TrashIcon } from '@/core/icons';
 
 interface GridToolbarControlsProps {
   group: GridGroup;
@@ -31,6 +36,10 @@ function clampBlockSize(value: number, min = 20, max = 9999): number {
 }
 
 function clampPadding(value: number, min = 0): number {
+  return Math.max(min, Math.round(value));
+}
+
+function clampGap(value: number, min = 0): number {
   return Math.max(min, Math.round(value));
 }
 
@@ -165,11 +174,12 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const gridEditFocus = useEditorStore(state => state.gridEditFocus);
   const setGridEditFocus = useEditorStore(state => state.setGridEditFocus);
-  const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup } = useGridGroupOps();
+  const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup, deleteGridGroup } = useGridGroupOps();
   const gridStyleEditing = useGridStyleEditing(group, currentImage?.rectangles ?? []);
 
   const layoutPopover = useToolbarPopover();
   const paddingPopover = useToolbarPopover();
+  const gapPopover = useToolbarPopover();
   const blockSizePopover = useToolbarPopover();
 
   const settings = normalizeGridSettings(group.settings);
@@ -178,12 +188,20 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     : undefined;
   const representativeRect = currentImage?.rectangles.find(rect => rect.id === group.rectIds[0]);
   const padding = settings.padding ?? { x: 0, y: 0 };
-  const maxRectWidth = Math.round(group.bounds.width / settings.cols);
+  const gap = getGridGap(group.bounds, settings);
+  const slotSize = maxBlockSize(
+    group.bounds,
+    settings.cols,
+    settings.rows,
+    settings.gap ?? { x: gap.gapX, y: gap.gapY },
+  );
+  const maxRectWidth = slotSize.width;
   const isGridMode = gridEditFocus === 'grid';
 
   useEffect(() => {
     layoutPopover.close();
     paddingPopover.close();
+    gapPopover.close();
     blockSizePopover.close();
   }, [group.id]);
 
@@ -232,6 +250,38 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     const y = clampPadding(value);
     if (y !== padding.y) {
       updateGroupSettings(group.id, { padding: { x: padding.x, y } });
+    }
+  };
+
+  const applyGapChange = (targetGap: { gapX: number; gapY: number }) => {
+    const next = scaleGridSettingsForGapChange(group.bounds, settings, targetGap);
+    updateGroupSettings(group.id, {
+      gap: next.gap,
+      rectWidth: next.rectWidth,
+      rectHeight: next.rectHeight,
+      padding: next.padding,
+    });
+  };
+
+  const adjustGapX = (delta: number) => {
+    applyGapChange({ gapX: clampGap(gap.gapX + delta), gapY: gap.gapY });
+  };
+
+  const adjustGapY = (delta: number) => {
+    applyGapChange({ gapX: gap.gapX, gapY: clampGap(gap.gapY + delta) });
+  };
+
+  const commitGapX = (value: number) => {
+    const gapX = clampGap(value);
+    if (gapX !== gap.gapX) {
+      applyGapChange({ gapX, gapY: gap.gapY });
+    }
+  };
+
+  const commitGapY = (value: number) => {
+    const gapY = clampGap(value);
+    if (gapY !== gap.gapY) {
+      applyGapChange({ gapX: gap.gapX, gapY });
     }
   };
 
@@ -435,6 +485,72 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
                 document.body,
               )}
           </div>
+
+          <div ref={gapPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
+            <button
+              ref={gapPopover.triggerRef}
+              type="button"
+              className={clsx('grid-toolbar-controls__menu-trigger', {
+                'grid-toolbar-controls__menu-trigger--open': gapPopover.isOpen,
+              })}
+              onClick={gapPopover.toggle}
+              title={t('editor.gridGap')}
+              aria-label={t('editor.gridGap')}
+            >
+              <GapIcon size={16} />
+            </button>
+            {gapPopover.isOpen && gapPopover.menuPosition &&
+              createPortal(
+                <div
+                  ref={gapPopover.menuRef}
+                  className="grid-toolbar-controls__popover grid-toolbar-controls__popover--gap"
+                  {...blockSelectionZoneProps}
+                  style={{
+                    top: gapPopover.menuPosition.top,
+                    left: gapPopover.menuPosition.left,
+                  }}
+                >
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridGapX')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <button type="button" onClick={() => adjustGapX(-1)} aria-label="-">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={gap.gapX}
+                        key={`gap-x-${group.id}-${gap.gapX}`}
+                        onBlur={e => commitGapX(Number(e.target.value) || 0)}
+                      />
+                      <button type="button" onClick={() => adjustGapX(1)} aria-label="+">
+                        +
+                      </button>
+                    </div>
+                  </label>
+
+                  <label className="grid-toolbar-controls__stepper">
+                    <span>{t('editor.gridGapY')}</span>
+                    <div className="grid-toolbar-controls__stepper-inputs">
+                      <button type="button" onClick={() => adjustGapY(-1)} aria-label="-">
+                        −
+                      </button>
+                      <input
+                        type="number"
+                        min={0}
+                        defaultValue={gap.gapY}
+                        key={`gap-y-${group.id}-${gap.gapY}`}
+                        onBlur={e => commitGapY(Number(e.target.value) || 0)}
+                      />
+                      <button type="button" onClick={() => adjustGapY(1)} aria-label="+">
+                        +
+                      </button>
+                    </div>
+                  </label>
+                </div>,
+                document.body,
+              )}
+          </div>
         </>
       ) : (
         <>
@@ -527,6 +643,15 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
       <LayerControls selectedIds={selectedRectangleIds} />
 
       <div className="grid-toolbar-controls__divider" />
+      <button
+        type="button"
+        className="grid-toolbar-controls__delete"
+        onClick={() => deleteGridGroup(group.id)}
+        title={t('editor.gridDelete')}
+        aria-label={t('editor.gridDelete')}
+      >
+        <TrashIcon size={16} />
+      </button>
       <button
         type="button"
         className="grid-toolbar-controls__ungroup"

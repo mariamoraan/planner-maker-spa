@@ -100,8 +100,24 @@
     }
   }
 
-  &__ungroup {
+  &__delete {
     margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    color: hsl(0, 72%, 51%);
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.06);
+    }
+  }
+
+  &__ungroup {
     padding: 6px 12px;
     border: 1px solid rgba(0, 0, 0, 0.12);
     border-radius: 8px;
@@ -155,6 +171,13 @@
     }
 
     &--padding {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 280px;
+    }
+
+    &--gap {
       display: flex;
       flex-direction: column;
       gap: 10px;

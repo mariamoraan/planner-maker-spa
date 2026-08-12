@@ -23,6 +23,7 @@ import {
     Signature,
     Grid3X3,
     AlignHorizontalSpaceAround,
+    AlignHorizontalSpaceBetween,
 } from 'lucide-react';
 
 
@@ -51,4 +52,5 @@ export {
     Signature as SignatureIcon,
     Grid3X3 as GridIcon,
     AlignHorizontalSpaceAround as PaddingIcon,
+    AlignHorizontalSpaceBetween as GapIcon,
 };

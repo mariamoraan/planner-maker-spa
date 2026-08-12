@@ -5,9 +5,9 @@ import {
   boundsFromInferredGrid,
   boundsFromPitch,
   boundsFromRectanglesWithPadding,
+  clampBoundsToMinContent,
   clampGridPadding,
   clampGridRectSize,
-  defaultGridBounds,
   expandGridRectIds,
   gridConfigFromBounds,
   inferGridDimensionsFromCount,
@@ -15,10 +15,12 @@ import {
   inferPaddingFromRects,
   inferPitchFromRectangles,
   medianRectSize,
+  minBoundsForContent,
   orderRectIdsRowMajor,
   redistributeGridMoves,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
+import { getGridToolPreset } from '@/features/editor/domain/services/grid-tool-presets';
 import { buildGridRectangles } from '@/features/editor/domain/services/grid-rectangle-builder';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
 import { normalizeGridSettings, toPersistedGridSettings } from '@/features/editor/domain/services/grid-edit-types';
@@ -48,6 +50,7 @@ function applyGridLayout(
     alignH: settings.alignH,
     alignV: settings.alignV,
     padding: settings.padding,
+    gap: settings.gap,
   });
 
   let next = [...rectangles];
@@ -89,6 +92,7 @@ function syncGridCellCountLocal(
       { width: settings.rectWidth, height: settings.rectHeight },
       { alignH: settings.alignH, alignV: settings.alignV },
       settings.padding,
+      settings.gap,
     );
 
     const newRects = buildGridRectangles(
@@ -149,6 +153,7 @@ export function useGridGroupOps() {
         { width: normalized.rectWidth, height: normalized.rectHeight },
         { alignH: normalized.alignH, alignV: normalized.alignV },
         normalized.padding ?? { x: 0, y: 0 },
+        normalized.gap,
       );
 
       const rects = buildGridRectangles(config, fieldType, currentImage.rectangles.length);
@@ -172,28 +177,36 @@ export function useGridGroupOps() {
   );
 
   const createDefaultGrid = useCallback(
-    (fieldType: FieldType) => {
+    () => {
       if (!currentImage) return;
 
+      const preset = getGridToolPreset(currentImage.type);
+      const rectSize = preset.rectSize;
+      const gap = { x: 0, y: 0 };
+      const contentW = preset.cols * rectSize.width;
+      const contentH = preset.rows * rectSize.height;
+      const frameW = Math.round(contentW * 1.5);
+      const frameH = Math.round(contentH * 1.5);
+
       const settings: GridEditSettings = {
-        cols: DEFAULT_GRID_COLS,
-        rows: DEFAULT_GRID_ROWS,
-        alignH: 'left',
-        alignV: 'top',
-        rectWidth: DEFAULT_GRID_RECT_SIZE.width,
-        rectHeight: DEFAULT_GRID_RECT_SIZE.height,
+        cols: preset.cols,
+        rows: preset.rows,
+        alignH: 'center',
+        alignV: 'center',
+        rectWidth: rectSize.width,
+        rectHeight: rectSize.height,
         padding: { x: 0, y: 0 },
+        gap,
       };
 
-      const bounds = defaultGridBounds(
-        currentImage.width,
-        currentImage.height,
-        settings.cols,
-        settings.rows,
-        DEFAULT_GRID_RECT_SIZE,
-      );
+      const bounds: GridBounds = {
+        x: Math.round((currentImage.width - frameW) / 2),
+        y: Math.round((currentImage.height - frameH) / 2),
+        width: frameW,
+        height: frameH,
+      };
 
-      createGrid(bounds, settings, fieldType);
+      createGrid(bounds, settings, 'day');
     },
     [currentImage, createGrid],
   );
@@ -333,7 +346,8 @@ export function useGridGroupOps() {
         updates.rectHeight !== undefined ||
         updates.alignH !== undefined ||
         updates.alignV !== undefined ||
-        updates.padding !== undefined
+        updates.padding !== undefined ||
+        updates.gap !== undefined
       ) {
         nextRects = applyGridLayout(nextRects, rectIds, group.bounds, nextSettings);
       }
@@ -357,13 +371,24 @@ export function useGridGroupOps() {
       const group = currentImage.gridGroups?.[groupId];
       if (!group) return;
 
+      const normalized = normalizeGridSettings(group.settings);
+      const clampedBounds = clampBoundsToMinContent(bounds, normalized);
+      const nextSettings: GridEditSettings = toPersistedGridSettings({
+        ...normalized,
+        padding: clampGridPadding(
+          clampedBounds,
+          normalized,
+          normalized.padding ?? { x: 0, y: 0 },
+        ),
+      });
+
       const nextRects = applyGridLayout(
         currentImage.rectangles,
         group.rectIds,
-        bounds,
-        group.settings,
+        clampedBounds,
+        nextSettings,
       );
-      const nextGroup = buildGridGroup(group.rectIds, bounds, group.settings, groupId);
+      const nextGroup = buildGridGroup(group.rectIds, clampedBounds, nextSettings, groupId);
 
       persistGroup(
         nextRects,
@@ -455,11 +480,32 @@ export function useGridGroupOps() {
     [currentImage, updatePageGridState],
   );
 
+  const deleteGridGroup = useCallback(
+    (groupId: string) => {
+      if (!currentImage) return;
+
+      const group = currentImage.gridGroups?.[groupId];
+      if (!group) return;
+
+      const idsToDelete = new Set(group.rectIds);
+      const nextRects = currentImage.rectangles.filter(rect => !idsToDelete.has(rect.id));
+      const nextGridGroups = removeGridGroup(currentImage.gridGroups, groupId);
+
+      updatePageGridState({
+        rectangles: nextRects,
+        gridGroups: nextGridGroups ?? null,
+      });
+      setSelectedRectangleIds([]);
+    },
+    [currentImage, updatePageGridState, setSelectedRectangleIds],
+  );
+
   return {
     createGrid,
     createDefaultGrid,
     groupSelectionAsGrid,
     ungroupGridGroup,
+    deleteGridGroup,
     updateGroupSettings,
     updateGroupBounds,
     translateGridGroup,
@@ -485,6 +531,7 @@ export function computePreviewPositionsForSettings(
     alignH: normalized.alignH,
     alignV: normalized.alignV,
     padding: normalized.padding,
+    gap: normalized.gap,
   });
 
   const map: Record<string, { x: number; y: number }> = {};
@@ -509,6 +556,7 @@ export function computePreviewPositionsForBounds(
     alignH: settings.alignH,
     alignV: settings.alignV,
     padding: settings.padding,
+    gap: settings.gap,
   });
 
   const map: Record<string, { x: number; y: number }> = {};
@@ -517,3 +565,18 @@ export function computePreviewPositionsForBounds(
   }
   return map;
 }
+
+export function computePreviewRectSizesForSettings(
+  group: GridGroup,
+  settings: GridEditSettings,
+): Record<string, { width: number; height: number }> {
+  const normalized = normalizeGridSettings(settings);
+  const size = { width: normalized.rectWidth, height: normalized.rectHeight };
+  const map: Record<string, { width: number; height: number }> = {};
+  for (const id of group.rectIds) {
+    map[id] = size;
+  }
+  return map;
+}
+
+export { minBoundsForContent };

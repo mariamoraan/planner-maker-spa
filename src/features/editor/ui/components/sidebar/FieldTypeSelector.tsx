@@ -100,9 +100,7 @@ export const FieldTypeSelector = () => {
   };
 
   const handleAddGrid = () => {
-    const fieldType = selectedFieldType ?? availableTypes[0];
-    if (!fieldType) return;
-    createDefaultGrid(fieldType);
+    createDefaultGrid();
   };
 
   return (

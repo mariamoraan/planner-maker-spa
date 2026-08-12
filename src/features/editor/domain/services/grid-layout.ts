@@ -5,10 +5,13 @@ export type { GridAlignH, GridAlignV };
 
 export interface GridLayoutConfig {
   origin: { x: number; y: number };
+  bounds?: GridBounds;
   cols: number;
   rows: number;
+  /** Step size between block origins: rectSize + gap */
   cellSize: { width: number; height: number };
   rectSize: { width: number; height: number };
+  gap?: { x: number; y: number };
   alignH?: GridAlignH;
   alignV?: GridAlignV;
   /** @deprecated Legacy — use alignH/alignV */
@@ -29,7 +32,21 @@ export interface InferredGrid extends GridLayoutConfig {
   rectIds: string[];
 }
 
+export interface GridSettingsInput {
+  cols: number;
+  rows: number;
+  rectWidth: number;
+  rectHeight: number;
+  alignH?: GridAlignH;
+  alignV?: GridAlignV;
+  /** @deprecated Legacy — use alignH/alignV */
+  align?: 'top-left' | 'center';
+  padding?: { x: number; y: number };
+  gap?: { x: number; y: number };
+}
+
 const DEFAULT_PADDING = { x: 0, y: 0 };
+const DEFAULT_GAP = { x: 0, y: 0 };
 
 function resolveAlignment(config: GridLayoutConfig): { alignH: GridAlignH; alignV: GridAlignV } {
   if (config.alignH && config.alignV) {
@@ -41,30 +58,150 @@ function resolveAlignment(config: GridLayoutConfig): { alignH: GridAlignH; align
   return { alignH: 'left', alignV: 'top' };
 }
 
-function resolvePadding(config: GridLayoutConfig): { x: number; y: number } {
-  const { alignH, alignV } = resolveAlignment(config);
-  const padding = config.padding ?? DEFAULT_PADDING;
-  const { cellSize, rectSize } = config;
+export function resolveGridGap(settings: GridSettingsInput): { x: number; y: number } {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  return normalized.gap ?? DEFAULT_GAP;
+}
 
-  let x: number;
-  if (alignH === 'left') {
-    x = padding.x;
-  } else if (alignH === 'center') {
-    x = (cellSize.width - rectSize.width) / 2 + padding.x;
-  } else {
-    x = cellSize.width - rectSize.width - padding.x;
-  }
+function effectiveGap(gap: { x: number; y: number }, cols: number, rows: number): { x: number; y: number } {
+  return {
+    x: cols > 1 ? gap.x : 0,
+    y: rows > 1 ? gap.y : 0,
+  };
+}
 
-  let y: number;
-  if (alignV === 'top') {
-    y = padding.y;
-  } else if (alignV === 'center') {
-    y = (cellSize.height - rectSize.height) / 2 + padding.y;
-  } else {
-    y = cellSize.height - rectSize.height - padding.y;
-  }
+export function gridContentSize(
+  cols: number,
+  rows: number,
+  rectSize: { width: number; height: number },
+  gap: { x: number; y: number },
+): { width: number; height: number } {
+  const g = effectiveGap(gap, cols, rows);
+  return {
+    width: cols * rectSize.width + (cols - 1) * g.x,
+    height: rows * rectSize.height + (rows - 1) * g.y,
+  };
+}
+
+export function rectSizeFromGap(
+  bounds: GridBounds,
+  cols: number,
+  rows: number,
+  gap: { x: number; y: number },
+): { width: number; height: number } {
+  return maxBlockSize(bounds, cols, rows, gap);
+}
+
+export function maxBlockSize(
+  bounds: GridBounds,
+  cols: number,
+  rows: number,
+  gap: { x: number; y: number },
+): { width: number; height: number } {
+  const g = effectiveGap(gap, cols, rows);
+  return {
+    width: Math.round((bounds.width - (cols - 1) * g.x) / cols),
+    height: Math.round((bounds.height - (rows - 1) * g.y) / rows),
+  };
+}
+
+export function minBoundsForContent(settings: GridSettingsInput): { width: number; height: number } {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const gap = normalized.gap ?? DEFAULT_GAP;
+  return gridContentSize(
+    normalized.cols,
+    normalized.rows,
+    { width: normalized.rectWidth, height: normalized.rectHeight },
+    gap,
+  );
+}
+
+export function clampGridGapForRectSize(
+  targetGap: number,
+  boundsSize: number,
+  count: number,
+  rectSize: number,
+): number {
+  if (count <= 1) return 0;
+  const maxGap = Math.max(0, Math.floor((boundsSize - count * rectSize) / (count - 1)));
+  return Math.min(maxGap, Math.max(0, Math.round(targetGap)));
+}
+
+export function clampBoundsToMinContent(bounds: GridBounds, settings: GridSettingsInput): GridBounds {
+  const min = minBoundsForContent(settings);
+  return {
+    x: bounds.x,
+    y: bounds.y,
+    width: Math.max(bounds.width, min.width),
+    height: Math.max(bounds.height, min.height),
+  };
+}
+
+export function contentOrigin(
+  bounds: GridBounds,
+  cols: number,
+  rows: number,
+  rectSize: { width: number; height: number },
+  gap: { x: number; y: number },
+  alignH: GridAlignH,
+  alignV: GridAlignV,
+): { x: number; y: number } {
+  const content = gridContentSize(cols, rows, rectSize, gap);
+  const freeX = bounds.width - content.width;
+  const freeY = bounds.height - content.height;
+
+  let x = bounds.x;
+  if (alignH === 'center') x = bounds.x + freeX / 2;
+  else if (alignH === 'right') x = bounds.x + freeX;
+
+  let y = bounds.y;
+  if (alignV === 'center') y = bounds.y + freeY / 2;
+  else if (alignV === 'bottom') y = bounds.y + freeY;
 
   return { x: Math.round(x), y: Math.round(y) };
+}
+
+function gridSlotSize(
+  bounds: GridBounds | undefined,
+  cols: number,
+  rows: number,
+  rectSize: { width: number; height: number },
+  gap: { x: number; y: number },
+): { width: number; height: number } {
+  if (bounds) {
+    return maxBlockSize(bounds, cols, rows, gap);
+  }
+  return { width: rectSize.width, height: rectSize.height };
+}
+
+function blockOffsetInCell(config: GridLayoutConfig): { x: number; y: number } {
+  const gap = config.gap ?? DEFAULT_GAP;
+  const slot = gridSlotSize(config.bounds, config.cols, config.rows, config.rectSize, gap);
+  const padding = resolvePadding(config);
+  const { alignH, alignV } = resolveAlignment(config);
+  const freeX = Math.max(0, slot.width - config.rectSize.width);
+  const freeY = Math.max(0, slot.height - config.rectSize.height);
+  const px = Math.min(Math.max(0, padding.x), freeX);
+  const py = Math.min(Math.max(0, padding.y), freeY);
+
+  let x = px;
+  if (alignH === 'center') x = freeX / 2;
+  else if (alignH === 'right') x = freeX - px;
+
+  let y = py;
+  if (alignV === 'center') y = freeY / 2;
+  else if (alignV === 'bottom') y = freeY - py;
+
+  return { x: Math.round(x), y: Math.round(y) };
+}
+
+function cellStep(config: GridLayoutConfig): { x: number; y: number } {
+  const gap = effectiveGap(config.gap ?? DEFAULT_GAP, config.cols, config.rows);
+  const slot = gridSlotSize(config.bounds, config.cols, config.rows, config.rectSize, config.gap ?? DEFAULT_GAP);
+  return {
+    x: slot.width + gap.x,
+    y: slot.height + gap.y,
+  };
 }
 
 export function cellSlotOrigin(
@@ -72,10 +209,24 @@ export function cellSlotOrigin(
   row: number,
   config: GridLayoutConfig,
 ): { x: number; y: number } {
+  const step = cellStep(config);
   return {
-    x: Math.round(config.origin.x + col * config.cellSize.width),
-    y: Math.round(config.origin.y + row * config.cellSize.height),
+    x: Math.round(config.origin.x + col * step.x),
+    y: Math.round(config.origin.y + row * step.y),
   };
+}
+
+export function cellSlotSize(
+  bounds: GridBounds,
+  cols: number,
+  rows: number,
+  gap: { x: number; y: number } = DEFAULT_GAP,
+): { width: number; height: number } {
+  return maxBlockSize(bounds, cols, rows, gap);
+}
+
+function resolvePadding(config: GridLayoutConfig): { x: number; y: number } {
+  return config.padding ?? DEFAULT_PADDING;
 }
 
 export function cellOrigin(
@@ -83,10 +234,11 @@ export function cellOrigin(
   row: number,
   config: GridLayoutConfig,
 ): { x: number; y: number } {
-  const padding = resolvePadding(config);
+  const slot = cellSlotOrigin(col, row, config);
+  const offset = blockOffsetInCell(config);
   return {
-    x: Math.round(config.origin.x + col * config.cellSize.width + padding.x),
-    y: Math.round(config.origin.y + row * config.cellSize.height + padding.y),
+    x: Math.round(slot.x + offset.x),
+    y: Math.round(slot.y + offset.y),
   };
 }
 
@@ -225,7 +377,7 @@ export interface GridBounds {
   height: number;
 }
 
-export const DEFAULT_GRID_GAP = 12;
+export const DEFAULT_GRID_GAP = 0;
 
 export function defaultGridBounds(
   pageWidth: number,
@@ -235,10 +387,9 @@ export function defaultGridBounds(
   rectSize: { width: number; height: number },
   gap: { x: number; y: number } = { x: DEFAULT_GRID_GAP, y: DEFAULT_GRID_GAP },
 ): GridBounds {
-  const pitchX = rectSize.width + gap.x;
-  const pitchY = rectSize.height + gap.y;
-  const width = pitchX * cols;
-  const height = pitchY * rows;
+  const g = effectiveGap(gap, cols, rows);
+  const width = cols * rectSize.width + (cols - 1) * g.x;
+  const height = rows * rectSize.height + (rows - 1) * g.y;
   return {
     x: Math.round((pageWidth - width) / 2),
     y: Math.round((pageHeight - height) / 2),
@@ -254,6 +405,7 @@ export function gridConfigFromBounds(
   rectSize: { width: number; height: number },
   alignment: 'top-left' | 'center' | { alignH: GridAlignH; alignV: GridAlignV } = 'top-left',
   padding?: { x: number; y: number },
+  gap: { x: number; y: number } = DEFAULT_GAP,
 ): GridLayoutConfig {
   let alignH: GridAlignH;
   let alignV: GridAlignV;
@@ -269,31 +421,26 @@ export function gridConfigFromBounds(
     alignV = 'top';
   }
 
+  const g = effectiveGap(gap, cols, rows);
+  const slot = maxBlockSize(bounds, cols, rows, gap);
+  const step = {
+    width: slot.width + g.x,
+    height: slot.height + g.y,
+  };
+  const origin = { x: bounds.x, y: bounds.y };
+
   return {
-    origin: { x: bounds.x, y: bounds.y },
+    origin,
+    bounds,
     cols,
     rows,
-    cellSize: {
-      width: bounds.width / cols,
-      height: bounds.height / rows,
-    },
+    cellSize: step,
     rectSize,
+    gap,
     alignH,
     alignV,
     padding,
   };
-}
-
-export interface GridSettingsInput {
-  cols: number;
-  rows: number;
-  rectWidth: number;
-  rectHeight: number;
-  alignH?: GridAlignH;
-  alignV?: GridAlignV;
-  /** @deprecated Legacy — use alignH/alignV */
-  align?: 'top-left' | 'center';
-  padding?: { x: number; y: number };
 }
 
 export function gridConfigFromGroup(
@@ -301,6 +448,7 @@ export function gridConfigFromGroup(
   settings: GridSettingsInput,
 ): GridLayoutConfig {
   const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const gap = normalized.gap ?? DEFAULT_GAP;
   return gridConfigFromBounds(
     bounds,
     normalized.cols,
@@ -308,6 +456,7 @@ export function gridConfigFromGroup(
     { width: normalized.rectWidth, height: normalized.rectHeight },
     { alignH: normalized.alignH, alignV: normalized.alignV },
     normalized.padding,
+    gap,
   );
 }
 
@@ -315,14 +464,15 @@ const MIN_GRID_RECT_SIZE = 20;
 
 export function clampGridRectSize(
   bounds: GridBounds,
-  settings: Pick<GridSettingsInput, 'cols' | 'rows'>,
+  settings: Pick<GridSettingsInput, 'cols' | 'rows' | 'gap'>,
   size: { width: number; height: number },
 ): { width: number; height: number } {
-  const maxWidth = Math.round(bounds.width / settings.cols);
+  const gap = settings.gap ?? DEFAULT_GAP;
+  const max = maxBlockSize(bounds, settings.cols, settings.rows, gap);
 
   return {
-    width: Math.min(maxWidth, Math.max(MIN_GRID_RECT_SIZE, Math.round(size.width))),
-    height: Math.max(MIN_GRID_RECT_SIZE, Math.round(size.height)),
+    width: Math.min(max.width, Math.max(MIN_GRID_RECT_SIZE, Math.round(size.width))),
+    height: Math.min(max.height, Math.max(MIN_GRID_RECT_SIZE, Math.round(size.height))),
   };
 }
 
@@ -331,10 +481,10 @@ export function clampGridPadding(
   settings: GridSettingsInput,
   padding: { x: number; y: number },
 ): { x: number; y: number } {
-  const cellWidth = bounds.width / settings.cols;
-  const cellHeight = bounds.height / settings.rows;
-  const maxX = Math.max(0, Math.round(cellWidth - settings.rectWidth));
-  const maxY = Math.max(0, Math.round(cellHeight - settings.rectHeight));
+  const gap = settings.gap ?? DEFAULT_GAP;
+  const slot = maxBlockSize(bounds, settings.cols, settings.rows, gap);
+  const maxX = Math.max(0, Math.round(slot.width - settings.rectWidth));
+  const maxY = Math.max(0, Math.round(slot.height - settings.rectHeight));
 
   return {
     x: Math.min(maxX, Math.max(0, Math.round(padding.x))),
@@ -363,32 +513,10 @@ export function inferPaddingFromRects(
   const slot = cellSlotOrigin(0, 0, config);
   const blockOffsetX = Math.round(firstRect.x - slot.x);
   const blockOffsetY = Math.round(firstRect.y - slot.y);
-  const cellW = config.cellSize.width;
-  const cellH = config.cellSize.height;
-  const rectW = normalized.rectWidth;
-  const rectH = normalized.rectHeight;
-
-  let paddingX: number;
-  if (normalized.alignH === 'left') {
-    paddingX = blockOffsetX;
-  } else if (normalized.alignH === 'center') {
-    paddingX = blockOffsetX - (cellW - rectW) / 2;
-  } else {
-    paddingX = cellW - rectW - blockOffsetX;
-  }
-
-  let paddingY: number;
-  if (normalized.alignV === 'top') {
-    paddingY = blockOffsetY;
-  } else if (normalized.alignV === 'center') {
-    paddingY = blockOffsetY - (cellH - rectH) / 2;
-  } else {
-    paddingY = cellH - rectH - blockOffsetY;
-  }
 
   return clampGridPadding(bounds, normalized, {
-    x: Math.round(paddingX),
-    y: Math.round(paddingY),
+    x: blockOffsetX,
+    y: blockOffsetY,
   });
 }
 
@@ -413,7 +541,10 @@ export function boundsFromRectangles(
 export function redistributeGridMoves(
   rectIds: string[],
   bounds: GridBounds,
-  config: Pick<GridLayoutConfig, 'cols' | 'rows' | 'rectSize' | 'alignH' | 'alignV' | 'align' | 'padding'>,
+  config: Pick<
+    GridLayoutConfig,
+    'cols' | 'rows' | 'rectSize' | 'alignH' | 'alignV' | 'align' | 'padding' | 'gap'
+  >,
 ): { id: string; x: number; y: number }[] {
   const gridConfig = gridConfigFromBounds(
     bounds,
@@ -426,6 +557,7 @@ export function redistributeGridMoves(
         ? 'center'
         : 'top-left',
     config.padding,
+    config.gap ?? DEFAULT_GAP,
   );
   return gridPositionsFromConfig(rectIds, gridConfig);
 }
@@ -634,16 +766,60 @@ export function gapFromPitch(
   };
 }
 
+export function deriveLegacyGap(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+): { x: number; y: number } {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  const pitch = pitchFromBounds(bounds, normalized.cols, normalized.rows);
+  const legacy = gapFromPitch(pitch, {
+    width: normalized.rectWidth,
+    height: normalized.rectHeight,
+  });
+  return { x: legacy.gapX, y: legacy.gapY };
+}
+
+export function migrateGridSettingsToGapBetween(
+  bounds: GridBounds,
+  settings: GridSettingsInput,
+): GridEditSettings {
+  const normalized = normalizeGridSettings(settings as GridEditSettings);
+  if (normalized.gap !== undefined) {
+    return normalized;
+  }
+
+  const gap = deriveLegacyGap(bounds, normalized);
+  const rectSize = rectSizeFromGap(bounds, normalized.cols, normalized.rows, gap);
+
+  return {
+    ...normalized,
+    gap,
+    rectWidth: rectSize.width,
+    rectHeight: rectSize.height,
+  };
+}
+
+export function clampGridGapAxis(
+  targetGap: number,
+  boundsSize: number,
+  count: number,
+  minRectSize: number = MIN_GRID_RECT_SIZE,
+): number {
+  if (count <= 1) return 0;
+  const maxGap = Math.max(0, Math.floor((boundsSize - count * minRectSize) / (count - 1)));
+  return Math.min(maxGap, Math.max(0, Math.round(targetGap)));
+}
+
 export function getGridGap(
   bounds: GridBounds,
   settings: GridSettingsInput,
 ): { gapX: number; gapY: number } {
   const normalized = normalizeGridSettings(settings as GridEditSettings);
-  const pitch = pitchFromBounds(bounds, normalized.cols, normalized.rows);
-  return gapFromPitch(pitch, {
-    width: normalized.rectWidth,
-    height: normalized.rectHeight,
-  });
+  if (normalized.gap !== undefined) {
+    return { gapX: normalized.gap.x, gapY: normalized.gap.y };
+  }
+  const legacy = deriveLegacyGap(bounds, normalized);
+  return { gapX: legacy.x, gapY: legacy.y };
 }
 
 export function scaleGridSettingsForGapChange(
@@ -651,6 +827,7 @@ export function scaleGridSettingsForGapChange(
   settings: GridSettingsInput,
   targetGap: { gapX: number; gapY: number },
 ): {
+  gap: { x: number; y: number };
   gapX: number;
   gapY: number;
   rectWidth: number;
@@ -658,31 +835,46 @@ export function scaleGridSettingsForGapChange(
   padding: { x: number; y: number };
 } {
   const normalized = normalizeGridSettings(settings as GridEditSettings);
-  const pitch = pitchFromBounds(bounds, normalized.cols, normalized.rows);
 
-  const rectWidth = clampGridRectSize(bounds, normalized, {
-    width: Math.round(pitch.pitchX - targetGap.gapX),
+  const gap = {
+    x: clampGridGapForRectSize(
+      targetGap.gapX,
+      bounds.width,
+      normalized.cols,
+      normalized.rectWidth,
+    ),
+    y: clampGridGapForRectSize(
+      targetGap.gapY,
+      bounds.height,
+      normalized.rows,
+      normalized.rectHeight,
+    ),
+  };
+
+  const clampedSize = clampGridRectSize(bounds, { ...normalized, gap }, {
+    width: normalized.rectWidth,
     height: normalized.rectHeight,
-  }).width;
+  });
 
-  const rectHeight = clampGridRectSize(bounds, normalized, {
-    width: rectWidth,
-    height: Math.round(pitch.pitchY - targetGap.gapY),
-  }).height;
+  const nextSettings: GridSettingsInput = {
+    ...normalized,
+    gap,
+    rectWidth: clampedSize.width,
+    rectHeight: clampedSize.height,
+  };
 
   const padding = clampGridPadding(
     bounds,
-    { ...normalized, rectWidth, rectHeight },
+    nextSettings,
     normalized.padding ?? { x: 0, y: 0 },
   );
 
-  const nextGap = gapFromPitch(pitch, { width: rectWidth, height: rectHeight });
-
   return {
-    gapX: nextGap.gapX,
-    gapY: nextGap.gapY,
-    rectWidth,
-    rectHeight,
+    gap,
+    gapX: gap.x,
+    gapY: gap.y,
+    rectWidth: clampedSize.width,
+    rectHeight: clampedSize.height,
     padding,
   };
 }
@@ -695,37 +887,12 @@ export function paddingFromBlockPosition(
   const normalized = normalizeGridSettings(settings as GridEditSettings);
   const config = gridConfigFromGroup(bounds, normalized);
   const slotOrigin = cellSlotOrigin(0, 0, config);
-  const blockOffsetX = blockPos.x - slotOrigin.x;
-  const blockOffsetY = blockPos.y - slotOrigin.y;
-  const cellW = config.cellSize.width;
-  const cellH = config.cellSize.height;
-  const rectW = normalized.rectWidth;
-  const rectH = normalized.rectHeight;
-
-  let paddingX: number;
-  if (normalized.alignH === 'left') {
-    paddingX = blockOffsetX;
-  } else if (normalized.alignH === 'center') {
-    paddingX = blockOffsetX - (cellW - rectW) / 2;
-  } else {
-    paddingX = cellW - rectW - blockOffsetX;
-  }
-
-  let paddingY: number;
-  if (normalized.alignV === 'top') {
-    paddingY = blockOffsetY;
-  } else if (normalized.alignV === 'center') {
-    paddingY = blockOffsetY - (cellH - rectH) / 2;
-  } else {
-    paddingY = cellH - rectH - blockOffsetY;
-  }
-
   return {
     alignH: 'left',
     alignV: 'top',
     padding: clampGridPadding(bounds, normalized, {
-      x: Math.round(paddingX),
-      y: Math.round(paddingY),
+      x: Math.round(blockPos.x - slotOrigin.x),
+      y: Math.round(blockPos.y - slotOrigin.y),
     }),
   };
 }
@@ -813,15 +980,45 @@ export function gridLinePositions(config: GridLayoutConfig): {
   vertical: number[];
   horizontal: number[];
 } {
-  const { origin, cols, rows, cellSize } = config;
+  const frameX = config.bounds?.x ?? config.origin.x;
+  const frameY = config.bounds?.y ?? config.origin.y;
+  const frameW =
+    config.bounds?.width ??
+    gridContentSize(config.cols, config.rows, config.rectSize, config.gap ?? DEFAULT_GAP).width;
+  const frameH =
+    config.bounds?.height ??
+    gridContentSize(config.cols, config.rows, config.rectSize, config.gap ?? DEFAULT_GAP).height;
+
   return {
-    vertical: Array.from({ length: cols + 1 }, (_, index) =>
-      Math.round(origin.x + index * cellSize.width),
-    ),
-    horizontal: Array.from({ length: rows + 1 }, (_, index) =>
-      Math.round(origin.y + index * cellSize.height),
-    ),
+    vertical: [Math.round(frameX), Math.round(frameX + frameW)],
+    horizontal: [Math.round(frameY), Math.round(frameY + frameH)],
   };
+}
+
+export function gapLinePositions(config: GridLayoutConfig): {
+  vertical: number[];
+  horizontal: number[];
+} {
+  const gap = effectiveGap(config.gap ?? DEFAULT_GAP, config.cols, config.rows);
+  const slot = gridSlotSize(config.bounds, config.cols, config.rows, config.rectSize, config.gap ?? DEFAULT_GAP);
+  const vertical: number[] = [];
+  const horizontal: number[] = [];
+
+  if (config.cols >= 2) {
+    for (let col = 0; col < config.cols - 1; col++) {
+      const left = cellSlotOrigin(col, 0, config);
+      vertical.push(Math.round(left.x + slot.width + gap.x / 2));
+    }
+  }
+
+  if (config.rows >= 2) {
+    for (let row = 0; row < config.rows - 1; row++) {
+      const top = cellSlotOrigin(0, row, config);
+      horizontal.push(Math.round(top.y + slot.height + gap.y / 2));
+    }
+  }
+
+  return { vertical, horizontal };
 }
 
 export interface GridDimensionLabelSpec {
@@ -839,40 +1036,41 @@ export function gridDimensionLabels(
   pitchX: GridDimensionLabelSpec | null;
   pitchY: GridDimensionLabelSpec | null;
 } {
-  const pitch = { pitchX: config.cellSize.width, pitchY: config.cellSize.height };
-  const gap = gapFromPitch(pitch, rectSize);
+  const gap = effectiveGap(config.gap ?? DEFAULT_GAP, config.cols, config.rows);
+  const step = cellStep(config);
+  const slot = gridSlotSize(config.bounds, config.cols, config.rows, config.rectSize, config.gap ?? DEFAULT_GAP);
   const cell00 = cellOrigin(0, 0, config);
 
   let gapX: GridDimensionLabelSpec | null = null;
-  if (config.cols >= 2) {
+  if (config.cols >= 2 && gap.x > 0) {
     const cell10 = cellOrigin(1, 0, config);
     gapX = {
-      x: (cell00.x + rectSize.width + cell10.x) / 2,
-      y: config.origin.y,
-      text: `${gap.gapX}px`,
+      x: (cell00.x + config.rectSize.width + cell10.x) / 2,
+      y: config.bounds?.y ?? config.origin.y,
+      text: `${gap.x}px`,
     };
   }
 
   let gapY: GridDimensionLabelSpec | null = null;
-  if (config.rows >= 2) {
+  if (config.rows >= 2 && gap.y > 0) {
     const cell01 = cellOrigin(0, 1, config);
     gapY = {
-      x: config.origin.x,
-      y: (cell00.y + rectSize.height + cell01.y) / 2,
-      text: `${gap.gapY}px`,
+      x: config.bounds?.x ?? config.origin.x,
+      y: (cell00.y + config.rectSize.height + cell01.y) / 2,
+      text: `${gap.y}px`,
     };
   }
 
   const pitchX: GridDimensionLabelSpec = {
-    x: cell00.x + rectSize.width / 2,
-    y: config.origin.y,
-    text: `${Math.round(pitch.pitchX)}px`,
+    x: cell00.x + config.rectSize.width / 2,
+    y: config.bounds?.y ?? config.origin.y,
+    text: `${Math.round(step.x)}px`,
   };
 
   const pitchY: GridDimensionLabelSpec = {
-    x: config.origin.x,
-    y: cell00.y + rectSize.height / 2,
-    text: `${Math.round(pitch.pitchY)}px`,
+    x: config.bounds?.x ?? config.origin.x,
+    y: cell00.y + config.rectSize.height / 2,
+    text: `${Math.round(step.y)}px`,
   };
 
   return { gapX, gapY, pitchX, pitchY };
@@ -885,9 +1083,14 @@ export function boundsFromGap(
   gap: { gapX: number; gapY: number },
   rectSize: { width: number; height: number },
 ): GridBounds {
-  const pitchX = Math.max(rectSize.width, rectSize.width + gap.gapX);
-  const pitchY = Math.max(rectSize.height, rectSize.height + gap.gapY);
-  return boundsFromPitch({ x: bounds.x, y: bounds.y }, cols, rows, pitchX, pitchY);
+  const normalizedGap = { x: gap.gapX, y: gap.gapY };
+  const g = effectiveGap(normalizedGap, cols, rows);
+  return {
+    x: bounds.x,
+    y: bounds.y,
+    width: Math.round(cols * rectSize.width + (cols - 1) * g.x),
+    height: Math.round(rows * rectSize.height + (rows - 1) * g.y),
+  };
 }
 
 export function resizeGridPitch(

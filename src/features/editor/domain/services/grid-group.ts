@@ -2,7 +2,7 @@ import type { FieldType, GridGroup, Rectangle } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import type { GridEditSettings } from './grid-edit-types';
 import { normalizeGridSettings, toPersistedGridSettings } from './grid-edit-types';
-import { translateGridBounds, type GridBounds } from './grid-layout';
+import { migrateGridSettingsToGapBetween, redistributeGridMoves, translateGridBounds, type GridBounds } from './grid-layout';
 
 export function createGridGroupId(): string {
   return `grid-${generateId()}`;
@@ -116,12 +116,19 @@ export function repairGridGroupSettings(
   const next: Record<string, GridGroup> = {};
 
   for (const [id, group] of Object.entries(gridGroups)) {
-    const normalized = toPersistedGridSettings(normalizeGridSettings(group.settings));
+    const migrated = migrateGridSettingsToGapBetween(group.bounds, group.settings);
+    const normalized = toPersistedGridSettings(normalizeGridSettings(migrated));
     const hasLegacyAlign = group.settings.align !== undefined;
+    const needsGapMigration = group.settings.gap === undefined;
     const needsUpdate =
       hasLegacyAlign ||
+      needsGapMigration ||
       group.settings.alignH !== normalized.alignH ||
-      group.settings.alignV !== normalized.alignV;
+      group.settings.alignV !== normalized.alignV ||
+      group.settings.gap?.x !== normalized.gap?.x ||
+      group.settings.gap?.y !== normalized.gap?.y ||
+      group.settings.rectWidth !== normalized.rectWidth ||
+      group.settings.rectHeight !== normalized.rectHeight;
 
     if (needsUpdate) {
       changed = true;
@@ -266,9 +273,22 @@ export function translateGridGroupState(
   if (!group) return null;
 
   const nextBounds = translateGridBounds(group.bounds, dx, dy);
+  const settings = normalizeGridSettings(group.settings);
+  const moves = redistributeGridMoves(group.rectIds, nextBounds, {
+    cols: settings.cols,
+    rows: settings.rows,
+    rectSize: { width: settings.rectWidth, height: settings.rectHeight },
+    alignH: settings.alignH,
+    alignV: settings.alignV,
+    padding: settings.padding,
+    gap: settings.gap,
+  });
+  const moveById = new Map(moves.map(move => [move.id, move]));
   const nextRects = rectangles.map(rect => {
     if (!group.rectIds.includes(rect.id)) return rect;
-    return { ...rect, x: Math.round(rect.x + dx), y: Math.round(rect.y + dy) };
+    const move = moveById.get(rect.id);
+    if (!move) return rect;
+    return { ...rect, x: move.x, y: move.y };
   });
   const nextGroup = buildGridGroup(group.rectIds, nextBounds, group.settings, groupId);
   const assigned = assignRectsToGroup(nextRects, nextGroup);
