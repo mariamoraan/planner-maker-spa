@@ -730,17 +730,37 @@ export function resizeGridBounds(
 
 export const GRID_HANDLE_OUTSET = 12;
 
+const CORNER_ONLY_BLOCK_HANDLES_STAGE_THRESHOLD = 52;
+
 export function adaptiveHandleRadius(
   width: number,
   height: number,
   scale: number,
   options?: { min?: number; max?: number; ratio?: number },
 ): number {
-  const min = options?.min ?? 4;
+  const min = options?.min ?? 2.5;
   const max = options?.max ?? 9;
-  const ratio = options?.ratio ?? 0.14;
+  const ratio = options?.ratio ?? 0.12;
   const minDim = Math.min(width, height) * scale;
   return Math.min(max, Math.max(min, minDim * ratio));
+}
+
+export function shouldUseCornerBlockHandlesOnly(
+  width: number,
+  height: number,
+  scale: number,
+): boolean {
+  return Math.min(width, height) * scale < CORNER_ONLY_BLOCK_HANDLES_STAGE_THRESHOLD;
+}
+
+export function adaptiveHandleHitWidth(radius: number): number {
+  return Math.max(12, radius * 3);
+}
+
+export function adaptiveHandleStrokeWidth(radius: number, isHovered: boolean): number {
+  if (radius <= 3) return isHovered ? 1.25 : 1;
+  if (radius <= 5) return isHovered ? 1.75 : 1.5;
+  return isHovered ? 2.5 : 2;
 }
 
 export function pitchFromBounds(

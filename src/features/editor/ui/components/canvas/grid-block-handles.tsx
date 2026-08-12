@@ -2,11 +2,14 @@ import React, { useRef, useCallback, useState } from 'react';
 import { Group, Rect, Circle } from 'react-konva';
 import type Konva from 'konva';
 import {
+  adaptiveHandleHitWidth,
   adaptiveHandleRadius,
+  adaptiveHandleStrokeWidth,
   cellOrigin,
   gridConfigFromGroup,
   paddingFromBlockPosition,
   resizeGridBlockFromHandle,
+  shouldUseCornerBlockHandlesOnly,
   type GridBlockResizeHandle,
   type GridBounds,
 } from '@/features/editor/domain/services/grid-layout';
@@ -193,9 +196,13 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
   const frameW = block.width * scale;
   const frameH = block.height * scale;
 
+  const cornersOnly = shouldUseCornerBlockHandlesOnly(block.width, block.height, scale);
   const baseRadius = adaptiveHandleRadius(block.width, block.height, scale);
-  const hoverRadius = Math.min(9, baseRadius + 2);
-  const hitStrokeWidth = Math.max(8, baseRadius * 1.6);
+  const hoverRadius =
+    baseRadius <= 3
+      ? Math.min(5, baseRadius + 1)
+      : Math.min(9, baseRadius + 2);
+  const hitStrokeWidth = adaptiveHandleHitWidth(baseRadius);
 
   const renderHandle = (
     handle: GridBlockHandle,
@@ -206,6 +213,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
     const cy = toStage(pos.y, scale, offset.y);
     const isHovered = hoveredHandle === handle;
     const radius = isHovered || isDragging ? hoverRadius : baseRadius;
+    const strokeWidth = adaptiveHandleStrokeWidth(baseRadius, isHovered);
 
     return (
       <Circle
@@ -216,9 +224,9 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
         hitStrokeWidth={hitStrokeWidth}
         fill="white"
         stroke={GRID_COLOR}
-        strokeWidth={isHovered ? 2.5 : 2}
-        shadowColor={isHovered ? 'rgba(0, 180, 160, 0.35)' : undefined}
-        shadowBlur={isHovered ? 8 : 0}
+        strokeWidth={strokeWidth}
+        shadowColor={isHovered && baseRadius > 4 ? 'rgba(0, 180, 160, 0.35)' : undefined}
+        shadowBlur={isHovered && baseRadius > 4 ? 8 : 0}
         draggable
         dragBoundFunc={() => ({ x: cx, y: cy })}
         onMouseDown={stopMouseDown}
@@ -269,9 +277,10 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
         renderHandle(handle, cursor, handlePosition(block, handle)),
       )}
 
-      {EDGE_HANDLES.map(({ handle, cursor }) =>
-        renderHandle(handle, cursor, handlePosition(block, handle)),
-      )}
+      {!cornersOnly &&
+        EDGE_HANDLES.map(({ handle, cursor }) =>
+          renderHandle(handle, cursor, handlePosition(block, handle)),
+        )}
     </Group>
   );
 };

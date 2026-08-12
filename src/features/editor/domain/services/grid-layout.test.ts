@@ -41,7 +41,10 @@ import {
   resizeGridPitch,
   scaleGridSettingsForGapChange,
   scaleGridSettingsForPaddingChange,
+  adaptiveHandleHitWidth,
   adaptiveHandleRadius,
+  adaptiveHandleStrokeWidth,
+  shouldUseCornerBlockHandlesOnly,
   translateGridBounds,
   type GridLayoutConfig,
 } from './grid-layout';
@@ -786,9 +789,33 @@ describe('maxGridGap / maxGridPadding', () => {
 
 describe('adaptiveHandleRadius', () => {
   it('scales with block size and clamps to min/max', () => {
-    expect(adaptiveHandleRadius(20, 20, 1)).toBe(4);
+    expect(adaptiveHandleRadius(20, 20, 1)).toBe(2.5);
     expect(adaptiveHandleRadius(200, 150, 1)).toBe(9);
-    expect(adaptiveHandleRadius(80, 60, 1)).toBeCloseTo(8.4, 1);
+    expect(adaptiveHandleRadius(80, 60, 1)).toBeCloseTo(7.2, 1);
+  });
+});
+
+describe('shouldUseCornerBlockHandlesOnly', () => {
+  it('uses corner handles only for small blocks on stage', () => {
+    expect(shouldUseCornerBlockHandlesOnly(20, 20, 1)).toBe(true);
+    expect(shouldUseCornerBlockHandlesOnly(40, 40, 1)).toBe(true);
+    expect(shouldUseCornerBlockHandlesOnly(60, 60, 1)).toBe(false);
+    expect(shouldUseCornerBlockHandlesOnly(20, 20, 2)).toBe(true);
+    expect(shouldUseCornerBlockHandlesOnly(30, 30, 2)).toBe(false);
+  });
+});
+
+describe('adaptiveHandleHitWidth / adaptiveHandleStrokeWidth', () => {
+  it('keeps a generous hit target even for tiny handles', () => {
+    expect(adaptiveHandleHitWidth(2.5)).toBe(12);
+    expect(adaptiveHandleHitWidth(6)).toBe(18);
+  });
+
+  it('uses thinner strokes for tiny handles', () => {
+    expect(adaptiveHandleStrokeWidth(2.5, false)).toBe(1);
+    expect(adaptiveHandleStrokeWidth(2.5, true)).toBe(1.25);
+    expect(adaptiveHandleStrokeWidth(5, false)).toBe(1.5);
+    expect(adaptiveHandleStrokeWidth(8, true)).toBe(2.5);
   });
 });
 
