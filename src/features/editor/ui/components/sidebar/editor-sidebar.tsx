@@ -24,11 +24,12 @@ import { TEMPLATE_TYPE_CONFIG, type PlannerLocale, type WeekStartsOn, getTemplat
 import { DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions';
+import { ReplacePageImageButton } from './replace-page-image-button';
 
 type SidebarSectionId = 'currentPage' | 'dynamicBlocks' | 'actions' | 'blockSettings';
 
 const DEFAULT_SECTION_STATE: Record<SidebarSectionId, boolean> = {
-  currentPage: false,
+  currentPage: true,
   dynamicBlocks: true,
   actions: false,
   blockSettings: false,
@@ -127,6 +128,7 @@ export const EditorSidebar: React.FC = () => {
           <p className='editor-sidebar__main__section__content__title'>
             {currentImage ? TEMPLATE_TYPE_CONFIG[currentImage.type].label : '—'}
           </p>
+          {currentImage ? <ReplacePageImageButton pageId={currentImage.id} /> : null}
         </EditorSidebarSection>
         {template && currentImage && (
           <EditorSidebarSection

@@ -4,6 +4,12 @@ import { TemplateType } from "@/features/template";
 import { useCallback } from "react";
 import { useTemplateId } from "./use-template-id";
 import { getInsertIndexForType } from "@/features/template/domain/services/template-image-order";
+import {
+  applyPageImageData,
+  resolvePageImageRef,
+  persistPageImageAsset,
+  syncPageImageRefIfCloud,
+} from "@/features/editor/domain/services/page-image-asset";
 
 const toImageMeta = (image: {
   id: string;
@@ -33,6 +39,8 @@ export const useManageImages = () => {
         getImageData,
         getTemplate,
         reorderImages: reorderImagesStore,
+        updateImage,
+        syncUid,
     } = useTemplateStore();
     const pushHistory = useHistoryStore(state => state.push);
 
@@ -134,10 +142,40 @@ export const useManageImages = () => {
         });
     }, [templateId, getTemplate, reorderImagesStore, pushHistory]);
 
+    const replaceImage = useCallback(async (pageId: string, imageData: string) => {
+        if (!templateId) return;
+
+        const template = getTemplate(templateId);
+        const page = template?.images.find(p => p.id === pageId);
+        if (!page) return;
+
+        const beforeImageData = (await getImageData(pageId)) ?? page.src ?? '';
+        if (beforeImageData === imageData) return;
+
+        const imageRef = resolvePageImageRef(syncUid, pageId, page.imageRef);
+        const resolvedSrc = await persistPageImageAsset(imageRef, imageData);
+
+        pushHistory(templateId, {
+          type: 'replacePageImage',
+          imageId: pageId,
+          beforeImageData,
+          afterImageData: imageData,
+        });
+
+        updateImage(templateId, pageId, {
+          src: resolvedSrc,
+          imageRef,
+          missingLocalAsset: false,
+        });
+
+        await syncPageImageRefIfCloud(syncUid, templateId, pageId, imageRef);
+    }, [templateId, getImageData, getTemplate, pushHistory, syncUid, updateImage]);
+
     return {
         addImage,
         deleteImage,
         uploadImageToEmptyCanvas,
         reorderImages,
+        replaceImage,
     }
 }

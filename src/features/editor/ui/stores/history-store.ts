@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { GridGroup, Rectangle, TemplateImage } from '@/features/template';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
+import { applyPageImageData } from '@/features/editor/domain/services/page-image-asset';
 
 export type HistoryAction =
   | { type: 'addRectangle'; imageId: string; rectangle: Rectangle }
@@ -52,6 +53,12 @@ export type HistoryAction =
         rectangles: Rectangle[];
         gridGroups?: Record<string, GridGroup> | null;
       };
+    }
+  | {
+      type: 'replacePageImage';
+      imageId: string;
+      beforeImageData: string;
+      afterImageData: string;
     };
 
 type TemplateHistory = {
@@ -208,6 +215,11 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
     case 'updatePageGridState': {
       const snapshot = direction === 'undo' ? action.before : action.after;
       store.updateImage(templateId, action.imageId, snapshot);
+      break;
+    }
+    case 'replacePageImage': {
+      const imageData = direction === 'undo' ? action.beforeImageData : action.afterImageData;
+      await applyPageImageData(templateId, action.imageId, imageData);
       break;
     }
   }

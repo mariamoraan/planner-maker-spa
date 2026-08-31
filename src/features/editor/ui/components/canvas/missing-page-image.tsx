@@ -3,9 +3,8 @@ import { Upload, ImageOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/core/components/ui/button';
 import { fileToBase64 } from '@/features/editor/domain/services/planner-utils';
-import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useTemplateId } from '@/features/editor/ui/hooks/use-template-id';
-import { getInfra } from '@/core/bootstrap/infra';
+import { applyPageImageData } from '@/features/editor/domain/services/page-image-asset';
 import './missing-page-image.scss';
 
 interface MissingPageImageProps {
@@ -16,38 +15,17 @@ interface MissingPageImageProps {
 export const MissingPageImage: React.FC<MissingPageImageProps> = ({ pageId, pageName }) => {
   const { t } = useTranslation();
   const templateId = useTemplateId();
-  const syncUid = useTemplateStore(state => state.syncUid);
-  const updateImage = useTemplateStore(state => state.updateImage);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
-      if (!file || !templateId || !syncUid) return;
+      if (!file || !templateId) return;
 
       try {
         const imageData = await fileToBase64(file);
         const img = new Image();
         img.onload = async () => {
-          const template = useTemplateStore.getState().getTemplate(templateId);
-          const page = template?.images.find(p => p.id === pageId);
-          if (!page?.imageRef) return;
-
-          await getInfra().images.save(page.imageRef, imageData);
-          const resolvedSrc = (await getInfra().images.load(page.imageRef)) ?? imageData;
-
-          updateImage(templateId, pageId, {
-            src: resolvedSrc,
-            width: img.width,
-            height: img.height,
-            imageRef: page.imageRef,
-            missingLocalAsset: false,
-          });
-
-          if (page.imageRef.url) {
-            await getInfra().templates.updatePage(syncUid, templateId, pageId, {
-              imageRef: page.imageRef,
-            });
-          }
+          await applyPageImageData(templateId, pageId, imageData);
         };
         img.src = imageData;
       } catch (error) {
@@ -56,7 +34,7 @@ export const MissingPageImage: React.FC<MissingPageImageProps> = ({ pageId, page
         e.target.value = '';
       }
     },
-    [templateId, pageId, syncUid, updateImage]
+    [templateId, pageId],
   );
 
   return (

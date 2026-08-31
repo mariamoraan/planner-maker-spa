@@ -30,10 +30,11 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     const pageId = pageIdFromImageRefKey(ref.key);
     const mime = data.match(/^data:(.*?);/)?.[1] ?? 'image/png';
     const file = dataUrlToFile(data, `${pageId}.${extensionForMime(mime)}`);
+    const previousFileKey = ref.fileKey;
 
     const uploaded = await uploadFiles('plannerImage', {
       files: [file],
-      input: { pageId, idToken: token },
+      input: { pageId, idToken: token, previousFileKey },
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -62,7 +63,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
   }
 
   async delete(ref: ImageRef): Promise<void> {
-    if (!ref.fileKey) return;
+    if (!ref.fileKey && !ref.key) return;
 
     const token = await getFirebaseIdToken();
     if (!token) {

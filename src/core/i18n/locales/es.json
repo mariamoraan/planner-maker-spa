@@ -291,7 +291,10 @@
     "weekStartsOnSunday": "Domingo",
     "missingImageTitle": "Imagen no disponible en este dispositivo",
     "missingImageDescription": "La imagen de \"{{name}}\" está guardada en otro dispositivo. Vuelve a subirla para seguir editando.",
-    "reuploadImage": "Volver a subir imagen"
+    "reuploadImage": "Volver a subir imagen",
+    "replacePageImage": "Reemplazar imagen",
+    "replacePageImageHint": "Sube una nueva imagen de fondo. Se mantienen el tipo, el orden y los bloques configurados.",
+    "replacePageImageInProgress": "Reemplazando imagen…"
   },
   "generator": {
     "title": "Exportar planner",

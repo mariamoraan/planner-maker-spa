@@ -17,6 +17,7 @@ export class CachingImageAdapter implements ImageAssetPort {
   }
 
   async save(ref: ImageRef, data: string): Promise<void> {
+    await this.cache.delete(ref).catch(() => undefined);
     await this.primary.save(ref, data);
     const fromPrimary = (await this.primary.load(ref)) ?? ref.url ?? data;
     const toCache = isDataUrl(data)

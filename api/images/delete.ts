@@ -20,8 +20,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as DeleteBody;
     const { fileKey, key } = body ?? {};
 
-    if (!fileKey) {
-      res.status(400).json({ error: 'fileKey is required' });
+    if (!fileKey && !key) {
+      res.status(400).json({ error: 'fileKey or key is required' });
       return;
     }
 
@@ -30,7 +30,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const utapi = new UTApi();
-    await utapi.deleteFiles(fileKey);
+
+    if (fileKey) {
+      await utapi.deleteFiles(fileKey);
+    }
+
+    if (key) {
+      await utapi.deleteFiles(key, { keyType: 'customId' });
+    }
 
     res.status(200).json({ success: true });
   } catch (error) {

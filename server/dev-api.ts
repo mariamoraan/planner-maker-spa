@@ -93,10 +93,10 @@ export async function handleImageDeleteApi(req: IncomingMessage, res: ServerResp
     const uid = await verifyFirebaseToken(req.headers.authorization);
     const { fileKey, key } = body ?? {};
 
-    if (!fileKey) {
+    if (!fileKey && !key) {
       res.statusCode = 400;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'fileKey is required' }));
+      res.end(JSON.stringify({ error: 'fileKey or key is required' }));
       return;
     }
 
@@ -105,7 +105,14 @@ export async function handleImageDeleteApi(req: IncomingMessage, res: ServerResp
     }
 
     const utapi = new UTApi();
-    await utapi.deleteFiles(fileKey);
+
+    if (fileKey) {
+      await utapi.deleteFiles(fileKey);
+    }
+
+    if (key) {
+      await utapi.deleteFiles(key, { keyType: 'customId' });
+    }
 
     res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');

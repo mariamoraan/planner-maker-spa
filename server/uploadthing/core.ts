@@ -1,4 +1,4 @@
-import { createUploadthing, type FileRouter, UploadThingError, UTFiles } from 'uploadthing/server';
+import { createUploadthing, type FileRouter, UploadThingError, UTFiles, UTApi } from 'uploadthing/server';
 import { z } from 'zod';
 import { assertKeyBelongsToUser, verifyFirebaseIdToken, verifyFirebaseToken } from '../firebase-admin';
 
@@ -18,6 +18,7 @@ export const uploadRouter = {
       z.object({
         pageId: z.string().min(1),
         idToken: z.string().min(1),
+        previousFileKey: z.string().optional(),
       })
     )
     .middleware(async ({ req, input, files }) => {
@@ -35,8 +36,20 @@ export const uploadRouter = {
         }
       }
 
-      const customId = `${uid}/${input.pageId}`;
-      assertKeyBelongsToUser(customId, uid);
+      const pageKey = `${uid}/${input.pageId}`;
+      assertKeyBelongsToUser(pageKey, uid);
+
+      // Unique customId avoids Uploadthing 409 when replacing an existing page image.
+      const customId = `${pageKey}/${Date.now()}`;
+
+      if (input.previousFileKey) {
+        try {
+          const utapi = new UTApi();
+          await utapi.deleteFiles(input.previousFileKey);
+        } catch (error) {
+          console.warn('[uploadthing] Failed to delete previous page image:', error);
+        }
+      }
 
       const fileOverrides = files.map(file => ({
         ...file,
@@ -46,6 +59,7 @@ export const uploadRouter = {
       return {
         uid,
         pageId: input.pageId,
+        pageKey,
         customId,
         [UTFiles]: fileOverrides,
       };
@@ -53,7 +67,7 @@ export const uploadRouter = {
     .onUploadComplete(async ({ metadata, file }) => {
       return {
         url: file.ufsUrl ?? file.url,
-        key: metadata.customId,
+        key: metadata.pageKey,
         fileKey: file.key,
       };
     }),
