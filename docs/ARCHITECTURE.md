@@ -2,7 +2,8 @@
 
 Technical documentation for **Dyna — Planner Builder**.
 
-**Back to project overview:** [README.md](../README.md)
+**Back to project overview:** [README.md](../README.md)  
+**Product flows (actors & interactions):** [FLOWS.md](./FLOWS.md)
 
 ---
 
@@ -72,11 +73,11 @@ flowchart TB
 
 | Module | Path | Domain entities | Responsibilities |
 |--------|------|-----------------|------------------|
-| **template** | `src/features/template/` | Template, TemplatePage, Rectangle, ImageRef | CRUD, page ordering, Firestore sync, home dashboard, analytics |
-| **editor** | `src/features/editor/` | (operates on template entities) | Konva canvas, snap guides, selection, undo/redo |
+| **template** | `src/features/template/` | Template, TemplatePage, Rectangle, GridGroup, ImageRef, PaperSize | CRUD, page ordering, paper size, Firestore sync, home dashboard, analytics |
+| **editor** | `src/features/editor/` | (operates on template entities) | Konva canvas, snap guides, grid tool, selection, undo/redo, zoom/pan |
 | **export** | `src/features/export/` | PlannerConfig, GeneratedPage | Page generation, PDF assembly, export progress |
-| **auth** | `src/features/auth/` | AuthUser, UserProfile | Google sign-in, access gate, user profile |
-| **landing** | `src/features/landing/` | JoinWaitlistInput | Marketing page, waitlist signup |
+| **auth** | `src/features/auth/` | AuthUser, UserProfile (ports) | Google sign-in, access gate, user profile |
+| **landing** | `src/features/landing/` | JoinWaitlistInput | Marketing page, waitlist signup, interactive demo |
 
 Each feature exports a barrel file at `src/features/<name>/index.ts`.
 
@@ -94,6 +95,7 @@ erDiagram
   Template {
     string id
     string name
+    string paperSize
     date startDate
     date endDate
     string locale
@@ -104,6 +106,7 @@ erDiagram
     string type
     int width
     int height
+    object gridGroups
   }
   Rectangle {
     string id
@@ -111,6 +114,8 @@ erDiagram
     float y
     string fieldType
     object style
+    string gridGroupId
+    int gridCellIndex
   }
   ImageRef {
     string provider
@@ -129,6 +134,7 @@ interface Template {
   name: string;
   description?: string;
   images: TemplatePage[];
+  paperSize?: PaperSize;        // e.g. 'A4' | 'A5' — drives export raster/PDF size
   createdAt: Date;
   updatedAt: Date;
   startDate?: Date;
@@ -151,8 +157,12 @@ interface TemplatePage {
   width: number;
   height: number;
   rectangles: Rectangle[];
+  gridGroups?: Record<string, GridGroup>; // optional grid layouts of fields
+  createdAt: Date;
+  updatedAt: Date;
   src: string;           // data URL or blob URL for display
   imageRef?: ImageRef;   // storage pointer (local or cloud)
+  missingLocalAsset?: boolean;
 }
 ```
 
@@ -188,7 +198,9 @@ interface Rectangle {
   fieldType: FieldType;       // 'year' | 'month' | 'day' | 'startDay' | 'endDay'
   order: number;
   formatVariant?: FormatVariant;
-  style?: FieldStyle;         // font, color, bold, italic, textCase, alignment
+  style?: FieldStyle;         // font, color, bold, italic, textCase, textAlign
+  gridGroupId?: string;
+  gridCellIndex?: number;
 }
 ```
 
@@ -200,8 +212,10 @@ interface Rectangle {
 | `WeekStartsOn` | `monday`, `sunday` | Calendar grid and week number calculation |
 | `TemplateType` | 6 page types | Page categorization and field constraints |
 | `FieldType` | 5 field types | Dynamic zone type |
-| `FieldStyle` | font, color, bold, italic, textCase, alignment | Per-field typography |
-| `ImageRef` | provider + key | Storage pointer (`local` or `uploadthing`) |
+| `FieldStyle` | font, color, bold, italic, textCase, textAlign | Per-field typography |
+| `PaperSize` | e.g. `A4`, `A5` | Print size for export rasterization and PDF pages |
+| `GridGroup` | cols/rows/bounds/settings | Grid of field rectangles on a page |
+| `ImageRef` | provider + key (+ optional url/fileKey) | Storage pointer (`local`, `uploadthing`; type also allows `firebase` / `r2`) |
 
 ---
 
@@ -213,8 +227,8 @@ The use-case layer provides thin **command/query facades** over Zustand stores o
 
 ```typescript
 // Commands mutate state or trigger side effects
-export function createTemplate(name: string) {
-  return useTemplateStore.getState().createTemplate(name);
+export function createTemplate(name: string, paperSize: PaperSize, description?: string) {
+  return useTemplateStore.getState().createTemplate(name, paperSize, description);
 }
 
 // Queries read state
@@ -238,6 +252,7 @@ export function signInWithGoogle() {
 | Commands | `addImage`, `updateImage`, `deleteImage`, `reorderImages` | `use-case/commands/page.commands.ts` |
 | Commands | `addRectangle`, `updateRectangle`, `deleteRectangle` | `use-case/commands/rectangle.commands.ts` |
 | Commands | `migrateLocalTemplatesToFirebase`, `migrateLocalImagesToCloud` | `use-case/commands/sync.commands.ts` |
+| Commands | `trackEvent`, `trackPageView` | `use-case/commands/analytics.commands.ts` |
 | Queries | `getTemplate`, `listTemplates`, `getCurrentImage` | `use-case/queries/template.queries.ts` |
 
 **Editor**
@@ -265,6 +280,7 @@ export function signInWithGoogle() {
 | Kind | Operations | File |
 |------|------------|------|
 | Commands | `joinWaitlist` | `use-case/commands/join-waitlist.ts` |
+| Commands | `openDemoTemplate` | `use-case/commands/open-demo-template.ts` |
 
 ---
 
@@ -296,11 +312,13 @@ export function signInWithGoogle() {
 | History | history-store | In-memory only; large undo stacks shouldn't persist |
 | Export job | export-store | Independent lifecycle with progress and caching |
 
-React Query is wired in `App.tsx` but not yet used in features — reserved for future server-state fetching without adding complexity now.
+React Query is **not** used in the app today (`App.tsx` only wraps `AuthProvider` + MUI `LocalizationProvider`).
 
 ---
 
 ## Key Flows
+
+Detalle de actores e interacciones: **[FLOWS.md](./FLOWS.md)**. Resumen técnico abajo.
 
 ### 1. Auth & access gate
 
@@ -371,13 +389,15 @@ flowchart LR
 
 **Key components:**
 - `TemplateEditor.tsx` — page shell
-- `TemplateCanvas.tsx` — Konva canvas with drag, resize, snap
+- `TemplateCanvas.tsx` — Konva canvas with drag, resize, snap, zoom/pan
 - `editor-sidebar.tsx` — field type selector and style controls
 - `pages-map.tsx` — thumbnail navigation with drag-to-reorder
+- Grid overlays/handles — cols/rows/gaps/alignment for field grids
 
 **Hooks:**
 - `use-manage-images.ts` — upload, delete, reorder pages
 - `use-manage-areas.ts` — rectangle CRUD
+- `use-grid-group-ops.ts` — grid group editing
 - `use-undo-redo-shortcuts.ts` — keyboard shortcuts
 
 ### 4. PDF export pipeline
@@ -410,7 +430,7 @@ Each page is rendered by:
 
 1. Spawn module Worker with page PNG data URLs
 2. Worker embeds each PNG as a PDF page via `pdf-lib`
-3. Page dimensions match the original uploaded image size
+3. Page dimensions come from `template.paperSize` (or inferred size) via `resolvePdfPageSizeForExport` — not necessarily the raw uploaded pixel size
 4. Worker posts final `ArrayBuffer` back to main thread
 5. Browser download triggered
 
@@ -420,9 +440,13 @@ Each page is rendered by:
 - `src/features/export/domain/services/planner-export.ts` — orchestration
 - `src/features/export/infrastructure/workers/pdf.worker.ts` — PDF assembly
 - `src/features/export/domain/services/pdf-page-size.ts` — dimension logic
-- `src/features/editor/domain/services/planner-utils.ts` — calendar math and field rendering
+- `src/features/editor/domain/services/planner-utils.ts` — calendar math and field rendering (`renderFieldOnCanvas`)
+- `src/features/editor/domain/services/field-style-config.ts` — fonts/styles + `resolveCanvasTextX` / `resolveCanvasTextY`
+- `src/features/template/domain/services/paper-size.ts` — paper size ↔ pixels/points
 
 **Caching:** if the same template + date range is exported again without changes, cached pages are reused (skipping phase 1).
+
+**Typography note:** export text uses Canvas2D `textBaseline: 'alphabetic'` + `resolveCanvasTextY` (font bounding-box metrics, measuring `'M'`) so vertical centering matches Konva's `verticalAlign="middle"` in the editor.
 
 ---
 
@@ -470,7 +494,7 @@ flowchart TB
 | Service | Usage | Adapter |
 |---------|-------|---------|
 | **Auth** | Google sign-in via popup | `FirebaseAuthAdapter` |
-| **Firestore** | User profiles, templates, pages, waitlist, demo requests | `FirebaseTemplateRepository`, `FirebaseUserRepository`, `FirebaseWaitlistRepository`, `FirebaseDemoRequestRepository` |
+| **Firestore** | User profiles, templates, pages, waitlist | `FirebaseTemplateRepository`, `FirebaseUserRepository`, `FirebaseWaitlistRepository` |
 | **Analytics** | Product event tracking | `FirebaseAnalyticsAdapter` |
 
 **Firestore schema:**
@@ -481,9 +505,9 @@ users/{uid}
   ├── email: string
   ├── displayName: string
   └── templates/{templateId}
-        ├── name, description, pageOrder, locale, weekStartsOn, dates
+        ├── name, description, paperSize, pageOrder, locale, weekStartsOn, dates
         └── pages/{pageId}
-              ├── type, width, height, imageRef, rectangles
+              ├── type, width, height, imageRef, rectangles, gridGroups
               └── ...
 waitlist/{email}
   ├── email: string
@@ -511,8 +535,8 @@ Production uses `VITE_IMAGE_STORAGE=cloud`. UploadThing is the primary store for
 
 | Mode | `VITE_IMAGE_STORAGE` | Storage | Use case |
 |------|---------------------|---------|----------|
-| Cloud | `cloud` | UploadThing + IndexedDB cache | Production (default on Vercel) |
-| Local | `local` | IndexedDB only | Offline dev without UploadThing credentials |
+| Cloud | `cloud` | UploadThing + IndexedDB cache | Production (set explicitly; see `.env.example`) |
+| Local | unset / other | IndexedDB only | Offline / local-only image storage |
 
 **Server files:**
 - `server/uploadthing/core.ts` — upload router with auth middleware
@@ -531,16 +555,21 @@ All adapters are wired in `src/core/bootstrap/infra.ts`:
 
 ```typescript
 export function getInfra(): InfraServices {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase is not configured. Copy .env.example to .env.local …');
+  }
   return {
     auth: new FirebaseAuthAdapter(),
     users: new FirebaseUserRepository(),
     waitlist: new FirebaseWaitlistRepository(),
     analytics: new FirebaseAnalyticsAdapter(),
     templates: new FirebaseTemplateRepository(),
-    images: createImageAdapter(),  // Caching(UploadThing, IndexedDB) in cloud mode; IndexedDB only in local dev
+    images: createImageAdapter(),  // Caching(UploadThing, IndexedDB) in cloud mode; IndexedDB only otherwise
   };
 }
 ```
+
+Cloud image mode is enabled only when `VITE_IMAGE_STORAGE === 'cloud'` (`isCloudImageStorageEnabled()`). If unset or any other value, images stay on IndexedDB.
 
 ### Analytics events
 
@@ -552,21 +581,28 @@ export function getInfra(): InfraServices {
 | `login` | Google sign-in |
 | `planner_created` | New template created |
 | `block_added` | Dynamic field placed on canvas |
-| `planner_generated` | Export started |
-| `planner_downloaded` | PDF download triggered |
+| `planner_generated` | Export finished successfully (with `pageCount`) |
+| `planner_downloaded` | PDF download triggered (same success path as above) |
 
 ---
 
 ## Dual Render Pipeline
 
-A key frontend engineering decision: the editor and the export use **different rendering engines**.
+A key frontend engineering decision: the editor and the export use **different rendering engines**, but share the same field model and typography helpers.
 
 | Context | Engine | Why |
 |---------|--------|-----|
-| **Editor preview** | Konva (WebGL/Canvas) | Interactive drag, resize, snap guides, multi-select — needs a scene graph |
-| **PDF generation** | HTML Canvas 2D | Pixel-accurate text rendering with custom fonts; deterministic output matching print |
+| **Editor preview** | Konva / react-konva (2D canvas scene graph) | Interactive drag, resize, snap guides, multi-select |
+| **PDF generation** | HTML Canvas 2D → PNG → pdf-lib Worker | Deterministic print output; worker only assembles PDF pages |
 
-This separation keeps the editor responsive (Konva handles interaction efficiently) while ensuring export fidelity (HTML Canvas gives precise control over typography and positioning for print output).
+| Concern | Editor | Export |
+|---------|--------|--------|
+| Text node | Konva `Text` `verticalAlign="middle"` | `renderFieldOnCanvas` |
+| Baseline | Konva non-legacy (alphabetic + font metrics) | `textBaseline: 'alphabetic'` + `resolveCanvasTextY` |
+| Horizontal align | Konva `align` | `resolveCanvasTextX` |
+| Fonts / styles | `field-style-config` | Same module (`buildCanvasFont`, etc.) |
+
+This keeps the editor responsive while ensuring PDF text sits in the same place as the canvas preview (especially for script fonts with asymmetric ascent/descent).
 
 ---
 
@@ -583,7 +619,6 @@ This separation keeps the editor responsive (Konva handles interaction efficient
 | **Undo/redo** | Command pattern in separate store | Clean separation from template data | In-memory only (acceptable for v1) |
 | **Image adapter** | Caching wrapper over UploadThing | Transparent IndexedDB cache; same port interface | Cache invalidation complexity |
 | **Auth gate** | Admin-granted access in Firestore | Controlled early access without building admin UI | Manual step for each user |
-| **React Query** | Wired but unused | Reserved for future server-state without premature complexity | Dead code until needed |
 | **Deploy** | Vercel (static + serverless) | Zero-config hosting; API routes for UploadThing auth | Vendor lock-in for serverless |
 
 ---
@@ -601,8 +636,15 @@ This separation keeps the editor responsive (Konva handles interaction efficient
 | `src/features/editor/domain/services/planner-week.test.ts` | Week calculation, ISO vs US week numbers |
 | `src/features/editor/domain/services/canvas-snap.test.ts` | Snap guide alignment and spacing |
 | `src/features/editor/domain/services/canvas-pan.test.ts` | Canvas panning bounds |
+| `src/features/editor/domain/services/canvas-viewport.test.ts` | Viewport / zoom math |
+| `src/features/editor/domain/services/drag-axis-lock.test.ts` | Axis-locked dragging |
+| `src/features/editor/domain/services/grid-layout.test.ts` | Grid cell layout |
+| `src/features/editor/domain/services/grid-group.test.ts` | Grid group operations |
+| `src/features/editor/domain/services/grid-tool-presets.test.ts` | Grid tool presets |
+| `src/features/editor/domain/services/layer-order.test.ts` | Layer ordering |
 | `src/features/export/domain/services/pdf-page-size.test.ts` | PDF page dimension logic |
-| `src/test/daily-page.test.ts` | Daily page generation integration |
+| `src/features/template/domain/services/paper-size.test.ts` | Paper size conversions |
+| `src/test/daily-page.test.ts` | Field values, text case, `resolveCanvasTextX` / `resolveCanvasTextY` |
 
 **Run tests:**
 
@@ -625,7 +667,7 @@ npm run test:watch  # watch mode
 | `VITE_FIREBASE_APP_ID` | Yes | — | Firebase client config |
 | `VITE_FIREBASE_MEASUREMENT_ID` | No | — | Firebase Analytics |
 | `VITE_INFRA_PROVIDER` | No | `firebase` | Declared; not used in code yet |
-| `VITE_IMAGE_STORAGE` | No | `cloud` in production | `cloud` (UploadThing) or `local` (dev only) |
+| `VITE_IMAGE_STORAGE` | No | unset ⇒ local IndexedDB | Set to `cloud` for UploadThing (as in `.env.example` / production) |
 | `VITE_UPLOADTHING_URL` | No | same-origin `/api/uploadthing` | Override upload endpoint |
 | `VITE_IMAGE_DELETE_URL` | No | same-origin `/api/images/delete` | Override delete endpoint |
 
@@ -647,6 +689,7 @@ These are **never** exposed to the client bundle.
 
 | Concern | Path |
 |---------|------|
+| Product flows | `docs/FLOWS.md` |
 | DI bootstrap | `src/core/bootstrap/infra.ts` |
 | App router | `src/core/routes/app-router.tsx` |
 | Route paths | `src/core/routes/paths.ts` |
@@ -655,15 +698,19 @@ These are **never** exposed to the client bundle.
 | Template store | `src/features/template/ui/stores/template-store.ts` |
 | Template sync hook | `src/features/template/ui/hooks/use-template-sync.ts` |
 | Template migration | `src/features/template/domain/services/template-migration.ts` |
+| Paper size | `src/features/template/domain/services/paper-size.ts` |
 | Page type constraints | `src/features/template/domain/constants/template-field-types.ts` |
 | Page ordering | `src/features/template/domain/services/template-image-order.ts` |
 | Editor store | `src/features/editor/ui/stores/editor-store.ts` |
 | History store | `src/features/editor/ui/stores/history-store.ts` |
 | Calendar logic | `src/features/editor/domain/services/planner-utils.ts` |
-| Field styling | `src/features/editor/domain/services/field-style-config.ts` |
+| Field styling / text X·Y | `src/features/editor/domain/services/field-style-config.ts` |
+| Grid layout | `src/features/editor/domain/services/grid-layout.ts` |
+| Grid groups | `src/features/editor/domain/services/grid-group.ts` |
 | Canvas snap | `src/features/editor/domain/services/canvas-snap.ts` |
 | Canvas editor | `src/features/editor/ui/components/canvas/TemplateCanvas.tsx` |
 | Template editor page | `src/features/editor/ui/pages/TemplateEditor.tsx` |
+| Demo template open | `src/features/landing/use-case/commands/open-demo-template.ts` |
 | Export store | `src/features/export/ui/stores/export-store.ts` |
 | Export orchestration | `src/features/export/domain/services/planner-export.ts` |
 | PDF worker | `src/features/export/infrastructure/workers/pdf.worker.ts` |
@@ -678,4 +725,4 @@ These are **never** exposed to the client bundle.
 
 ## Migration Note
 
-The codebase recently migrated from a flat structure (`src/components/`, `src/lib/`, `src/stores/`, `src/infrastructure/`) to the current feature-sliced layout (`src/features/`, `src/core/`). Some legacy paths may still exist on disk during the transition but are not the source of truth. All new code and documentation references the feature module paths above.
+The codebase migrated from a flat structure (`src/components/`, `src/lib/`, `src/stores/`, `src/infrastructure/`) to the current feature-sliced layout (`src/features/`, `src/core/`). That migration is complete; those legacy top-level folders are no longer present. All documentation references the feature module paths above.

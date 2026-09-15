@@ -8,7 +8,8 @@ Built end-to-end as a **Product Engineer** project: product definition, UX/UI, f
 
 `React 19` · `TypeScript` · `Vite` · `Zustand` · `Konva` · `pdf-lib` · `Firebase` · `SCSS`
 
-> **Architecture deep dive:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+> **Architecture deep dive:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)  
+> **Product flows:** [docs/FLOWS.md](docs/FLOWS.md)
 
 ---
 
@@ -38,7 +39,7 @@ flowchart LR
 
 - **Visual canvas editor** — Konva-based drag/resize with Figma-like snap guides, multi-select, and full undo/redo
 - **Calendar generation engine** — locale-aware date logic (EN/ES), configurable week start (Monday/Sunday), ISO or US week numbers
-- **Client-side PDF pipeline** — two-phase export (page generation + PDF assembly) off the main thread via a Web Worker
+- **Client-side PDF pipeline** — two-phase export: page PNGs on the main thread, PDF assembly in a Web Worker
 - **Feature-sliced architecture** — five domain modules with ports/adapters, use-case layer, and a central DI bootstrap
 - **Auth & early access** — Google sign-in, admin-granted access gate, waitlist collection
 - **Cloud-backed persistence** — Firestore realtime sync for templates; UploadThing for page artwork; IndexedDB as client-side image cache
@@ -53,13 +54,16 @@ flowchart LR
 - **Page-type system** — cover, month cover, monthly calendar, weekly calendar, daily page, and extra pages — each with type-specific allowed field types
 - **Visual editor** — drag, resize, and snap dynamic blocks on a Konva canvas
 - **Typed dynamic fields** — year, month, day, and week range (startDay / endDay) with per-page constraints
-- **Block styling** — font, color, format variants (numeric vs. name), text case, and alignment per field
+- **Block styling** — font (Gloria / Great Vibes / Lato), color, format variants (numeric vs. name), text case, and alignment per field
+- **Grid tool** — place and edit field grids (cols, rows, gaps, alignment) on calendar-style pages
+- **Paper size** — A4/A5 (and related) project size driving export rasterization and PDF page dimensions
 - **Pages map** — thumbnail navigation grouped by page type, with drag-to-reorder within each group
 - **Undo / redo** — command-pattern history for block and page operations
 - **Planner generation** — real calendar logic fills every page for a chosen date range
-- **PDF export** — print-ready output matching each page's size and orientation
+- **PDF export** — print-ready output matching the project's paper size and orientation
 - **Google sign-in & access gate** — Firebase Auth with admin-controlled early access
 - **Waitlist** — landing page signup stored in Firestore
+- **Interactive demo** — try the editor without auth at `/landing-demo/home`
 - **Firestore sync** — realtime template metadata sync across sessions and devices
 - **Cloud image storage** — UploadThing for page artwork with IndexedDB caching for fast loads
 - **Analytics** — Firebase Analytics events for key product actions
@@ -108,7 +112,7 @@ flowchart TB
 
 The codebase follows a **feature-sliced, hexagonal architecture**: each module owns its domain logic, use cases, UI, and infrastructure adapters. Shared concerns (routing, i18n, UI primitives, DI) live in `src/core/`.
 
-**[Full architecture docs → docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+**[Full architecture docs → docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** · **[Flows → docs/FLOWS.md](docs/FLOWS.md)**
 
 ---
 
@@ -170,9 +174,9 @@ flowchart LR
 | Layer | Technologies |
 |-------|-------------|
 | **Frontend** | React 19, TypeScript, Vite, React Router 6, SCSS |
-| **State** | Zustand, React Context (auth), TanStack React Query (scaffolded) |
+| **State** | Zustand, React Context (auth) |
 | **Canvas** | Konva, react-konva, @dnd-kit |
-| **Export** | pdf-lib (Web Worker), HTML Canvas |
+| **Export** | pdf-lib (Web Worker), HTML Canvas 2D |
 | **Dates / i18n** | date-fns, dayjs, i18next |
 | **UI** | Radix UI, MUI date pickers, Framer Motion, Lucide |
 | **Infrastructure** | Firebase (Auth, Firestore, Analytics), UploadThing, IndexedDB (image cache) |
@@ -198,10 +202,10 @@ src/
 
 server/                 # Shared server logic (Firebase Admin, UploadThing router)
 api/                    # Vercel serverless entry points
-docs/                   # Architecture documentation
+docs/                   # Architecture + product flow docs
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for layer details, domain model, and key file references.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for layer details and [docs/FLOWS.md](docs/FLOWS.md) for actor/interaction maps.
 
 ---
 
@@ -224,7 +228,7 @@ npm run build
 
 ### Environment variables
 
-Client-side (prefix `VITE_`): Firebase config, `VITE_IMAGE_STORAGE` (`cloud` for production, `local` for offline dev without UploadThing).
+Client-side (prefix `VITE_`): Firebase config, `VITE_IMAGE_STORAGE` (`cloud` enables UploadThing; any other/unset value uses IndexedDB only).
 
 Server-only (for image uploads): `UPLOADTHING_TOKEN`, `FIREBASE_SERVICE_ACCOUNT` or `FIREBASE_SERVICE_ACCOUNT_PATH`.
 
@@ -248,8 +252,9 @@ Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin cre
 ### Done
 
 - Core planner generation (upload, define zones, generate, export)
-- Firebase auth, waitlist, demo requests, and analytics
+- Firebase auth, waitlist, interactive demo, and analytics
 - Firestore template sync and UploadThing image storage
+- Paper size selection and field grid tool
 
 ### Next
 
@@ -269,4 +274,4 @@ Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin cre
 
 Dyna was designed and built end-to-end — from product thesis and UX flows to canvas editing, calendar generation, PDF export, cloud sync, and production deployment on Vercel. It demonstrates product thinking, design craft, and frontend engineering in a single cohesive project.
 
-For the full technical story — domain model, state management, export pipeline, and integration details — see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+For the full technical story see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. For who-calls-whom in each product flow see **[docs/FLOWS.md](docs/FLOWS.md)**.
