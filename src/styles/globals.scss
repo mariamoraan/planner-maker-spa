@@ -42,38 +42,6 @@
   --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
 }
 
-.dark {
-  --background: 222 47% 6%;
-  --foreground: 210 40% 98%;
-  --card: 222 47% 8%;
-  --card-foreground: 210 40% 98%;
-  --popover: 222 47% 8%;
-  --popover-foreground: 210 40% 98%;
-  --primary: 210 40% 98%;
-  --primary-foreground: 222 47% 11%;
-  --secondary: 222 47% 14%;
-  --secondary-foreground: 210 40% 98%;
-  --muted: 222 47% 14%;
-  --muted-foreground: 215 20% 65%;
-  --accent: 168 76% 42%;
-  --accent-foreground: 0 0% 100%;
-  --destructive: 0 63% 31%;
-  --destructive-foreground: 210 40% 98%;
-  --border: 222 47% 18%;
-  --input: 222 47% 18%;
-  --ring: 168 76% 42%;
-  --sidebar-background: 222 47% 6%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 168 76% 42%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 222 47% 14%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 222 47% 14%;
-  --sidebar-ring: 168 76% 42%;
-  --canvas-bg: 222 47% 10%;
-  --canvas-grid: 222 47% 16%;
-}
-
 /* Preflight reset (replaces Tailwind base) */
 *,
 *::before,
