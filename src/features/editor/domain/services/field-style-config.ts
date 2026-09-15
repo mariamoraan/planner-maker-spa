@@ -176,6 +176,26 @@ export function resolveCanvasTextX(x: number, width: number, textAlign: TextAlig
   }
 }
 
+/**
+ * Alphabetic baseline Y matching Konva's non-legacy verticalAlign="middle"
+ * (fontBoundingBox metrics, same as measureSize('M')).
+ */
+export function resolveCanvasTextY(
+  y: number,
+  height: number,
+  metrics: Pick<
+    TextMetrics,
+    | 'fontBoundingBoxAscent'
+    | 'fontBoundingBoxDescent'
+    | 'actualBoundingBoxAscent'
+    | 'actualBoundingBoxDescent'
+  >,
+): number {
+  const ascent = metrics.fontBoundingBoxAscent ?? metrics.actualBoundingBoxAscent ?? 0;
+  const descent = metrics.fontBoundingBoxDescent ?? metrics.actualBoundingBoxDescent ?? 0;
+  return y + height / 2 + (ascent - descent) / 2;
+}
+
 function capitalizeWord(word: string, locale = 'es'): string {
   if (!word) return word;
   return word.charAt(0).toLocaleUpperCase(locale) + word.slice(1).toLocaleLowerCase(locale);

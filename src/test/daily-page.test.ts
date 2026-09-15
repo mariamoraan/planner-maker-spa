@@ -11,6 +11,7 @@ import {
   applyTextCase,
   isValidHexColor,
   resolveCanvasTextX,
+  resolveCanvasTextY,
   resolveFieldStyle,
 } from '@/features/editor/domain/services/field-style-config';
 import type { Rectangle, TemplatePage } from '@/features/template';
@@ -196,6 +197,40 @@ describe('field style config helpers', () => {
     expect(resolveCanvasTextX(0, 100, 'left')).toBe(5);
     expect(resolveCanvasTextX(0, 100, 'center')).toBe(50);
     expect(resolveCanvasTextX(0, 100, 'right')).toBe(95);
+  });
+
+  it('resolves canvas text y with Konva-equivalent font metrics', () => {
+    // Gloria-like asymmetric box: ascent 79, descent 32 → skew +23.5
+    expect(
+      resolveCanvasTextY(0, 80, {
+        fontBoundingBoxAscent: 79,
+        fontBoundingBoxDescent: 32,
+      }),
+    ).toBe(63.5);
+
+    // Rect offset: y=100, height=80 → same skew from local center
+    expect(
+      resolveCanvasTextY(100, 80, {
+        fontBoundingBoxAscent: 79,
+        fontBoundingBoxDescent: 32,
+      }),
+    ).toBe(163.5);
+
+    // Symmetric metrics → baseline at geometric center (legacy middle equivalent)
+    expect(
+      resolveCanvasTextY(0, 80, {
+        fontBoundingBoxAscent: 40,
+        fontBoundingBoxDescent: 40,
+      }),
+    ).toBe(40);
+
+    // Falls back to actualBoundingBox* when fontBoundingBox* is missing
+    expect(
+      resolveCanvasTextY(0, 80, {
+        actualBoundingBoxAscent: 79,
+        actualBoundingBoxDescent: 32,
+      }),
+    ).toBe(63.5);
   });
 
   it('applies text case transformations in Spanish', () => {

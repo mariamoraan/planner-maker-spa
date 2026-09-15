@@ -13,6 +13,7 @@ import {
   getFormatVariant,
   resolveFieldStyle,
   resolveCanvasTextX,
+  resolveCanvasTextY,
   buildCanvasFont,
   formatFieldValue,
   isYearFormatVariant,
@@ -385,11 +386,13 @@ export async function renderFieldOnCanvas(
   await document.fonts.load(fontString);
   ctx.font = fontString;
   ctx.textAlign = style.textAlign;
-  ctx.textBaseline = 'middle';
+  ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = color;
 
   const textX = resolveCanvasTextX(x, width, style.textAlign);
-  ctx.fillText(value, textX, y + height / 2, width * 0.9);
+  // Konva measures 'M' for vertical metrics (see Text.js measureSize / _sceneFunc)
+  const textY = resolveCanvasTextY(y, height, ctx.measureText('M'));
+  ctx.fillText(value, textX, textY, width * 0.9);
   ctx.restore();
 }
 
