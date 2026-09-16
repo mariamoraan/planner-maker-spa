@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type Konva from 'konva';
 import type { Rectangle, TemplateImage } from '@/features/template';
+import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
+import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { isEditableTarget } from './canvas-interaction-types';
 
@@ -32,11 +34,14 @@ export function useCanvasKeyboard({
   const clearSelection = useEditorStore(state => state.clearSelection);
   const setCanvasTool = useEditorStore(state => state.setCanvasTool);
   const { addAreas, deleteAreas } = useManageAreas();
+  const { deleteGridGroup } = useGridGroupOps();
 
   const selectedRectangleIdsRef = useRef(selectedRectangleIds);
   selectedRectangleIdsRef.current = selectedRectangleIds;
   const rectanglesRef = useRef(currentImage?.rectangles);
   rectanglesRef.current = currentImage?.rectangles;
+  const gridGroupsRef = useRef(currentImage?.gridGroups);
+  gridGroupsRef.current = currentImage?.gridGroups;
   const copiedRectsRef = useRef(copiedRects);
   copiedRectsRef.current = copiedRects;
   const scaleRef = useRef(scale);
@@ -49,6 +54,8 @@ export function useCanvasKeyboard({
   isGridHandleDraggingRef.current = isGridHandleDragging;
   const onCancelGridPreviewRef = useRef(onCancelGridPreview);
   onCancelGridPreviewRef.current = onCancelGridPreview;
+  const deleteGridGroupRef = useRef(deleteGridGroup);
+  deleteGridGroupRef.current = deleteGridGroup;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -82,7 +89,12 @@ export function useCanvasKeyboard({
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedIds.length > 0) {
         e.preventDefault();
-        deleteAreas([...selectedIds]);
+        const lockedGrid = getGridGroupForSelection(selectedIds, gridGroupsRef.current);
+        if (lockedGrid) {
+          deleteGridGroupRef.current(lockedGrid.id);
+        } else {
+          deleteAreas([...selectedIds]);
+        }
         return;
       }
 
@@ -133,3 +145,4 @@ export function useCanvasKeyboard({
     addAreas,
   ]);
 }
+

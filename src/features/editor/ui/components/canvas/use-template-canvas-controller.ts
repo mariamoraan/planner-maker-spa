@@ -63,6 +63,7 @@ export function useTemplateCanvasController({
     dragState: drag.dragState,
     dragOverlay: drag.dragOverlay,
     imageId: currentImage?.id,
+    stageRef,
   });
 
   isGridHandleDraggingRef.current = grid.isGridHandleDragging;

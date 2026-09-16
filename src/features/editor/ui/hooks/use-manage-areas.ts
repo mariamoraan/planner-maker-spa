@@ -3,6 +3,7 @@ import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useHistoryStore } from '@/features/editor/ui/stores/history-store';
 import { FieldType, Rectangle, type GridGroup } from '@/features/template';
 import { getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
+import { removeGridGroupsFullyCoveredBy } from '@/features/editor/domain/services/grid-group';
 import {
   applyLayerOperation,
   type LayerOperation,
@@ -101,6 +102,49 @@ export const useManageAreas = () => {
         }
     }, [templateId, currentImageId, updateRectangle, getCurrentImage, pushHistory]);
 
+    const updatePageGridState = useCallback(
+      (
+        updates: {
+          rectangles: Rectangle[];
+          gridGroups?: Record<string, GridGroup> | null;
+        },
+        options?: { recordHistory?: boolean },
+      ) => {
+        if (!templateId || !currentImageId) return;
+
+        const recordHistory = options?.recordHistory ?? true;
+        if (recordHistory) {
+          const currentImage = getCurrentImage(templateId);
+          if (!currentImage) return;
+
+          pushHistory(templateId, {
+            type: 'updatePageGridState',
+            imageId: currentImageId,
+            before: {
+              rectangles: structuredClone(currentImage.rectangles),
+              gridGroups: currentImage.gridGroups
+                ? structuredClone(currentImage.gridGroups)
+                : null,
+            },
+            after: {
+              rectangles: structuredClone(updates.rectangles),
+              gridGroups:
+                updates.gridGroups !== undefined
+                  ? updates.gridGroups
+                    ? structuredClone(updates.gridGroups)
+                    : null
+                  : currentImage.gridGroups
+                    ? structuredClone(currentImage.gridGroups)
+                    : null,
+            },
+          });
+        }
+
+        updateImage(templateId, currentImageId, updates);
+      },
+      [templateId, currentImageId, updateImage, getCurrentImage, pushHistory],
+    );
+
     const deleteAreas = useCallback((ids: string[]) => {
         if (!templateId || !currentImageId || ids.length === 0) return;
 
@@ -116,6 +160,25 @@ export const useManageAreas = () => {
           .filter((entry): entry is { rectangle: Rectangle; index: number } => entry !== null);
 
         if (toDelete.length === 0) return;
+
+        const deletedIds = toDelete.map(d => d.rectangle.id);
+        const prunedGridGroups = removeGridGroupsFullyCoveredBy(
+          deletedIds,
+          currentImage.gridGroups,
+        );
+
+        if (prunedGridGroups !== null) {
+          const idSet = new Set(deletedIds);
+          const nextRects = currentImage.rectangles.filter(rect => !idSet.has(rect.id));
+          updatePageGridState({
+            rectangles: nextRects,
+            gridGroups: prunedGridGroups ?? null,
+          });
+          setSelectedRectangleIds(
+            selectedRectangleIds.filter(selectedId => !idSet.has(selectedId)),
+          );
+          return;
+        }
 
         if (toDelete.length === 1) {
           pushHistory(templateId, {
@@ -133,7 +196,7 @@ export const useManageAreas = () => {
           });
         }
 
-        for (const id of [...ids].sort((a, b) => {
+        for (const id of [...deletedIds].sort((a, b) => {
           const indexA = toDelete.find(d => d.rectangle.id === a)?.index ?? 0;
           const indexB = toDelete.find(d => d.rectangle.id === b)?.index ?? 0;
           return indexB - indexA;
@@ -144,7 +207,7 @@ export const useManageAreas = () => {
         setSelectedRectangleIds(
           selectedRectangleIds.filter(selectedId => !ids.includes(selectedId)),
         );
-    }, [templateId, currentImageId, deleteRectangle, selectedRectangleIds, setSelectedRectangleIds, getCurrentImage, pushHistory]);
+    }, [templateId, currentImageId, deleteRectangle, selectedRectangleIds, setSelectedRectangleIds, getCurrentImage, pushHistory, updatePageGridState]);
 
     const deleteArea = useCallback((id: string) => {
         deleteAreas([id]);
@@ -226,50 +289,6 @@ export const useManageAreas = () => {
             updateRectangle(templateId, currentImageId, id, updates);
         }
     }, [templateId, currentImageId, updateRectangle, getCurrentImage, pushHistory]);
-
-
-    const updatePageGridState = useCallback(
-      (
-        updates: {
-          rectangles: Rectangle[];
-          gridGroups?: Record<string, GridGroup> | null;
-        },
-        options?: { recordHistory?: boolean },
-      ) => {
-        if (!templateId || !currentImageId) return;
-
-        const recordHistory = options?.recordHistory ?? true;
-        if (recordHistory) {
-          const currentImage = getCurrentImage(templateId);
-          if (!currentImage) return;
-
-          pushHistory(templateId, {
-            type: 'updatePageGridState',
-            imageId: currentImageId,
-            before: {
-              rectangles: structuredClone(currentImage.rectangles),
-              gridGroups: currentImage.gridGroups
-                ? structuredClone(currentImage.gridGroups)
-                : null,
-            },
-            after: {
-              rectangles: structuredClone(updates.rectangles),
-              gridGroups:
-                updates.gridGroups !== undefined
-                  ? updates.gridGroups
-                    ? structuredClone(updates.gridGroups)
-                    : null
-                  : currentImage.gridGroups
-                    ? structuredClone(currentImage.gridGroups)
-                    : null,
-            },
-          });
-        }
-
-        updateImage(templateId, currentImageId, updates);
-      },
-      [templateId, currentImageId, updateImage, getCurrentImage, pushHistory],
-    );
 
     const reorderLayers = useCallback(
       (operation: LayerOperation, selectedIds: string[]) => {

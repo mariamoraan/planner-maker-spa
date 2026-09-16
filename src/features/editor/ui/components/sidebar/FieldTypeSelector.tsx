@@ -1,6 +1,6 @@
 import './field-type-selector.scss'
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FieldType } from '@/features/template';
 import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/features/template';
@@ -46,26 +46,11 @@ export const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
 
 export const FieldTypeSelector = () => {
   const { t } = useTranslation();
-  const selectedFieldType = useEditorStore(state => state.selectedFieldType);
+  const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const setSelectedFieldType = useEditorStore(state => state.setSelectedFieldType);
   const { addArea } = useManageAreas();
   const { createDefaultGrid } = useGridGroupOps();
   const currentImage = useCurrentImage();
-
-  useEffect(() => {
-    if (!currentImage) return;
-    const availableFieldTypes = (Object.keys(FIELD_TYPE_CONFIG) as FieldType[]).filter(type =>
-      TEMPLATE_FIELD_TYPES[currentImage.type].includes(type),
-    );
-    if (!selectedFieldType) {
-      setSelectedFieldType(availableFieldTypes[0]);
-      return;
-    }
-    const includesCurrentFieldType = availableFieldTypes.includes(selectedFieldType);
-    if (!includesCurrentFieldType) {
-      setSelectedFieldType(availableFieldTypes?.length ? availableFieldTypes[0] : undefined);
-    }
-  }, [currentImage, currentImage?.type, selectedFieldType, setSelectedFieldType]);
 
   if (!currentImage) return null;
 
@@ -82,6 +67,15 @@ export const FieldTypeSelector = () => {
       </div>
     );
   }
+
+  const selectedRects = currentImage.rectangles.filter(rect =>
+    selectedRectangleIds.includes(rect.id),
+  );
+  const highlightedType =
+    selectedRects.length > 0 &&
+    selectedRects.every(rect => rect.fieldType === selectedRects[0].fieldType)
+      ? selectedRects[0].fieldType
+      : undefined;
 
   const handleSelectType = (type: FieldType) => {
     setSelectedFieldType(type);
@@ -112,7 +106,7 @@ export const FieldTypeSelector = () => {
             key={type}
             type="button"
             onClick={() => handleSelectType(type)}
-            className={`field-type-selector__button${selectedFieldType === type ? ' field-type-selector__button--active' : ''}`}
+            className={`field-type-selector__button${highlightedType === type ? ' field-type-selector__button--active' : ''}`}
             title={FIELD_TYPE_CONFIG[type].label}
           >
             <div className="field-type-selector__button__icon-wrapper">{FIELD_ICONS[type]}</div>

@@ -253,6 +253,27 @@ export function removeGridGroup(
   return Object.keys(next).length > 0 ? next : undefined;
 }
 
+/** Removes grid groups whose every rectId is in `ids`. Returns null if nothing changed. */
+export function removeGridGroupsFullyCoveredBy(
+  ids: string[],
+  gridGroups: Record<string, GridGroup> | undefined,
+): Record<string, GridGroup> | undefined | null {
+  if (!gridGroups) return null;
+
+  const idSet = new Set(ids);
+  let next: Record<string, GridGroup> | undefined = gridGroups;
+  let changed = false;
+
+  for (const group of Object.values(gridGroups)) {
+    if (group.rectIds.length === 0) continue;
+    if (!group.rectIds.every(id => idSet.has(id))) continue;
+    next = removeGridGroup(next, group.id);
+    changed = true;
+  }
+
+  return changed ? next : null;
+}
+
 export function upsertGridGroup(
   gridGroups: Record<string, GridGroup> | undefined,
   group: GridGroup,

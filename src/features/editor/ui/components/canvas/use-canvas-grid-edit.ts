@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { RefObject } from 'react';
+import type Konva from 'konva';
 import type { TemplateImage } from '@/features/template';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import {
@@ -23,6 +25,7 @@ interface UseCanvasGridEditParams {
   dragState: DragState | null;
   dragOverlay: DragOverlay | null;
   imageId: string | undefined;
+  stageRef: RefObject<Konva.Stage | null>;
 }
 
 export function useCanvasGridEdit({
@@ -31,6 +34,7 @@ export function useCanvasGridEdit({
   dragState,
   dragOverlay,
   imageId,
+  stageRef,
 }: UseCanvasGridEditParams) {
   const [gridBoundsPreview, setGridBoundsPreview] = useState<GridBounds | null>(null);
   const [gridSettingsPreview, setGridSettingsPreview] = useState<Partial<GridEditSettings> | null>(
@@ -62,8 +66,11 @@ export function useCanvasGridEdit({
       setGridSettingsPreview(null);
       gridSettingsPreviewRef.current = null;
       setGridEditFocus('grid');
+      // Handles set container.style.cursor on hover; unmount skips mouseLeave.
+      const container = stageRef.current?.container();
+      if (container) container.style.cursor = '';
     }
-  }, [lockedGridGroup?.id, setGridEditFocus]);
+  }, [lockedGridGroup?.id, setGridEditFocus, stageRef]);
 
   const gridPreviewPositions = useMemo(() => {
     if (!lockedGridGroup || !gridBoundsPreview) return {};

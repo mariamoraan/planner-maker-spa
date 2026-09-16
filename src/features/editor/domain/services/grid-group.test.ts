@@ -13,6 +13,7 @@ import {
   isFullGridGroupSelected,
   isSelectionLockedGridGroup,
   removeGridGroup,
+  removeGridGroupsFullyCoveredBy,
   repairGridMetadata,
   resolveGridGroupId,
   translateGridGroupState,
@@ -135,6 +136,41 @@ describe('upsertGridGroup / removeGridGroup', () => {
     const upserted = upsertGridGroup(undefined, sampleGroup);
     expect(upserted['grid-1']).toEqual(sampleGroup);
     expect(removeGridGroup(upserted, 'grid-1')).toBeUndefined();
+  });
+});
+
+describe('removeGridGroupsFullyCoveredBy', () => {
+  const secondGroup: GridGroup = {
+    ...sampleGroup,
+    id: 'grid-2',
+    rectIds: ['d', 'e'],
+  };
+
+  it('returns null when no group is fully covered', () => {
+    const groups = { 'grid-1': sampleGroup, 'grid-2': secondGroup };
+    expect(removeGridGroupsFullyCoveredBy(['a', 'b'], groups)).toBeNull();
+    expect(removeGridGroupsFullyCoveredBy(['a', 'b', 'd'], groups)).toBeNull();
+  });
+
+  it('removes groups whose rectIds are all in the delete set', () => {
+    const groups = { 'grid-1': sampleGroup, 'grid-2': secondGroup };
+    const next = removeGridGroupsFullyCoveredBy(['a', 'b', 'c', 'd', 'e', 'x'], groups);
+    expect(next).toBeUndefined();
+  });
+
+  it('keeps uncovered groups and returns undefined when map becomes empty', () => {
+    const groups = { 'grid-1': sampleGroup };
+    expect(removeGridGroupsFullyCoveredBy(['a', 'b', 'c'], groups)).toBeUndefined();
+  });
+
+  it('keeps other groups when only one is covered', () => {
+    const groups = { 'grid-1': sampleGroup, 'grid-2': secondGroup };
+    const next = removeGridGroupsFullyCoveredBy(['a', 'b', 'c'], groups);
+    expect(next).toEqual({ 'grid-2': secondGroup });
+  });
+
+  it('returns null when gridGroups is undefined', () => {
+    expect(removeGridGroupsFullyCoveredBy(['a'], undefined)).toBeNull();
   });
 });
 
