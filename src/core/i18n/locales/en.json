@@ -241,6 +241,8 @@
     "gridToolRedistributeHint": "Redistribute {{count}} selected blocks within the grid area.",
     "gridColumns": "Columns",
     "gridRows": "Rows",
+    "gridAddRow": "+ Row",
+    "gridAddColumn": "+ Column",
     "gridAlignment": "Alignment",
     "gridAlignTopLeft": "Top left",
     "gridAlignTopCenter": "Top center",

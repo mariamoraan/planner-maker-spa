@@ -8,23 +8,20 @@ import type { FieldType, GridGroup } from '@/features/template';
 import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-style-controls';
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector';
 import { GridAlignmentPicker } from '@/features/editor/ui/components/shared/grid-alignment-picker';
-import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls';
 import { SliderStepper } from '@/features/editor/ui/components/shared/slider-stepper';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { getGridGroupFieldType } from '@/features/editor/domain/services/grid-group';
 import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
 import {
   getGridGap,
-  maxBlockSize,
   maxGridGap,
-  maxGridPadding,
   scaleGridSettingsForGapChange,
 } from '@/features/editor/domain/services/grid-layout';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { useGridStyleEditing } from '@/features/editor/ui/hooks/use-grid-style-editing';
-import { GridIcon, GapIcon, PaddingIcon, TrashIcon } from '@/core/icons';
+import { GridIcon, GapIcon, TrashIcon } from '@/core/icons';
 
 interface GridToolbarControlsProps {
   group: GridGroup;
@@ -34,79 +31,8 @@ function clampDimension(value: number, min = 1, max = 20): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function clampBlockSize(value: number, min = 20, max = 9999): number {
-  return Math.min(max, Math.max(min, Math.round(value)));
-}
-
-function clampPadding(value: number, min = 0): number {
-  return Math.max(min, Math.round(value));
-}
-
 function clampGap(value: number, min = 0): number {
   return Math.max(min, Math.round(value));
-}
-
-interface DimensionStepperInputProps {
-  value: number;
-  min?: number;
-  max?: number;
-  onCommit: (value: number) => void;
-  onAdjust: (delta: number) => void;
-  decrementLabel?: string;
-  incrementLabel?: string;
-}
-
-function DimensionStepperInput({
-  value,
-  min = 0,
-  max,
-  onCommit,
-  onAdjust,
-  decrementLabel = '-',
-  incrementLabel = '+',
-}: DimensionStepperInputProps) {
-  const [draft, setDraft] = useState<string | null>(null);
-  const displayValue = draft ?? String(value);
-
-  const commitDraft = () => {
-    if (draft === null || draft.trim() === '') {
-      setDraft(null);
-      return;
-    }
-
-    const parsed = Number(draft);
-    if (Number.isFinite(parsed)) {
-      onCommit(parsed);
-    }
-    setDraft(null);
-  };
-
-  return (
-    <>
-      <button type="button" onClick={() => onAdjust(-1)} aria-label={decrementLabel}>
-        −
-      </button>
-      <input
-        type="text"
-        inputMode="numeric"
-        className="grid-toolbar-controls__dimension-input"
-        value={displayValue}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        onFocus={() => setDraft(String(value))}
-        onChange={event => setDraft(event.target.value.replace(/\D/g, ''))}
-        onBlur={commitDraft}
-        onKeyDown={event => {
-          if (event.key === 'Enter') {
-            event.currentTarget.blur();
-          }
-        }}
-      />
-      <button type="button" onClick={() => onAdjust(1)} aria-label={incrementLabel}>
-        +
-      </button>
-    </>
-  );
 }
 
 function useToolbarPopover() {
@@ -174,40 +100,26 @@ function useToolbarPopover() {
 export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
   const { t } = useTranslation();
   const currentImage = useCurrentImage();
-  const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const gridEditFocus = useEditorStore(state => state.gridEditFocus);
   const setGridEditFocus = useEditorStore(state => state.setGridEditFocus);
   const { updateGroupSettings, updateGroupFieldType, ungroupGridGroup, deleteGridGroup } = useGridGroupOps();
   const gridStyleEditing = useGridStyleEditing(group, currentImage?.rectangles ?? []);
 
   const layoutPopover = useToolbarPopover();
-  const paddingPopover = useToolbarPopover();
   const gapPopover = useToolbarPopover();
-  const blockSizePopover = useToolbarPopover();
 
   const settings = normalizeGridSettings(group.settings);
   const groupFieldType = currentImage
     ? getGridGroupFieldType(group, currentImage.rectangles, currentImage.gridGroups)
     : undefined;
   const representativeRect = currentImage?.rectangles.find(rect => rect.id === group.rectIds[0]);
-  const padding = settings.padding ?? { x: 0, y: 0 };
   const gap = getGridGap(group.bounds, settings);
-  const slotSize = maxBlockSize(
-    group.bounds,
-    settings.cols,
-    settings.rows,
-    settings.gap ?? { x: gap.gapX, y: gap.gapY },
-  );
-  const maxRectWidth = slotSize.width;
   const maxGapLimits = maxGridGap(group.bounds, settings);
-  const maxPaddingLimits = maxGridPadding(group.bounds, settings);
   const isGridMode = gridEditFocus === 'grid';
 
   useEffect(() => {
     layoutPopover.close();
-    paddingPopover.close();
     gapPopover.close();
-    blockSizePopover.close();
   }, [group.id]);
 
   const adjustCols = (delta: number) => {
@@ -232,24 +144,6 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     }
   };
 
-  const applyPaddingChange = (targetPadding: { x: number; y: number }) => {
-    updateGroupSettings(group.id, { padding: targetPadding });
-  };
-
-  const commitPaddingX = (value: number) => {
-    const x = clampPadding(Math.min(maxPaddingLimits.x, value));
-    if (x !== padding.x) {
-      applyPaddingChange({ x, y: padding.y });
-    }
-  };
-
-  const commitPaddingY = (value: number) => {
-    const y = clampPadding(Math.min(maxPaddingLimits.y, value));
-    if (y !== padding.y) {
-      applyPaddingChange({ x: padding.x, y });
-    }
-  };
-
   const applyGapChange = (targetGap: { gapX: number; gapY: number }) => {
     const next = scaleGridSettingsForGapChange(group.bounds, settings, targetGap);
     updateGroupSettings(group.id, {
@@ -271,32 +165,6 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
     const gapY = clampGap(Math.min(maxGapLimits.y, value));
     if (gapY !== gap.gapY) {
       applyGapChange({ gapX: gap.gapX, gapY });
-    }
-  };
-
-  const adjustRectWidth = (delta: number) => {
-    updateGroupSettings(group.id, {
-      rectWidth: clampBlockSize(settings.rectWidth + delta, 20, maxRectWidth),
-    });
-  };
-
-  const adjustRectHeight = (delta: number) => {
-    updateGroupSettings(group.id, {
-      rectHeight: clampBlockSize(settings.rectHeight + delta, 20),
-    });
-  };
-
-  const commitRectWidth = (value: number) => {
-    const rectWidth = clampBlockSize(value, 20, maxRectWidth);
-    if (rectWidth !== settings.rectWidth) {
-      updateGroupSettings(group.id, { rectWidth });
-    }
-  };
-
-  const commitRectHeight = (value: number) => {
-    const rectHeight = clampBlockSize(value, 20);
-    if (rectHeight !== settings.rectHeight) {
-      updateGroupSettings(group.id, { rectHeight });
     }
   };
 
@@ -409,51 +277,6 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
               )}
           </div>
 
-          <div ref={paddingPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
-            <button
-              ref={paddingPopover.triggerRef}
-              type="button"
-              className={clsx('grid-toolbar-controls__menu-trigger', {
-                'grid-toolbar-controls__menu-trigger--open': paddingPopover.isOpen,
-              })}
-              onClick={paddingPopover.toggle}
-              title={t('editor.gridCellPadding')}
-              aria-label={t('editor.gridCellPadding')}
-            >
-              <PaddingIcon size={16} />
-            </button>
-            {paddingPopover.isOpen && paddingPopover.menuPosition &&
-              createPortal(
-                <div
-                  ref={paddingPopover.menuRef}
-                  className="grid-toolbar-controls__popover grid-toolbar-controls__popover--padding"
-                  {...blockSelectionZoneProps}
-                  style={{
-                    top: paddingPopover.menuPosition.top,
-                    left: paddingPopover.menuPosition.left,
-                  }}
-                >
-                  <SliderStepper
-                    label={t('editor.gridPaddingX')}
-                    value={padding.x}
-                    min={0}
-                    max={maxPaddingLimits.x}
-                    onChange={x => applyPaddingChange({ x, y: padding.y })}
-                    onCommit={commitPaddingX}
-                  />
-                  <SliderStepper
-                    label={t('editor.gridPaddingY')}
-                    value={padding.y}
-                    min={0}
-                    max={maxPaddingLimits.y}
-                    onChange={y => applyPaddingChange({ x: padding.x, y })}
-                    onCommit={commitPaddingY}
-                  />
-                </div>,
-                document.body,
-              )}
-          </div>
-
           <div ref={gapPopover.containerRef} className="grid-toolbar-controls__popover-anchor">
             <button
               ref={gapPopover.triggerRef}
@@ -513,59 +336,6 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
             onChange={(alignH, alignV) => updateGroupSettings(group.id, { alignH, alignV })}
           />
 
-          <div ref={blockSizePopover.containerRef} className="grid-toolbar-controls__popover-anchor">
-            <button
-              ref={blockSizePopover.triggerRef}
-              type="button"
-              className={clsx('grid-toolbar-controls__menu-trigger', {
-                'grid-toolbar-controls__menu-trigger--open': blockSizePopover.isOpen,
-              })}
-              onClick={blockSizePopover.toggle}
-              title={t('editor.gridBlockSize')}
-              aria-label={t('editor.gridBlockSize')}
-            >
-              <GridIcon size={16} />
-            </button>
-            {blockSizePopover.isOpen && blockSizePopover.menuPosition &&
-              createPortal(
-                <div
-                  ref={blockSizePopover.menuRef}
-                  className="grid-toolbar-controls__popover grid-toolbar-controls__popover--layout"
-                  {...blockSelectionZoneProps}
-                  style={{
-                    top: blockSizePopover.menuPosition.top,
-                    left: blockSizePopover.menuPosition.left,
-                  }}
-                >
-                  <label className="grid-toolbar-controls__stepper">
-                    <span>{t('editor.gridBlockWidth')}</span>
-                    <div className="grid-toolbar-controls__stepper-inputs">
-                      <DimensionStepperInput
-                        value={settings.rectWidth}
-                        min={20}
-                        max={maxRectWidth}
-                        onCommit={commitRectWidth}
-                        onAdjust={adjustRectWidth}
-                      />
-                    </div>
-                  </label>
-
-                  <label className="grid-toolbar-controls__stepper">
-                    <span>{t('editor.gridBlockHeight')}</span>
-                    <div className="grid-toolbar-controls__stepper-inputs">
-                      <DimensionStepperInput
-                        value={settings.rectHeight}
-                        min={20}
-                        onCommit={commitRectHeight}
-                        onAdjust={adjustRectHeight}
-                      />
-                    </div>
-                  </label>
-                </div>,
-                document.body,
-              )}
-          </div>
-
           {groupFieldType && (
             <>
               <div className="grid-toolbar-controls__divider" />
@@ -589,9 +359,6 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
           )}
         </>
       )}
-
-      <div className="grid-toolbar-controls__divider" />
-      <LayerControls selectedIds={selectedRectangleIds} />
 
       <div className="grid-toolbar-controls__divider" />
       <button

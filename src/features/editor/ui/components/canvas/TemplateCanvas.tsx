@@ -7,6 +7,7 @@ import { CanvasPageImage } from './canvas-page-image';
 import { CanvasRectangleList } from './canvas-rectangle-list';
 import { CanvasSelectionOverlays } from './canvas-selection-overlays';
 import { CanvasGridEditLayer } from './canvas-grid-edit-layer';
+import { GridAddDimensionControls } from './grid-add-dimension-controls';
 import { GridCellGuides } from './grid-cell-guides';
 import { useTemplateCanvasController } from './use-template-canvas-controller';
 import './template-canva.scss';
@@ -77,11 +78,12 @@ export const TemplateCanvas: React.FC = () => {
             />
           )}
 
-          {c.currentImage && c.showRectangleGuides && (
+          {c.currentImage && (c.showRectangleGuides || c.grid.lockedGridGroup) && (
             <GridCellGuides
               gridGroups={c.currentImage.gridGroups}
               scale={scale}
               offset={offset}
+              onlyGroupId={c.showRectangleGuides ? null : c.grid.lockedGridGroup?.id}
               previewGroupId={c.grid.lockedGridGroup?.id}
               previewBounds={c.grid.activeGridBounds}
               previewSettings={c.grid.activeGridSettings}
@@ -115,6 +117,20 @@ export const TemplateCanvas: React.FC = () => {
           onSettingsCommit={c.grid.handleGridSettingsCommit}
         />
       </Stage>
+
+      {c.grid.lockedGridGroup &&
+        c.grid.activeGridBounds &&
+        c.grid.activeGridSettings &&
+        c.grid.gridEditFocus === 'grid' && (
+          <GridAddDimensionControls
+            groupId={c.grid.lockedGridGroup.id}
+            bounds={c.grid.activeGridBounds}
+            scale={scale}
+            offset={offset}
+            cols={c.grid.activeGridSettings.cols}
+            rows={c.grid.activeGridSettings.rows}
+          />
+        )}
 
       <div className="template-canva__controls">
         <CanvasFloatingControls

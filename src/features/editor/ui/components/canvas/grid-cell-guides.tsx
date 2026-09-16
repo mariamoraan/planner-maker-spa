@@ -18,6 +18,8 @@ interface GridCellGuidesProps {
   gridGroups: Record<string, GridGroup> | undefined;
   scale: number;
   offset: { x: number; y: number };
+  /** When set, only this group's cell slots are drawn. */
+  onlyGroupId?: string | null;
   previewGroupId?: string | null;
   previewBounds?: GridBounds | null;
   previewSettings?: GridEditSettings | null;
@@ -31,14 +33,19 @@ export const GridCellGuides: React.FC<GridCellGuidesProps> = ({
   gridGroups,
   scale,
   offset,
+  onlyGroupId = null,
   previewGroupId = null,
   previewBounds = null,
   previewSettings = null,
 }) => {
-  const groups = useMemo(
-    () => (gridGroups ? Object.values(gridGroups) : []),
-    [gridGroups],
-  );
+  const groups = useMemo(() => {
+    if (!gridGroups) return [];
+    if (onlyGroupId) {
+      const group = gridGroups[onlyGroupId];
+      return group ? [group] : [];
+    }
+    return Object.values(gridGroups);
+  }, [gridGroups, onlyGroupId]);
 
   if (groups.length === 0) return null;
 
