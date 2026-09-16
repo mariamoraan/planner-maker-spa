@@ -79,8 +79,8 @@ export function HowItWorksTimeline() {
                     alt={alt}
                     url={
                       step.key === 'upload'
-                        ? 'dyna.app/home'
-                        : 'dyna.app/editor'
+                        ? 'forma.app/home'
+                        : 'forma.app/editor'
                     }
                   />
                 </div>

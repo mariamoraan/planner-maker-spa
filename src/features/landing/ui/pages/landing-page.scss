@@ -1,6 +1,6 @@
 .landing-page {
   min-height: 100vh;
-  background-color: #fafafa;
+  background: #fafafa;
   color: #171717;
   scroll-behavior: smooth;
 
@@ -8,7 +8,7 @@
     position: sticky;
     top: 0;
     z-index: 10;
-    background-color: rgb(255 255 255 / 0.8);
+    background: rgb(255 255 255 / 0.8);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid #e5e5e5;
   }
@@ -123,7 +123,7 @@
     display: inline-block;
     padding: 0.75rem 1.5rem;
     border-radius: 1rem;
-    background-color: #000;
+    background: #000;
     color: #fff;
     font-weight: 500;
     text-decoration: none;
@@ -137,7 +137,7 @@
     }
 
     &--secondary {
-      background-color: #fff;
+      background: #fff;
       color: #000;
       border: 1px solid #d4d4d4;
       box-shadow: none;
@@ -275,7 +275,7 @@
       background: #fafafa;
     }
 
-    &--dyna {
+    &--forma {
       background: #fff;
       border-color: #171717;
     }
@@ -387,11 +387,11 @@
     padding: 7rem 0;
 
     &--white {
-      background-color: #fff;
+      background: #fff;
     }
 
     &--neutral {
-      background-color: #fafafa;
+      background: #fafafa;
     }
   }
 
@@ -450,11 +450,11 @@
     text-align: center;
 
     &--neutral {
-      background-color: #fafafa;
+      background: #fafafa;
     }
 
     &--white {
-      background-color: #fff;
+      background: #fff;
     }
 
     h3 {
@@ -491,7 +491,7 @@
       top: 0;
       bottom: 0;
       width: 1px;
-      background-color: #d4d4d4;
+      background: #d4d4d4;
     }
   }
 
@@ -517,7 +517,7 @@
       width: 1rem;
       height: 1rem;
       border-radius: 9999px;
-      background-color: #000;
+      background: #000;
       top: 0.5rem;
     }
   }
@@ -581,7 +581,7 @@
     border-radius: 1rem;
     padding: 2rem;
     border: 1px solid #e5e5e5;
-    background-color: #fff;
+    background: #fff;
 
     &--highlight {
       box-shadow: 0 0 0 2px #000;
@@ -634,7 +634,7 @@
     border-radius: 0.75rem;
     font-weight: 500;
     border: 1px solid #e5e5e5;
-    background-color: #fafafa;
+    background: #fafafa;
     cursor: pointer;
 
     &:disabled {
@@ -644,7 +644,7 @@
   }
 
   &__footer {
-    background-color: #fff;
+    background: #fff;
   }
 
   &__footer-inner {

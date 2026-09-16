@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background-color: hsl(var(--background));
+  background: hsl(var(--background));
 
   @media (max-width: $editor-max-unsupported-width), (max-height: $editor-max-unsupported-height) {
     display: flex;

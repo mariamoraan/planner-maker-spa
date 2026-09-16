@@ -1,6 +1,6 @@
 # Architecture
 
-Technical documentation for **Dyna — Planner Builder**.
+Technical documentation for **Forma — Planner Builder**.
 
 **Back to project overview:** [README.md](../README.md)  
 **Product flows (actors & interactions):** [FLOWS.md](./FLOWS.md)
@@ -9,7 +9,7 @@ Technical documentation for **Dyna — Planner Builder**.
 
 ## Overview & Principles
 
-Dyna is a React SPA organized as **five feature modules** under `src/features/`, each following a consistent layered structure inspired by **Clean/Hexagonal architecture**:
+Forma is a React SPA organized as **five feature modules** under `src/features/`, each following a consistent layered structure inspired by **Clean/Hexagonal architecture**:
 
 ```
 features/<name>/

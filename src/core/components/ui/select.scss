@@ -28,7 +28,7 @@
   justify-content: space-between;
   border-radius: calc(var(--radius) - 2px);
   border: 1px solid hsl(var(--input));
-  background-color: hsl(var(--background));
+  background: hsl(var(--background));
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   cursor: pointer;
@@ -84,7 +84,7 @@
   overflow: hidden;
   border-radius: calc(var(--radius) - 2px);
   border: 1px solid hsl(var(--border));
-  background-color: hsl(var(--popover));
+  background: hsl(var(--popover));
   color: hsl(var(--popover-foreground));
   box-shadow: var(--shadow-md);
 
@@ -142,7 +142,7 @@
   outline: none;
 
   &:focus {
-    background-color: hsl(var(--accent));
+    background: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
   }
 
@@ -170,7 +170,7 @@
 .select-separator {
   margin: 0.25rem -0.25rem;
   height: 1px;
-  background-color: hsl(var(--muted));
+  background: hsl(var(--muted));
 }
 
 .select-item-description {

@@ -1,6 +1,6 @@
 # Flujos principales de la aplicación
 
-Mapa de **quién interviene** y **cómo se encadenan** los flujos de producto en Dyna.
+Mapa de **quién interviene** y **cómo se encadenan** los flujos de producto en Forma.
 
 Para capas, modelo de dominio, Firebase e integraciones, ver [ARCHITECTURE.md](./ARCHITECTURE.md).
 

@@ -62,7 +62,7 @@ html {
 body {
   margin: 0;
   line-height: inherit;
-  background-color: hsl(var(--background));
+  background: hsl(var(--background));
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -230,7 +230,7 @@ img, video {
 
 /* Global utilities */
 .canvas-workspace {
-  background-color: hsl(var(--canvas-bg));
+  background: hsl(var(--canvas-bg));
   background-image:
     linear-gradient(hsl(var(--canvas-grid)) 1px, transparent 1px),
     linear-gradient(90deg, hsl(var(--canvas-grid)) 1px, transparent 1px);
@@ -238,17 +238,17 @@ img, video {
 }
 
 .field-year {
-  background-color: hsl(var(--field-year) / 0.3);
+  background: hsl(var(--field-year) / 0.3);
   border-color: hsl(var(--field-year));
 }
 
 .field-month {
-  background-color: hsl(var(--field-month) / 0.3);
+  background: hsl(var(--field-month) / 0.3);
   border-color: hsl(var(--field-month));
 }
 
 .field-day {
-  background-color: hsl(var(--field-day) / 0.3);
+  background: hsl(var(--field-day) / 0.3);
   border-color: hsl(var(--field-day));
 }
 

@@ -37,18 +37,18 @@ $amb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
     cursor: pointer;
 
     transition:
-      background-color 150ms $amb-ease-enter,
+      background 150ms $amb-ease-enter,
       color 150ms $amb-ease-enter,
       transform 100ms $amb-ease-enter;
 
     &:hover:not(:disabled) {
-      background-color: $amb-color-default-hover;
+      background: $amb-color-default-hover;
       color: rgba(0, 0, 0, 0.87);
     }
 
     &:active:not(:disabled) {
       transform: scale(0.9);
-      background-color: $amb-color-default-active;
+      background: $amb-color-default-active;
     }
 
     &:focus-visible {
@@ -57,7 +57,7 @@ $amb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
     }
 
     &--active {
-      background-color: $amb-color-default-active;
+      background: $amb-color-default-active;
       color: rgba(0, 0, 0, 0.87);
     }
 
@@ -137,20 +137,20 @@ $amb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
     cursor: pointer;
     white-space: nowrap;
     transition:
-      background-color 120ms $amb-ease-enter,
+      background 120ms $amb-ease-enter,
       padding-left 120ms $amb-ease-enter;
 
     &:hover:not(:disabled) {
-      background-color: $amb-color-default-hover;
+      background: $amb-color-default-hover;
     }
 
     &:active:not(:disabled) {
-      background-color: $amb-color-default-active;
+      background: $amb-color-default-active;
       padding-left: 20px;
     }
 
     &:focus-visible {
-      background-color: $amb-color-default-hover;
+      background: $amb-color-default-hover;
       outline: none;
     }
 
@@ -159,13 +159,13 @@ $amb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
       color: $amb-color-primary;
 
       &:hover:not(:disabled) {
-        background-color: $amb-color-primary-hover;
+        background: $amb-color-primary-hover;
       }
       &:active:not(:disabled) {
-        background-color: $amb-color-primary-active;
+        background: $amb-color-primary-active;
       }
       &:focus-visible {
-        background-color: $amb-color-primary-hover;
+        background: $amb-color-primary-hover;
       }
     }
 
@@ -174,13 +174,13 @@ $amb-ease-exit: cubic-bezier(0.4, 0, 1, 1);
       color: $amb-color-error;
 
       &:hover:not(:disabled) {
-        background-color: $amb-color-error-hover;
+        background: $amb-color-error-hover;
       }
       &:active:not(:disabled) {
-        background-color: $amb-color-error-active;
+        background: $amb-color-error-active;
       }
       &:focus-visible {
-        background-color: $amb-color-error-hover;
+        background: $amb-color-error-hover;
       }
     }
 

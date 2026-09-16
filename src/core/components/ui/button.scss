@@ -9,7 +9,7 @@
   font-weight: 500;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   background: transparent;
 
   &:focus-visible {
@@ -30,45 +30,45 @@
   }
 
   &--default {
-    background-color: hsl(var(--primary));
+    background: hsl(var(--primary));
     color: hsl(var(--primary-foreground));
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--primary) / 0.9);
+      background: hsl(var(--primary) / 0.9);
     }
   }
 
   &--destructive {
-    background-color: hsl(var(--destructive));
+    background: hsl(var(--destructive));
     color: hsl(var(--destructive-foreground));
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--destructive) / 0.9);
+      background: hsl(var(--destructive) / 0.9);
     }
   }
 
   &--outline {
     border: 1px solid hsl(var(--input));
-    background-color: hsl(var(--background));
+    background: hsl(var(--background));
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--accent));
+      background: hsl(var(--accent));
       color: hsl(var(--accent-foreground));
     }
   }
 
   &--secondary {
-    background-color: hsl(var(--secondary));
+    background: hsl(var(--secondary));
     color: hsl(var(--secondary-foreground));
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--secondary) / 0.8);
+      background: hsl(var(--secondary) / 0.8);
     }
   }
 
   &--ghost {
     &:hover:not(:disabled) {
-      background-color: hsl(var(--accent));
+      background: hsl(var(--accent));
       color: hsl(var(--accent-foreground));
     }
   }
@@ -83,20 +83,20 @@
   }
 
   &--sidebar-primary {
-    background-color: hsl(var(--sidebar-primary));
+    background: hsl(var(--sidebar-primary));
     color: hsl(var(--sidebar-primary-foreground));
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--sidebar-primary) / 0.9);
+      background: hsl(var(--sidebar-primary) / 0.9);
     }
   }
 
   &--accent {
-    background-color: hsl(var(--accent));
+    background: hsl(var(--accent));
     color: hsl(var(--accent-foreground));
 
     &:hover:not(:disabled) {
-      background-color: hsl(var(--accent) / 0.9);
+      background: hsl(var(--accent) / 0.9);
     }
   }
 

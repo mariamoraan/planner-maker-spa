@@ -1,7 +1,7 @@
 .home-page {
   display: flex;
   min-height: 100dvh;
-  background-color: hsl(var(--background));
+  background: hsl(var(--background));
   color: hsl(var(--foreground));
   
 
@@ -50,7 +50,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.15s ease;
+    transition: background 0.15s ease;
 
     &:hover {
       background: hsl(var(--muted) / 0.5);

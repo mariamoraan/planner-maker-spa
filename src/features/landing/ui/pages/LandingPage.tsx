@@ -41,7 +41,7 @@ export default function LandingPage() {
   const closeMenu = () => setMenuOpen(false);
 
   const manualItems = t('landing.compare.manual.items', { returnObjects: true }) as string[];
-  const dynaItems = t('landing.compare.dyna.items', { returnObjects: true }) as string[];
+  const formaItems = t('landing.compare.forma.items', { returnObjects: true }) as string[];
   const heroPills = t('landing.hero.pills', { returnObjects: true }) as string[];
 
   return (
@@ -143,7 +143,7 @@ export default function LandingPage() {
             </motion.div>
 
             <motion.div
-              className="landing-page__compare-card landing-page__compare-card--dyna"
+              className="landing-page__compare-card landing-page__compare-card--forma"
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true }}
@@ -151,14 +151,14 @@ export default function LandingPage() {
               transition={{ delay: 0.1 }}
             >
               <Zap className="landing-page__compare-icon" />
-              <h3>{t('landing.compare.dyna.title')}</h3>
+              <h3>{t('landing.compare.forma.title')}</h3>
               <ul>
-                {dynaItems.map(item => (
+                {formaItems.map(item => (
                   <li key={item}>{item}</li>
                 ))}
               </ul>
               <p className="landing-page__compare-time landing-page__compare-time--highlight">
-                {t('landing.compare.dyna.time')}
+                {t('landing.compare.forma.time')}
               </p>
             </motion.div>
           </div>

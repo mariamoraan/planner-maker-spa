@@ -13,7 +13,7 @@
     z-index: 10;
     width: 100%;
     padding: 0;
-    background-color: hsl(var(--card) / 0.92);
+    background: hsl(var(--card) / 0.92);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid hsl(var(--border));
   }
@@ -139,7 +139,7 @@
     background: none;
     cursor: pointer;
     text-align: left;
-    transition: background-color 150ms ease;
+    transition: background 150ms ease;
 
     &:hover {
       background: hsl(var(--muted));

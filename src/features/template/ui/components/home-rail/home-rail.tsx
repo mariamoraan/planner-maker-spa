@@ -46,7 +46,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
         <header className="home-rail__header">
           <Link to={PATHS.landing} className="home-rail__logo">
             <LayoutTemplate className="home-rail__logo-icon" aria-hidden="true" />
-            Dyna
+            Forma
           </Link>
           <p className="home-rail__tagline">Planners dinámicos</p>
         </header>
@@ -112,7 +112,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
 
         <div className="home-rail__footer">
           <Link to={PATHS.landing} className="home-rail__explore-link">
-            Explorar Dyna
+            Explorar Forma
           </Link>
           <AddTemplateButton label="Nuevo proyecto" />
         </div>

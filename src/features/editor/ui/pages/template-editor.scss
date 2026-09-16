@@ -7,7 +7,7 @@
   height: 100dvh;
   min-width: 0;
   overflow: hidden;
-  background-color: hsl(var(--background));
+  background: hsl(var(--background));
 
   @media (max-width: $editor-compact-max-width) {
     --editor-sidebar-width: #{$editor-sidebar-width-compact};

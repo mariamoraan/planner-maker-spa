@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Dyna",
+    "appName": "Forma",
     "loading": "Loading…",
     "cancel": "Cancel",
     "continueWithGoogle": "Continue with Google",
@@ -32,7 +32,7 @@
       "pills": ["Your own design", "Print-ready PDF", "EN / ES calendars"]
     },
     "showcase": {
-      "url": "dyna.app/editor",
+      "url": "forma.app/editor",
       "templateName": "2026 Weekly Planner",
       "blockMonth": "Month",
       "blockDay": "Day",
@@ -40,10 +40,10 @@
       "sampleDay": "Mon 6",
       "startDate": "Jan 1, 2026",
       "endDate": "Dec 31, 2026",
-      "a11yLabel": "Animated preview of the Dyna editor workflow"
+      "a11yLabel": "Animated preview of the Forma editor workflow"
     },
     "compare": {
-      "title": "Manual vs Dyna",
+      "title": "Manual vs Forma",
       "subtitle": "Stop spending weekends on copy-paste. See exactly where you save time.",
       "manual": {
         "title": "Manual (Canva / Photoshop)",
@@ -55,8 +55,8 @@
         ],
         "time": "8–15 hours for a yearly planner"
       },
-      "dyna": {
-        "title": "With Dyna",
+      "forma": {
+        "title": "With Forma",
         "items": [
           "Upload your layout once",
           "Mark dynamic zones on the canvas",
@@ -68,7 +68,7 @@
     },
     "audience": {
       "title": "Built for planner creators",
-      "subtitle": "Whether you sell on Etsy or design for yourself — if you already have the artwork, Dyna handles the dates.",
+      "subtitle": "Whether you sell on Etsy or design for yourself — if you already have the artwork, Forma handles the dates.",
       "cards": [
         {
           "title": "Etsy & digital sellers",
@@ -83,12 +83,12 @@
         {
           "title": "Personal & print projects",
           "pain": "Reordering pages when the calendar shifts is tedious and error-prone.",
-          "solution": "Pick a date range and let Dyna order weeks, months and days correctly."
+          "solution": "Pick a date range and let Forma order weeks, months and days correctly."
         }
       ]
     },
     "benefits": {
-      "title": "What you get with Dyna",
+      "title": "What you get with Forma",
       "subtitle": "Everything you need to go from artwork to a finished planner.",
       "items": [
         {
@@ -112,8 +112,8 @@
     "demo": {
       "title": "See it in action",
       "subtitle": "Upload your design, mark dynamic zones, pick a date range, and download a complete planner.",
-      "videoLabel": "Dyna editor workflow demo",
-      "posterAlt": "Dyna editor with dynamic date zones on a weekly planner layout"
+      "videoLabel": "Forma editor workflow demo",
+      "posterAlt": "Forma editor with dynamic date zones on a weekly planner layout"
     },
     "how": {
       "title": "How it works",
@@ -164,14 +164,14 @@
       "divider": "or"
     },
     "footer": {
-      "brand": "Dyna — Planner Builder",
+      "brand": "Forma — Planner Builder",
       "description": "Build fully custom planners using your own designs and dynamic date logic.",
       "status": "Early access",
       "statusDetail": "Join the waitlist to get in"
     }
   },
   "login": {
-    "title": "Sign in to Dyna",
+    "title": "Sign in to Forma",
     "subtitle": "Use your Google account to access the planner editor.",
     "notConfigured": "Firebase is not configured. Add your credentials to .env.local to enable sign-in.",
     "backToLanding": "Back to landing"
@@ -179,7 +179,7 @@
   "accessPending": {
     "title": "Access not enabled yet",
     "loginSuccess": "You've signed in with Google successfully. Your account is connected, but you don't have access to the editor yet.",
-    "subtitle": "We're opening access gradually. You'll be able to use Dyna once your account is approved. If you joined the waitlist, we'll email you when it's your turn.",
+    "subtitle": "We're opening access gradually. You'll be able to use Forma once your account is approved. If you joined the waitlist, we'll email you when it's your turn.",
     "signedInAs": "Signed in as",
     "backToLanding": "Back to landing"
   },

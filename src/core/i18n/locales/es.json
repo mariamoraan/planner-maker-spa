@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Dyna",
+    "appName": "Forma",
     "loading": "Cargando…",
     "cancel": "Cancelar",
     "continueWithGoogle": "Continuar con Google",
@@ -32,7 +32,7 @@
       "pills": ["Tu propio diseño", "PDF print-ready", "Calendarios EN / ES"]
     },
     "showcase": {
-      "url": "dyna.app/editor",
+      "url": "forma.app/editor",
       "templateName": "Planner Semanal 2026",
       "blockMonth": "Mes",
       "blockDay": "Día",
@@ -40,10 +40,10 @@
       "sampleDay": "Lun 6",
       "startDate": "1 ene 2026",
       "endDate": "31 dic 2026",
-      "a11yLabel": "Vista previa animada del flujo de trabajo del editor Dyna"
+      "a11yLabel": "Vista previa animada del flujo de trabajo del editor Forma"
     },
     "compare": {
-      "title": "Manual vs Dyna",
+      "title": "Manual vs Forma",
       "subtitle": "Deja de perder fines de semana en copiar y pegar. Mira exactamente dónde ahorras tiempo.",
       "manual": {
         "title": "Manual (Canva / Photoshop)",
@@ -55,8 +55,8 @@
         ],
         "time": "8–15 horas para un planner anual"
       },
-      "dyna": {
-        "title": "Con Dyna",
+      "forma": {
+        "title": "Con Forma",
         "items": [
           "Sube tu layout una sola vez",
           "Marca zonas dinámicas en el canvas",
@@ -68,7 +68,7 @@
     },
     "audience": {
       "title": "Hecho para creadoras de planners",
-      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Dyna se encarga de las fechas.",
+      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Forma se encarga de las fechas.",
       "cards": [
         {
           "title": "Vendedoras Etsy y digitales",
@@ -83,12 +83,12 @@
         {
           "title": "Proyectos personales e impresión",
           "pain": "Reordenar páginas cuando cambia el calendario es tedioso y propenso a errores.",
-          "solution": "Elige un rango de fechas y deja que Dyna ordene semanas, meses y días correctamente."
+          "solution": "Elige un rango de fechas y deja que Forma ordene semanas, meses y días correctamente."
         }
       ]
     },
     "benefits": {
-      "title": "Lo que ganas con Dyna",
+      "title": "Lo que ganas con Forma",
       "subtitle": "Todo lo que necesitas para pasar del artwork a un planner terminado.",
       "items": [
         {
@@ -112,8 +112,8 @@
     "demo": {
       "title": "Míralo en acción",
       "subtitle": "Sube tu diseño, marca zonas dinámicas, elige un rango de fechas y descarga un planner completo.",
-      "videoLabel": "Demo del flujo del editor Dyna",
-      "posterAlt": "Editor Dyna con zonas dinámicas de fechas en un layout semanal"
+      "videoLabel": "Demo del flujo del editor Forma",
+      "posterAlt": "Editor Forma con zonas dinámicas de fechas en un layout semanal"
     },
     "how": {
       "title": "Cómo funciona",
@@ -164,14 +164,14 @@
       "divider": "o"
     },
     "footer": {
-      "brand": "Dyna — Planner Builder",
+      "brand": "Forma — Planner Builder",
       "description": "Crea planners totalmente personalizados con tus diseños y lógica de fechas dinámica.",
       "status": "Acceso anticipado",
       "statusDetail": "Apúntate a la lista de espera para entrar"
     }
   },
   "login": {
-    "title": "Inicia sesión en Dyna",
+    "title": "Inicia sesión en Forma",
     "subtitle": "Usa tu cuenta de Google para acceder al editor de planners.",
     "notConfigured": "Firebase no está configurado. Añade tus credenciales en .env.local para activar el inicio de sesión.",
     "backToLanding": "Volver a la landing"
@@ -179,7 +179,7 @@
   "accessPending": {
     "title": "Acceso aún no activado",
     "loginSuccess": "Has iniciado sesión con Google correctamente. Tu cuenta está conectada, pero todavía no tienes acceso al editor.",
-    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Dyna cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno.",
+    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Forma cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno.",
     "signedInAs": "Sesión iniciada como",
     "backToLanding": "Volver a la landing"
   },

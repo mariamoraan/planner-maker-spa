@@ -17,7 +17,7 @@ export function LandingScreenshot({
   src,
   srcSet,
   alt,
-  url = 'dyna.app/editor',
+  url = 'forma.app/editor',
   className,
   framed = true,
   width = LANDING_IMAGE_SIZE.width,

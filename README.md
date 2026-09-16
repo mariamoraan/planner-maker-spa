@@ -1,8 +1,8 @@
-# Dyna — Planner Builder
+# Forma — Planner Builder
 
 **Live demo:** [https://planner-maker-spa.vercel.app/](https://planner-maker-spa.vercel.app/)
 
-Dyna is a design-first web app that lets creators upload their own planner artwork, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF.
+Forma is a design-first web app that lets creators upload their own planner artwork, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF.
 
 Built end-to-end as a **Product Engineer** project: product definition, UX/UI, frontend architecture, and production deployment.
 
@@ -17,7 +17,7 @@ Built end-to-end as a **Product Engineer** project: product definition, UX/UI, f
 
 Most planner tools force you into fixed templates. Creators who already have custom artwork — covers, monthly spreads, weekly layouts — need a way to add **real calendar logic** on top of their designs without rebuilding everything in a rigid grid.
 
-Dyna bridges that gap: you bring the visuals, the app handles the dates.
+Forma bridges that gap: you bring the visuals, the app handles the dates.
 
 ### How it works
 
@@ -272,6 +272,6 @@ Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin cre
 
 ## About
 
-Dyna was designed and built end-to-end — from product thesis and UX flows to canvas editing, calendar generation, PDF export, cloud sync, and production deployment on Vercel. It demonstrates product thinking, design craft, and frontend engineering in a single cohesive project.
+Forma was designed and built end-to-end — from product thesis and UX flows to canvas editing, calendar generation, PDF export, cloud sync, and production deployment on Vercel. It demonstrates product thinking, design craft, and frontend engineering in a single cohesive project.
 
 For the full technical story see **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. For who-calls-whom in each product flow see **[docs/FLOWS.md](docs/FLOWS.md)**.
