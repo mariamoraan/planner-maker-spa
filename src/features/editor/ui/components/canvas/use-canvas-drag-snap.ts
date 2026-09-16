@@ -11,6 +11,7 @@ import {
   computeGroupBounds,
   normalizeCoord,
 } from '@/features/editor/domain/services/canvas-snap';
+import { normalizeRotation, rotatePointAround, rectCenter } from '@/features/editor/domain/services/block-geometry';
 import {
   resolveDragAxisLock,
   type DragAxisLock,
@@ -160,10 +161,43 @@ export function useCanvasDragSnap({
       const leaderStart = startEntries.find(entry => entry.id === rectId) ?? startEntries[0];
       const groupBounds = dragGroupBoundsRef.current;
 
-      const newX = (node.x() - offset.x) / scale;
-      const newY = (node.y() - offset.y) / scale;
-      const leaderDx = newX - leaderStart.x;
-      const leaderDy = newY - leaderStart.y;
+      // Node is positioned by center in world space (TemplateRectangle).
+      const worldCenter = {
+        x: (node.x() - offset.x) / scale,
+        y: (node.y() - offset.y) / scale,
+      };
+
+      const leaderGroupId = resolveGridGroupId(
+        rectId,
+        currentImage?.rectangles ?? [],
+        currentImage?.gridGroups,
+      );
+      const leaderGroup = leaderGroupId
+        ? currentImage?.gridGroups?.[leaderGroupId]
+        : undefined;
+      const groupRotation = leaderGroup?.rotation ?? 0;
+
+      let leaderDx: number;
+      let leaderDy: number;
+      if (groupRotation && leaderGroup) {
+        // World translation equals local translation for a rigid rotate+translate.
+        const startLocalCenter = {
+          x: leaderStart.x + movingRect.width / 2,
+          y: leaderStart.y + movingRect.height / 2,
+        };
+        const startWorldCenter = rotatePointAround(
+          startLocalCenter,
+          rectCenter(leaderGroup.bounds),
+          groupRotation,
+        );
+        leaderDx = worldCenter.x - startWorldCenter.x;
+        leaderDy = worldCenter.y - startWorldCenter.y;
+      } else {
+        const newX = worldCenter.x - movingRect.width / 2;
+        const newY = worldCenter.y - movingRect.height / 2;
+        leaderDx = newX - leaderStart.x;
+        leaderDy = newY - leaderStart.y;
+      }
 
       const axisLocked = resolveDragAxisLock(
         leaderDx,
@@ -252,9 +286,27 @@ export function useCanvasDragSnap({
 
       const leaderSnappedX = leaderStart.x + deltaX;
       const leaderSnappedY = leaderStart.y + deltaY;
+
+      let snappedWorldCenter = {
+        x: leaderSnappedX + movingRect.width / 2,
+        y: leaderSnappedY + movingRect.height / 2,
+      };
+      if (groupRotation && leaderGroup) {
+        const movedBounds = {
+          ...leaderGroup.bounds,
+          x: leaderGroup.bounds.x + deltaX,
+          y: leaderGroup.bounds.y + deltaY,
+        };
+        snappedWorldCenter = rotatePointAround(
+          snappedWorldCenter,
+          rectCenter(movedBounds),
+          groupRotation,
+        );
+      }
+
       node.position({
-        x: offset.x + leaderSnappedX * scale,
-        y: offset.y + leaderSnappedY * scale,
+        x: offset.x + snappedWorldCenter.x * scale,
+        y: offset.y + snappedWorldCenter.y * scale,
       });
 
       const previewPositions: Record<string, { x: number; y: number }> = {};
@@ -319,6 +371,8 @@ export function useCanvasDragSnap({
   const handleTransformEnd = useCallback(
     (rectId: string, e: Konva.KonvaEventObject<Event>) => {
       const node = e.target;
+      const movingRect = currentImage?.rectangles?.find(r => r.id === rectId);
+      if (!movingRect) return;
 
       const scaleX = node.scaleX();
       const scaleY = node.scaleY();
@@ -326,15 +380,142 @@ export function useCanvasDragSnap({
       node.scaleX(1);
       node.scaleY(1);
 
+      const nextWidth = Math.max(20, Math.round((node.width() * scaleX) / scale));
+      const nextHeight = Math.max(20, Math.round((node.height() * scaleY) / scale));
+      // Node x/y are the visual center (TemplateRectangle uses offset to center).
+      const centerX = (node.x() - offset.x) / scale;
+      const centerY = (node.y() - offset.y) / scale;
+
       updateArea(rectId, {
-        x: normalizeCoord((node.x() - offset.x) / scale),
-        y: normalizeCoord((node.y() - offset.y) / scale),
-        width: Math.round((node.width() * scaleX) / scale),
-        height: Math.round((node.height() * scaleY) / scale),
+        x: normalizeCoord(centerX - nextWidth / 2),
+        y: normalizeCoord(centerY - nextHeight / 2),
+        width: nextWidth,
+        height: nextHeight,
+        rotation: normalizeRotation(node.rotation()),
       });
     },
-    [scale, offset, updateArea],
+    [scale, offset, updateArea, currentImage?.rectangles],
   );
+
+  /** Move selection from the floating handle (image-space total delta from gesture start). */
+  const beginExternalMove = useCallback(
+    (rectId: string) => {
+      handleDragStart(rectId);
+    },
+    [handleDragStart],
+  );
+
+  const updateExternalMove = useCallback(
+    (totalDx: number, totalDy: number, shiftKey: boolean) => {
+      const startEntries = dragGroupStartRef.current;
+      if (!startEntries || startEntries.length === 0) return;
+
+      const leaderStart = startEntries[0];
+      const movingRect = currentImage?.rectangles?.find(r => r.id === leaderStart.id);
+      if (!movingRect) return;
+
+      const groupBounds = dragGroupBoundsRef.current;
+      const axisLocked = resolveDragAxisLock(
+        totalDx,
+        totalDy,
+        shiftKey,
+        dragAxisLockRef.current,
+      );
+      dragAxisLockRef.current = axisLocked.lock;
+
+      const excludeIds = new Set(startEntries.map(entry => entry.id));
+      const allBounds = (currentImage?.rectangles ?? []).map(r => ({
+        id: r.id,
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+      }));
+
+      const snapOptions = {
+        enabled: true,
+        canvasBounds: currentImage
+          ? { width: currentImage.width, height: currentImage.height }
+          : undefined,
+      };
+
+      let snapResult;
+      if (groupBounds && startEntries.length > 1) {
+        const members = startEntries.map(entry => {
+          const rect = allBounds.find(r => r.id === entry.id)!;
+          return {
+            id: entry.id,
+            startX: entry.x,
+            startY: entry.y,
+            width: rect.width,
+            height: rect.height,
+          };
+        });
+        snapResult = computeGroupSnap(
+          members,
+          axisLocked.dx,
+          axisLocked.dy,
+          allBounds,
+          excludeIds,
+          scale,
+          snapOptions,
+        );
+      } else {
+        snapResult = computeSnap(
+          {
+            id: movingRect.id,
+            x: movingRect.x,
+            y: movingRect.y,
+            width: movingRect.width,
+            height: movingRect.height,
+          },
+          leaderStart.x + axisLocked.dx,
+          leaderStart.y + axisLocked.dy,
+          allBounds,
+          excludeIds,
+          scale,
+          snapOptions,
+        );
+      }
+
+      if (axisLocked.lock === 'x') {
+        snapResult = {
+          ...snapResult,
+          y: groupBounds?.y ?? leaderStart.y,
+          guides: filterSnapGuidesForAxisLock(snapResult.guides, 'x'),
+        };
+      } else if (axisLocked.lock === 'y') {
+        snapResult = {
+          ...snapResult,
+          x: groupBounds?.x ?? leaderStart.x,
+          guides: filterSnapGuidesForAxisLock(snapResult.guides, 'y'),
+        };
+      }
+
+      const deltaX = groupBounds ? snapResult.x - groupBounds.x : snapResult.x - leaderStart.x;
+      const deltaY = groupBounds ? snapResult.y - groupBounds.y : snapResult.y - leaderStart.y;
+      dragDeltaRef.current = { dx: deltaX, dy: deltaY };
+
+      const previewPositions: Record<string, { x: number; y: number }> = {};
+      for (const entry of startEntries) {
+        previewPositions[entry.id] = {
+          x: entry.x + deltaX,
+          y: entry.y + deltaY,
+        };
+      }
+
+      scheduleDragOverlay({
+        guides: snapResult.guides,
+        previewPositions,
+        delta: { dx: deltaX, dy: deltaY },
+      });
+    },
+    [currentImage, scale, scheduleDragOverlay],
+  );
+
+  const endExternalMove = useCallback(() => {
+    handleDragEnd(dragGroupStartRef.current?.[0]?.id ?? '');
+  }, [handleDragEnd]);
 
   return {
     dragState,
@@ -343,5 +524,8 @@ export function useCanvasDragSnap({
     handleDragMove,
     handleDragEnd,
     handleTransformEnd,
+    beginExternalMove,
+    updateExternalMove,
+    endExternalMove,
   };
 }

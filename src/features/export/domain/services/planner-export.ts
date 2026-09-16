@@ -7,12 +7,14 @@ import {
 import {
   getFieldValue,
   loadImage,
-  WeekData,
   getMonthsBetween,
   getDaysOfMonth,
   renderFieldOnCanvas,
+  type FieldValueContext,
 } from '@/features/editor/domain/services/planner-utils';
+import { resolveWorldRect } from '@/features/editor/domain/services/block-geometry';
 import { resolveLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
+import type { WeekStartsOn } from '@/features/template';
 import type { WorkerResponse } from '@/features/export/infrastructure/workers/pdf.worker';
 
 const PAGES_WEIGHT = 0.85;
@@ -82,15 +84,10 @@ export function estimatePageCount(
 
 async function generatePage(
   templateImage: Template['images'][0],
-  context: {
-    year?: number;
-    month?: number;
-    week?: WeekData;
-    days?: Date[];
-    date?: Date;
-  },
+  context: FieldValueContext,
   plannerLocale: Template['locale'] = 'es',
   paperSize?: PaperSize,
+  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
 ): Promise<{ imageData: string; width: number; height: number; paperSize?: PaperSize }> {
   const img = await loadImage(templateImage.src);
 
@@ -120,10 +117,19 @@ async function generatePage(
       fillIncompleteWeeks: true,
       fillIncompleteMonths: true,
       locale: dateLocale,
+      weekStartsOn,
     });
 
     if (fieldValue) {
-      await renderFieldOnCanvas(ctx, rect, fieldValue, fieldColor, scaleX, scaleY);
+      const world = resolveWorldRect(rect, templateImage.gridGroups);
+      await renderFieldOnCanvas(
+        ctx,
+        { ...rect, x: world.x, y: world.y, rotation: world.rotation },
+        fieldValue,
+        fieldColor,
+        scaleX,
+        scaleY,
+      );
     }
   }
 
@@ -157,9 +163,16 @@ export async function generatePlannerPages(
   const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
   const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
   const exportPaperSize = template.paperSize ?? inferTemplatePaperSize(template);
+  const plannerRange = { plannerStart: startDate, plannerEnd: endDate };
 
   for (const coverImage of coverImages) {
-    const page = await generatePage(coverImage, {}, plannerLocale, exportPaperSize);
+    const page = await generatePage(
+      coverImage,
+      plannerRange,
+      plannerLocale,
+      exportPaperSize,
+      weekStartsOn,
+    );
     pages.push({ ...page, pageNumber: pages.length + 1, type: 'cover' });
     reportProgress();
   }
@@ -171,7 +184,8 @@ export async function generatePlannerPages(
         year: month.year,
         month: month.month,
         days: month.days,
-      }, plannerLocale, exportPaperSize);
+        ...plannerRange,
+      }, plannerLocale, exportPaperSize, weekStartsOn);
       pages.push({ ...page, pageNumber: pages.length + 1, type: 'month-cover' });
       reportProgress();
     }
@@ -182,7 +196,8 @@ export async function generatePlannerPages(
         year: month.year,
         month: month.month,
         days: month.days,
-      }, plannerLocale, exportPaperSize);
+        ...plannerRange,
+      }, plannerLocale, exportPaperSize, weekStartsOn);
       pages.push({ ...page, pageNumber: pages.length + 1, type: 'monthly-calendar' });
       reportProgress();
     }
@@ -197,7 +212,8 @@ export async function generatePlannerPages(
         year: date.getFullYear(),
         month: date.getMonth(),
         date,
-      }, plannerLocale, exportPaperSize);
+        ...plannerRange,
+      }, plannerLocale, exportPaperSize, weekStartsOn);
       pages.push({
         ...page,
         pageNumber: pages.length + 1,
@@ -217,7 +233,8 @@ export async function generatePlannerPages(
             year: month.year,
             month: month.month,
             week,
-          }, plannerLocale, exportPaperSize);
+            ...plannerRange,
+          }, plannerLocale, exportPaperSize, weekStartsOn);
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
@@ -246,7 +263,8 @@ export async function generatePlannerPages(
             year: month.year,
             month: month.month,
             week,
-          }, plannerLocale, exportPaperSize);
+            ...plannerRange,
+          }, plannerLocale, exportPaperSize, weekStartsOn);
           pages.push({
             ...page,
             pageNumber: pages.length + 1,
@@ -270,7 +288,13 @@ export async function generatePlannerPages(
 
   const extraPages = template.images.filter(img => img.type === 'extra');
   for (const extra of extraPages) {
-    const page = await generatePage(extra, {}, plannerLocale, exportPaperSize);
+    const page = await generatePage(
+      extra,
+      plannerRange,
+      plannerLocale,
+      exportPaperSize,
+      weekStartsOn,
+    );
     pages.push({ ...page, pageNumber: pages.length + 1, type: 'extra' });
     reportProgress();
   }

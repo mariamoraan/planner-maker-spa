@@ -29,6 +29,8 @@ interface TemplateRectangleProps {
     templateImage: TemplateImage;
     plannerLocale?: PlannerLocale;
     weekStartsOn?: WeekStartsOn;
+    plannerStart?: Date;
+    plannerEnd?: Date;
     scale: number;
     offset: { x: number; y: number };
     config: typeof FIELD_TYPE_CONFIG[FieldType];
@@ -37,6 +39,8 @@ interface TemplateRectangleProps {
     isMarqueePreview?: boolean;
     previewPosition?: { x: number; y: number };
     previewSize?: { width: number; height: number };
+    /** World-space rotation in degrees (includes grid group rotation). */
+    renderRotation?: number;
     draggable?: boolean;
     listening?: boolean;
     onClick: (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => void;
@@ -51,6 +55,8 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     templateImage,
     plannerLocale = 'es',
     weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+    plannerStart,
+    plannerEnd,
     scale,
     offset,
     config,
@@ -59,6 +65,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     isMarqueePreview = false,
     previewPosition,
     previewSize,
+    renderRotation,
     draggable = true,
     listening = true,
     onClick,
@@ -81,8 +88,8 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     );
 
     const previewContext = useMemo(
-      () => getEditorPreviewContext(templateImage, weekStartsOn),
-      [templateImage, weekStartsOn],
+      () => getEditorPreviewContext(templateImage, weekStartsOn, { plannerStart, plannerEnd }),
+      [templateImage, weekStartsOn, plannerStart, plannerEnd],
     );
 
     const dateLocale = useMemo(() => resolveLocale(plannerLocale), [plannerLocale]);
@@ -96,8 +103,9 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
         fillIncompleteWeeks: true,
         fillIncompleteMonths: true,
         locale: dateLocale,
+        weekStartsOn,
       }),
-      [rect, templateImage, previewContext, dateLocale],
+      [rect, templateImage, previewContext, dateLocale, weekStartsOn],
     );
 
     const style = useMemo(() => resolveFieldStyle(rect), [rect]);
@@ -110,11 +118,16 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     const height = displayHeight * scale;
     const displayX = previewPosition?.x ?? rect.x;
     const displayY = previewPosition?.y ?? rect.y;
+    const rotation = renderRotation ?? rect.rotation ?? 0;
+
+    // Position by center so rotation / transformer stay stable.
+    const centerX = offset.x + (displayX + displayWidth / 2) * scale;
+    const centerY = offset.y + (displayY + displayHeight / 2) * scale;
 
     const fontSize = useMemo(
       () =>
-        resolveFieldFontSize(width, height, fieldValue, size =>
-          measureKonvaTextWidth(fieldValue, size, fontFamily, fontStyle),
+        resolveFieldFontSize(width, height, fieldValue, (size, line) =>
+          measureKonvaTextWidth(line, size, fontFamily, fontStyle),
         ),
       [width, height, fieldValue, fontFamily, fontStyle],
     );
@@ -122,10 +135,13 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     return (
       <Group
         id={`rect-${rect.id}`}
-        x={offset.x + displayX * scale}
-        y={offset.y + displayY * scale}
+        x={centerX}
+        y={centerY}
+        offsetX={width / 2}
+        offsetY={height / 2}
         width={width}
         height={height}
+        rotation={rotation}
         draggable={draggable}
         listening={listening}
         onClick={onClick}

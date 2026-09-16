@@ -29,7 +29,9 @@ import {
   assignRectsToGroup,
   buildGridGroup,
   clearGridGroupFromRects,
+  getGridGroupMemberIds,
   removeGridGroup,
+  setGridGroupRotation,
   translateGridGroupState,
   upsertGridGroup,
 } from '@/features/editor/domain/services/grid-group';
@@ -429,6 +431,26 @@ export function useGridGroupOps() {
     [currentImage, updatePageGridState, setSelectedRectangleIds],
   );
 
+  const rotateGridGroup = useCallback(
+    (groupId: string, rotation: number) => {
+      if (!currentImage) return;
+
+      const result = setGridGroupRotation(
+        currentImage.rectangles,
+        currentImage.gridGroups,
+        groupId,
+        rotation,
+      );
+      if (!result) return;
+
+      updatePageGridState(result);
+      setSelectedRectangleIds(
+        getGridGroupMemberIds(groupId, result.rectangles, result.gridGroups),
+      );
+    },
+    [currentImage, updatePageGridState, setSelectedRectangleIds],
+  );
+
   const updateGroupFieldType = useCallback(
     (groupId: string, fieldType: FieldType) => {
       if (!currentImage) return;
@@ -516,6 +538,7 @@ export function useGridGroupOps() {
     updateGroupSettings,
     updateGroupBounds,
     translateGridGroup,
+    rotateGridGroup,
     updateGroupFieldType,
     updateGroupStyle,
     updateGroupFormatVariant,

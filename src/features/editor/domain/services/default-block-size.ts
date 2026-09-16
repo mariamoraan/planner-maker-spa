@@ -9,6 +9,8 @@ const BASELINE_BLOCK_SIZE: Record<FieldType, { width: number; height: number }> 
   day: { width: 80, height: 60 },
   startDay: { width: 80, height: 60 },
   endDay: { width: 80, height: 60 },
+  weekNumber: { width: 80, height: 60 },
+  composite: { width: 220, height: 70 },
 };
 
 /** Baseline grid cell size before page scaling. */

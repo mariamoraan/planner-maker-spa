@@ -7,6 +7,7 @@ interface GridOverlayProps {
   scale: number;
   offset: { x: number; y: number };
   mode?: 'edit' | 'preview';
+  rotation?: number;
 }
 
 const GRID_STROKE = 'hsl(168, 76%, 42%)';
@@ -20,19 +21,25 @@ export const GridOverlay: React.FC<GridOverlayProps> = ({
   scale,
   offset,
   mode = 'edit',
+  rotation = 0,
 }) => {
   const isEditMode = mode === 'edit';
 
-  const frameX = toStage(bounds.x, scale, offset.x);
-  const frameY = toStage(bounds.y, scale, offset.y);
   const frameW = bounds.width * scale;
   const frameH = bounds.height * scale;
+  const centerX = toStage(bounds.x + bounds.width / 2, scale, offset.x);
+  const centerY = toStage(bounds.y + bounds.height / 2, scale, offset.y);
 
   return (
-    <Group listening={false}>
+    <Group
+      x={centerX}
+      y={centerY}
+      offsetX={frameW / 2}
+      offsetY={frameH / 2}
+      rotation={rotation}
+      listening={false}
+    >
       <Rect
-        x={frameX}
-        y={frameY}
         width={frameW}
         height={frameH}
         fill={isEditMode ? 'transparent' : 'rgba(0, 200, 180, 0.06)'}

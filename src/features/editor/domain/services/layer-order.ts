@@ -1,5 +1,6 @@
 import type { GridGroup, Rectangle } from '@/features/template';
 import { findGridGroupForRect } from './grid-group';
+import { pointInOrientedRect, resolveWorldRect } from './block-geometry';
 
 export interface LayerUnit {
   ids: string[];
@@ -148,24 +149,22 @@ export function canLayerOperation(
 
 export function pointInRectangle(
   point: { x: number; y: number },
-  rect: Pick<Rectangle, 'x' | 'y' | 'width' | 'height'>,
+  rect: Pick<Rectangle, 'x' | 'y' | 'width' | 'height' | 'rotation'>,
 ): boolean {
-  return (
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height
-  );
+  return pointInOrientedRect(point, rect);
 }
 
 /** Returns the topmost rectangle at a point (last in array = front). */
 export function findTopmostRectangleAtPoint(
   point: { x: number; y: number },
   rectangles: Rectangle[],
+  gridGroups?: Record<string, GridGroup>,
 ): Rectangle | null {
   for (let index = rectangles.length - 1; index >= 0; index -= 1) {
-    if (pointInRectangle(point, rectangles[index])) {
-      return rectangles[index];
+    const rect = rectangles[index];
+    const world = resolveWorldRect(rect, gridGroups);
+    if (pointInOrientedRect(point, world)) {
+      return rect;
     }
   }
   return null;

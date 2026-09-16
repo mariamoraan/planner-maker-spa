@@ -7,7 +7,16 @@ import {
   getWeek,
 } from 'date-fns';
 import type { Locale } from 'date-fns';
-import type { Rectangle, FieldType, TemplateImage, WeekStartsOn } from '@/features/template';
+import type {
+  Rectangle,
+  FieldType,
+  TemplateImage,
+  WeekStartsOn,
+  CompositePart,
+  FormatVariant,
+} from '@/features/template';
+import { DEFAULT_COMPOSITE_PARTS } from '@/features/template';
+import { ensureDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
 import {
   SECONDARY_COLOR,
   getFormatVariant,
@@ -19,6 +28,7 @@ import {
   isYearFormatVariant,
   isMonthFormatVariant,
   isDayFormatVariant,
+  normalizeStartEndFormatVariant,
 } from '@/features/editor/domain/services/field-style-config';
 import {
   DEFAULT_LOCALE,
@@ -27,6 +37,7 @@ import {
   formatWeekdayName,
   resolveWeekStartsOn,
 } from '@/features/template/domain/services/locale-config';
+import { degToRad } from '@/features/editor/domain/services/block-geometry';
 
 /** @deprecated Use formatMonthName with locale instead */
 export const MONTH_NAMES = [
@@ -52,6 +63,16 @@ export interface WeekData {
   startDate: Date;
   endDate: Date;
   days: Date[];
+}
+
+export interface FieldValueContext {
+  year?: number;
+  month?: number;
+  week?: WeekData;
+  days?: Date[];
+  date?: Date;
+  plannerStart?: Date;
+  plannerEnd?: Date;
 }
 
 export function getMonthDatesForGrid({
@@ -97,7 +118,7 @@ export function getDaysOfMonth({ year, month }: { year: number; month: number })
   return dates;
 }
 
-function getWeekNumber(date: Date, weekStartsOn: WeekStartsOn): number {
+export function getWeekNumber(date: Date, weekStartsOn: WeekStartsOn): number {
   if (weekStartsOn === 'monday') {
     return getISOWeek(date);
   }
@@ -172,28 +193,32 @@ export function getMonthsBetween({
 
   return months;
 }
+
 export function getEditorPreviewContext(
   templateImage: TemplateImage,
-  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON
-): {
-  year?: number;
-  month?: number;
-  week?: WeekData;
-  days?: Date[];
-  date?: Date;
-} {
+  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
+  plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
+): FieldValueContext {
   const today = new Date();
   const year = today.getFullYear();
   const month = today.getMonth();
   const firstOfMonth = new Date(year, month, 1);
+  const plannerStart = plannerRange?.plannerStart ?? new Date(year, 0, 1);
+  const plannerEnd = plannerRange?.plannerEnd ?? new Date(year, 11, 31);
 
   switch (templateImage.type) {
     case 'daily-page':
-      return { date: firstOfMonth, year, month };
+      return { date: firstOfMonth, year, month, plannerStart, plannerEnd };
     case 'month-cover':
-      return { year, month };
+      return { year, month, plannerStart, plannerEnd };
     case 'monthly-calendar':
-      return { year, month, days: getMonthDatesForGrid({ year, month, weekStartsOn }) };
+      return {
+        year,
+        month,
+        days: getMonthDatesForGrid({ year, month, weekStartsOn }),
+        plannerStart,
+        plannerEnd,
+      };
     case 'weekly-calendar': {
       const weekStartOption = resolveWeekStartsOn(weekStartsOn);
       const weekStart = startOfWeek(firstOfMonth, { weekStartsOn: weekStartOption });
@@ -207,25 +232,26 @@ export function getEditorPreviewContext(
           endDate: days[6],
           days,
         },
+        plannerStart,
+        plannerEnd,
       };
     }
+    case 'cover':
+    case 'extra':
+      return { plannerStart, plannerEnd, year: plannerStart.getFullYear(), date: plannerStart };
     default:
-      return { year, month, date: firstOfMonth };
+      return { year, month, date: firstOfMonth, plannerStart, plannerEnd };
   }
 }
 
-/**
- * Get field value based on type and context
- */
-
-function formatYearValue(date: Date, formatVariant: ReturnType<typeof getFormatVariant>): string {
+function formatYearValue(date: Date, formatVariant: FormatVariant): string {
   if (isYearFormatVariant(formatVariant)) {
     return formatVariant === 'YY' ? format(date, 'yy') : format(date, 'yyyy');
   }
   return format(date, 'yyyy');
 }
 
-function formatMonthValue(date: Date, formatVariant: ReturnType<typeof getFormatVariant>, locale: Locale): string {
+function formatMonthValue(date: Date, formatVariant: FormatVariant, locale: Locale): string {
   if (isMonthFormatVariant(formatVariant)) {
     return formatVariant === 'numeric'
       ? format(date, 'M')
@@ -234,7 +260,7 @@ function formatMonthValue(date: Date, formatVariant: ReturnType<typeof getFormat
   return formatMonthName(date, locale);
 }
 
-function formatDayValue(date: Date, formatVariant: ReturnType<typeof getFormatVariant>, locale: Locale): string {
+function formatDayValue(date: Date, formatVariant: FormatVariant, locale: Locale): string {
   if (isDayFormatVariant(formatVariant)) {
     return formatVariant === 'numeric'
       ? format(date, 'd')
@@ -243,10 +269,136 @@ function formatDayValue(date: Date, formatVariant: ReturnType<typeof getFormatVa
   return format(date, 'd');
 }
 
+function formatStartEndValue(date: Date, formatVariant: FormatVariant, locale: Locale): string {
+  const variant = normalizeStartEndFormatVariant(formatVariant);
+  switch (variant) {
+    case 'dayNumeric':
+      return format(date, 'd');
+    case 'weekdayName':
+      return formatWeekdayName(date, locale);
+    case 'monthNumeric':
+      return format(date, 'M');
+    case 'monthName':
+      return formatMonthName(date, locale);
+    case 'YYYY':
+      return format(date, 'yyyy');
+    case 'YY':
+      return format(date, 'yy');
+  }
+}
+
 function resolveFieldColor(isInCurrentMonth: boolean, userColor: string): string {
   return isInCurrentMonth ? userColor : SECONDARY_COLOR;
 }
 
+export function resolveRangeEndpointDate(
+  which: 'start' | 'end',
+  context: FieldValueContext,
+  templateImage: TemplateImage,
+  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
+): Date | null {
+  switch (templateImage.type) {
+    case 'weekly-calendar': {
+      if (!context.week) return null;
+      return which === 'start'
+        ? context.week.days[0] ?? null
+        : context.week.days.at(-1) ?? null;
+    }
+    case 'daily-page': {
+      if (!context.date) return null;
+      const weekStartOption = resolveWeekStartsOn(weekStartsOn);
+      return which === 'start'
+        ? startOfWeek(context.date, { weekStartsOn: weekStartOption })
+        : endOfWeek(context.date, { weekStartsOn: weekStartOption });
+    }
+    case 'monthly-calendar':
+    case 'month-cover': {
+      if (context.year === undefined || context.month === undefined) return null;
+      return which === 'start'
+        ? new Date(context.year, context.month, 1)
+        : new Date(context.year, context.month + 1, 0);
+    }
+    case 'cover':
+    case 'extra':
+      return which === 'start'
+        ? context.plannerStart ?? null
+        : context.plannerEnd ?? null;
+    default:
+      return null;
+  }
+}
+
+export function resolveCompositeAnchorDate(
+  context: FieldValueContext,
+  templateImage: TemplateImage,
+): Date | null {
+  switch (templateImage.type) {
+    case 'daily-page':
+      return context.date ?? null;
+    case 'weekly-calendar':
+      return context.week?.days[0] ?? null;
+    case 'monthly-calendar':
+    case 'month-cover':
+      if (context.year === undefined || context.month === undefined) return null;
+      return new Date(context.year, context.month, 1);
+    case 'cover':
+    case 'extra':
+      return context.plannerStart ?? null;
+    default:
+      return context.date ?? context.plannerStart ?? null;
+  }
+}
+
+export function resolveWeekNumberDate(
+  context: FieldValueContext,
+  templateImage: TemplateImage,
+): Date | null {
+  switch (templateImage.type) {
+    case 'weekly-calendar':
+      return context.week?.days[0] ?? null;
+    case 'daily-page':
+      return context.date ?? null;
+    case 'cover':
+    case 'extra':
+      return context.plannerStart ?? null;
+    default:
+      return null;
+  }
+}
+
+function formatCompositePart(
+  part: CompositePart,
+  date: Date,
+  locale: Locale,
+  weekStartsOn: WeekStartsOn,
+): string {
+  switch (part.kind) {
+    case 'weekday':
+      return formatWeekdayName(date, locale);
+    case 'day':
+      return format(date, 'd');
+    case 'month':
+      return part.variant === 'numeric'
+        ? format(date, 'M')
+        : formatMonthName(date, locale);
+    case 'year':
+      return part.variant === 'YY' ? format(date, 'yy') : format(date, 'yyyy');
+    case 'weekNumber':
+      return String(getWeekNumber(date, weekStartsOn));
+    case 'literal':
+      return part.value;
+  }
+}
+
+export function resolveCompositeParts(rectangle: Rectangle): CompositePart[] {
+  return rectangle.compositeParts?.length
+    ? rectangle.compositeParts
+    : DEFAULT_COMPOSITE_PARTS;
+}
+
+/**
+ * Get field value based on type and context
+ */
 export function getFieldValue({
   fieldType,
   context,
@@ -255,20 +407,16 @@ export function getFieldValue({
   fillIncompleteWeeks,
   fillIncompleteMonths,
   locale = DEFAULT_LOCALE,
+  weekStartsOn = DEFAULT_WEEK_STARTS_ON,
 }: {
   fieldType: FieldType,
-  context: {
-    year?: number;
-    month?: number;
-    week?: WeekData;
-    days?: Date[];
-    date?: Date;
-  },
+  context: FieldValueContext,
   templateImage: TemplateImage,
   rectangle: Rectangle,
   fillIncompleteWeeks?: boolean;
   fillIncompleteMonths?: boolean;
   locale?: Locale;
+  weekStartsOn?: WeekStartsOn;
 }): {fieldValue: string, fieldColor: string} {
   const dateContext = context.date;
   const formatVariant = getFormatVariant(rectangle);
@@ -341,28 +489,38 @@ export function getFieldValue({
         }
       }
       return result('', userColor);
-    case 'startDay':
-      if(context.week) {
-        const filteredDays = context.week.days;
-        const startDate = filteredDays[0];
-        return result(formatDayValue(startDate, formatVariant, locale), userColor);
-      }
-      return result('', userColor);
-    case 'endDay':
-      if(context.week) {
-        const filteredDays = context.week.days;
-        const endDate = filteredDays.at(-1);
-        if (!endDate) return result('', userColor);
-        return result(formatDayValue(endDate, formatVariant, locale), userColor);
-      }
-      return result('', userColor);
+    case 'startDay': {
+      const startDate = resolveRangeEndpointDate('start', context, templateImage, weekStartsOn);
+      if (!startDate) return result('', userColor);
+      return result(formatStartEndValue(startDate, formatVariant, locale), userColor);
+    }
+    case 'endDay': {
+      const endDate = resolveRangeEndpointDate('end', context, templateImage, weekStartsOn);
+      if (!endDate) return result('', userColor);
+      return result(formatStartEndValue(endDate, formatVariant, locale), userColor);
+    }
+    case 'weekNumber': {
+      const weekDate = resolveWeekNumberDate(context, templateImage);
+      if (!weekDate) return result('', userColor);
+      return result(String(getWeekNumber(weekDate, weekStartsOn)), userColor);
+    }
+    case 'composite': {
+      const anchor = resolveCompositeAnchorDate(context, templateImage);
+      if (!anchor) return result('', userColor);
+      const parts = resolveCompositeParts(rectangle);
+      const value = parts
+        .map(part => formatCompositePart(part, anchor, locale, weekStartsOn))
+        .join('');
+      return result(value, userColor);
+    }
     default:
       return result('', userColor);
   }
 }
 
 /**
- * Render text onto a canvas at the specified rectangle position
+ * Render text onto a canvas at the specified rectangle position.
+ * Supports multiline values separated by `\n`.
  */
 export async function renderFieldOnCanvas(
   ctx: CanvasRenderingContext2D,
@@ -377,22 +535,40 @@ export async function renderFieldOnCanvas(
   const width = rectangle.width * scaleX;
   const height = rectangle.height * scaleY;
 
+  const lines = value.length > 0 ? value.split('\n') : [''];
+  const lineCount = Math.max(1, lines.length);
   const paddingY = rectangle.height * 0.15;
-  const fontSize = (rectangle.height - paddingY * 2) * scaleY;
+  const availableHeight = (rectangle.height - paddingY * 2) * scaleY;
+  const fontSize = (availableHeight / lineCount) * 0.9;
   const style = resolveFieldStyle(rectangle);
   const fontString = buildCanvasFont(style, fontSize);
+  const lineHeight = availableHeight / lineCount;
 
   ctx.save();
   await document.fonts.load(fontString);
+
+  const rotation = rectangle.rotation ?? 0;
+  if (rotation) {
+    const cx = x + width / 2;
+    const cy = y + height / 2;
+    ctx.translate(cx, cy);
+    ctx.rotate(degToRad(rotation));
+    ctx.translate(-cx, -cy);
+  }
+
   ctx.font = fontString;
   ctx.textAlign = style.textAlign;
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = color;
 
   const textX = resolveCanvasTextX(x, width, style.textAlign);
-  // Konva measures 'M' for vertical metrics (see Text.js measureSize / _sceneFunc)
-  const textY = resolveCanvasTextY(y, height, ctx.measureText('M'));
-  ctx.fillText(value, textX, textY, width * 0.9);
+  const metrics = ctx.measureText('M');
+  const blockTop = y + paddingY * scaleY;
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineY = resolveCanvasTextY(blockTop + i * lineHeight, lineHeight, metrics);
+    ctx.fillText(lines[i], textX, lineY, width * 0.9);
+  }
   ctx.restore();
 }
 
@@ -414,8 +590,6 @@ export function fileToBase64(file: File): Promise<string> {
     reader.onerror = error => reject(error);
   });
 }
-
-import { ensureDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
 
 /**
  * Load an image from base64 or URL (canvas-safe for export).

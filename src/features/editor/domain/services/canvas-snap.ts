@@ -58,13 +58,30 @@ export function normalizeCoord(value: number): number {
 }
 
 export function sanitizeRectangleGeometry(
-  rect: { x?: number; y?: number; width?: number; height?: number },
-): { x?: number; y?: number; width?: number; height?: number } {
+  rect: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+  },
+): {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  rotation?: number;
+} {
   const sanitized = { ...rect };
   if (sanitized.x !== undefined) sanitized.x = Math.round(sanitized.x);
   if (sanitized.y !== undefined) sanitized.y = Math.round(sanitized.y);
   if (sanitized.width !== undefined) sanitized.width = Math.round(sanitized.width);
   if (sanitized.height !== undefined) sanitized.height = Math.round(sanitized.height);
+  if (sanitized.rotation !== undefined) {
+    // Keep one decimal for smooth rotate; strip near-zero noise.
+    const rounded = Math.round(sanitized.rotation * 10) / 10;
+    sanitized.rotation = Math.abs(rounded) < 0.05 ? 0 : rounded;
+  }
   return sanitized;
 }
 

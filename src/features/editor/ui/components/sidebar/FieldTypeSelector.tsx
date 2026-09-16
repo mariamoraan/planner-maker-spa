@@ -3,7 +3,7 @@ import './field-type-selector.scss'
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { FieldType } from '@/features/template';
-import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/features/template';
+import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES, DEFAULT_COMPOSITE_PARTS } from '@/features/template';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group';
 import { YearIcon } from './year-icon';
@@ -11,6 +11,8 @@ import { MonthIcon } from './month-icon';
 import { DayIcon } from './day-icon';
 import { StartWeekDayIcon } from './start-week-day-icon';
 import { EndWeekDayIcon } from './end-week-day-icon';
+import { WeekNumberIcon } from './week-number-icon';
+import { CompositeIcon } from './composite-icon';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { getDefaultFieldStyle, getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
@@ -34,6 +36,10 @@ export function getFieldIcon(type: FieldType, size = DEFAULT_ICON_SIZE): React.R
       return <StartWeekDayIcon {...iconProps} />;
     case 'endDay':
       return <EndWeekDayIcon {...iconProps} />;
+    case 'weekNumber':
+      return <WeekNumberIcon {...iconProps} />;
+    case 'composite':
+      return <CompositeIcon {...iconProps} />;
   }
 }
 
@@ -43,6 +49,8 @@ export const FIELD_ICONS: Record<FieldType, React.ReactNode> = {
   day: getFieldIcon('day'),
   startDay: getFieldIcon('startDay'),
   endDay: getFieldIcon('endDay'),
+  weekNumber: getFieldIcon('weekNumber'),
+  composite: getFieldIcon('composite'),
 };
 
 export const FieldTypeSelector = () => {
@@ -95,6 +103,7 @@ export const FieldTypeSelector = () => {
       order: currentImage.rectangles.length,
       formatVariant: getDefaultFormatVariant(type),
       style: getDefaultFieldStyle(),
+      ...(type === 'composite' ? { compositeParts: [...DEFAULT_COMPOSITE_PARTS] } : {}),
     });
   };
 

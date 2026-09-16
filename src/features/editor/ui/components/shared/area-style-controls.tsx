@@ -216,10 +216,12 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     </>
   );
 
+  const hasFormatOptions = formatOptions.length > 0;
+
   if (variant === 'sidebar') {
     return (
       <div className="area-style-controls area-style-controls--sidebar">
-        {formatGroup}
+        {hasFormatOptions ? formatGroup : null}
         {colorGroup}
         {fontGroup}
         {styleGroup}
@@ -232,6 +234,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
 
   return (
     <div className="area-style-controls area-style-controls--toolbar">
+      {hasFormatOptions ? (
       <button
         ref={formatRef}
         type="button"
@@ -264,6 +267,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
           </div>
         </div>
       </button>
+      ) : null}
 
       <div ref={colorRef} className="area-style-controls__toolbar-popover-anchor">
         <button

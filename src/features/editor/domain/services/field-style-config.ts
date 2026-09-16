@@ -9,7 +9,8 @@ import type {
   YearFormatVariant,
   MonthFormatVariant,
   DayFormatVariant,
-} from '@/features/template';
+  StartEndFormatVariant,
+} from '@/features/template'
 
 export const MAIN_COLOR = '#1f2a3d';
 export const SECONDARY_COLOR = '#929599';
@@ -83,20 +84,33 @@ const DAY_FORMAT_OPTIONS: readonly FormatOption[] = [
   { id: 'weekdayName', label: 'Texto', preview: 'jueves' },
 ] as const;
 
+const START_END_FORMAT_OPTIONS: readonly FormatOption[] = [
+  { id: 'dayNumeric', label: 'Día nº', preview: '15' },
+  { id: 'weekdayName', label: 'Día texto', preview: 'jueves' },
+  { id: 'monthNumeric', label: 'Mes nº', preview: '5' },
+  { id: 'monthName', label: 'Mes texto', preview: 'mayo' },
+  { id: 'YYYY', label: 'Año 4', preview: '2026' },
+  { id: 'YY', label: 'Año 2', preview: '26' },
+] as const;
+
 export const FIELD_FORMAT_REGISTRY: Record<FieldType, readonly FormatOption[]> = {
   year: YEAR_FORMAT_OPTIONS,
   month: MONTH_FORMAT_OPTIONS,
   day: DAY_FORMAT_OPTIONS,
-  startDay: DAY_FORMAT_OPTIONS,
-  endDay: DAY_FORMAT_OPTIONS,
+  startDay: START_END_FORMAT_OPTIONS,
+  endDay: START_END_FORMAT_OPTIONS,
+  weekNumber: [],
+  composite: [],
 };
 
 const DEFAULT_FORMAT_BY_FIELD_TYPE: Record<FieldType, FormatVariant> = {
   year: 'YYYY',
   month: 'name',
   day: 'numeric',
-  startDay: 'numeric',
-  endDay: 'numeric',
+  startDay: 'dayNumeric',
+  endDay: 'dayNumeric',
+  weekNumber: 'numeric',
+  composite: 'numeric',
 };
 
 export function getDefaultFormatVariant(fieldType: FieldType): FormatVariant {
@@ -114,11 +128,30 @@ export function getDefaultFieldStyle(): FieldStyle {
   };
 }
 
-export function getFormatVariant(rectangle: Rectangle): FormatVariant {
-  if (rectangle.formatVariant) {
-    return rectangle.formatVariant;
+export function normalizeStartEndFormatVariant(
+  variant: FormatVariant,
+): Exclude<StartEndFormatVariant, 'numeric'> {
+  if (variant === 'numeric') return 'dayNumeric';
+  if (variant === 'name') return 'monthName';
+  if (
+    variant === 'dayNumeric' ||
+    variant === 'weekdayName' ||
+    variant === 'monthNumeric' ||
+    variant === 'monthName' ||
+    variant === 'YYYY' ||
+    variant === 'YY'
+  ) {
+    return variant;
   }
-  return getDefaultFormatVariant(rectangle.fieldType);
+  return 'dayNumeric';
+}
+
+export function getFormatVariant(rectangle: Rectangle): FormatVariant {
+  const raw = rectangle.formatVariant ?? getDefaultFormatVariant(rectangle.fieldType);
+  if (rectangle.fieldType === 'startDay' || rectangle.fieldType === 'endDay') {
+    return normalizeStartEndFormatVariant(raw);
+  }
+  return raw;
 }
 
 export function resolveFieldStyle(rectangle: Rectangle): FieldStyle {
@@ -201,21 +234,31 @@ function capitalizeWord(word: string, locale = 'es'): string {
   return word.charAt(0).toLocaleUpperCase(locale) + word.slice(1).toLocaleLowerCase(locale);
 }
 
-export function applyTextCase(value: string, textCase: TextCase, locale = 'es'): string {
+function applyTextCaseToLine(line: string, textCase: TextCase, locale = 'es'): string {
   switch (textCase) {
     case 'uppercase':
-      return value.toLocaleUpperCase(locale);
+      return line.toLocaleUpperCase(locale);
     case 'lowercase':
-      return value.toLocaleLowerCase(locale);
+      return line.toLocaleLowerCase(locale);
     case 'capitalize':
-      return value
+      return line
         .split(/\s+/)
         .filter(Boolean)
         .map(word => capitalizeWord(word, locale))
         .join(' ');
     default:
-      return value;
+      return line;
   }
+}
+
+export function applyTextCase(value: string, textCase: TextCase, locale = 'es'): string {
+  if (!value.includes('\n')) {
+    return applyTextCaseToLine(value, textCase, locale);
+  }
+  return value
+    .split('\n')
+    .map(line => applyTextCaseToLine(line, textCase, locale))
+    .join('\n');
 }
 
 export function formatFieldValue(value: string, style: FieldStyle, locale = 'es'): string {

@@ -182,8 +182,10 @@ describe('field style config helpers', () => {
     expect(getDefaultFormatVariant('year')).toBe('YYYY');
     expect(getDefaultFormatVariant('month')).toBe('name');
     expect(getDefaultFormatVariant('day')).toBe('numeric');
-    expect(getDefaultFormatVariant('startDay')).toBe('numeric');
-    expect(getDefaultFormatVariant('endDay')).toBe('numeric');
+    expect(getDefaultFormatVariant('startDay')).toBe('dayNumeric');
+    expect(getDefaultFormatVariant('endDay')).toBe('dayNumeric');
+    expect(getDefaultFormatVariant('weekNumber')).toBe('numeric');
+    expect(getDefaultFormatVariant('composite')).toBe('numeric');
   });
 
   it('validates hex colors', () => {

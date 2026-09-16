@@ -13,6 +13,7 @@ import {
   isSelectionLockedGridGroup,
   resolveGridGroupId,
 } from '@/features/editor/domain/services/grid-group';
+import { aabbFromRects, resolveWorldRect } from '@/features/editor/domain/services/block-geometry';
 import type { MarqueeRect } from './canvas-interaction-types';
 
 interface UseCanvasSelectionParams {
@@ -59,17 +60,18 @@ export function useCanvasSelection({
       currentImage?.rectangles?.filter(rect => selectedRectangleIds.includes(rect.id)) ?? [];
     if (selectedRects.length < 2) return null;
 
-    const minX = Math.min(...selectedRects.map(rect => rect.x));
-    const minY = Math.min(...selectedRects.map(rect => rect.y));
-    const maxX = Math.max(...selectedRects.map(rect => rect.x + rect.width));
-    const maxY = Math.max(...selectedRects.map(rect => rect.y + rect.height));
+    const worldRects = selectedRects.map(rect =>
+      resolveWorldRect(rect, currentImage?.gridGroups),
+    );
+    const box = aabbFromRects(worldRects);
+    if (!box) return null;
     const padding = 6;
 
     return {
-      x: minX - padding,
-      y: minY - padding,
-      width: maxX - minX + padding * 2,
-      height: maxY - minY + padding * 2,
+      x: box.x - padding,
+      y: box.y - padding,
+      width: box.width + padding * 2,
+      height: box.height + padding * 2,
     };
   }, [selectedRectangleIds, currentImage?.rectangles, currentImage?.gridGroups]);
 

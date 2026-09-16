@@ -1,5 +1,6 @@
 import React from 'react';
 import { Layer } from 'react-konva';
+import type { GridGroup } from '@/features/template';
 import type { GridBounds } from '@/features/editor/domain/services/grid-layout';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
 import type { GridEditFocus } from '@/features/editor/ui/stores/editor-store';
@@ -10,7 +11,7 @@ import { GridGapHandles } from './grid-gap-handles';
 import { GridFocusZones } from './grid-focus-zones';
 
 interface CanvasGridEditLayerProps {
-  lockedGridGroup: { id: string } | null;
+  lockedGridGroup: Pick<GridGroup, 'id' | 'rotation'> | null;
   activeGridBounds: GridBounds | null;
   activeGridSettings: GridEditSettings | null;
   gridEditFocus: GridEditFocus;
@@ -42,6 +43,9 @@ export const CanvasGridEditLayer: React.FC<CanvasGridEditLayerProps> = ({
     return null;
   }
 
+  // Interactive grid chrome assumes axis-aligned bounds; hide while rotated.
+  const isRotated = Boolean(lockedGridGroup.rotation);
+
   return (
     <Layer>
       <GridOverlay
@@ -49,44 +53,49 @@ export const CanvasGridEditLayer: React.FC<CanvasGridEditLayerProps> = ({
         scale={scale}
         offset={offset}
         mode={gridEditFocus === 'grid' ? 'edit' : 'preview'}
+        rotation={lockedGridGroup.rotation ?? 0}
       />
-      <GridFocusZones
-        bounds={activeGridBounds}
-        settings={activeGridSettings}
-        scale={scale}
-        offset={offset}
-        focus={gridEditFocus}
-        onFocusChange={setGridEditFocus}
-      />
-      {gridEditFocus === 'grid' && (
+      {!isRotated && (
         <>
-          <GridBoundsHandles
-            bounds={activeGridBounds}
-            scale={scale}
-            offset={offset}
-            minBounds={gridMinBounds ?? undefined}
-            onBoundsChange={onBoundsChange}
-            onDragEnd={onBoundsCommit}
-          />
-          <GridGapHandles
+          <GridFocusZones
             bounds={activeGridBounds}
             settings={activeGridSettings}
             scale={scale}
             offset={offset}
-            onGapPreview={onSettingsPreview}
-            onDragEnd={onSettingsCommit}
+            focus={gridEditFocus}
+            onFocusChange={setGridEditFocus}
           />
+          {gridEditFocus === 'grid' && (
+            <>
+              <GridBoundsHandles
+                bounds={activeGridBounds}
+                scale={scale}
+                offset={offset}
+                minBounds={gridMinBounds ?? undefined}
+                onBoundsChange={onBoundsChange}
+                onDragEnd={onBoundsCommit}
+              />
+              <GridGapHandles
+                bounds={activeGridBounds}
+                settings={activeGridSettings}
+                scale={scale}
+                offset={offset}
+                onGapPreview={onSettingsPreview}
+                onDragEnd={onSettingsCommit}
+              />
+            </>
+          )}
+          {gridEditFocus === 'block' && (
+            <GridBlockHandles
+              bounds={activeGridBounds}
+              settings={activeGridSettings}
+              scale={scale}
+              offset={offset}
+              onSettingsChange={onSettingsPreview}
+              onDragEnd={onSettingsCommit}
+            />
+          )}
         </>
-      )}
-      {gridEditFocus === 'block' && (
-        <GridBlockHandles
-          bounds={activeGridBounds}
-          settings={activeGridSettings}
-          scale={scale}
-          offset={offset}
-          onSettingsChange={onSettingsPreview}
-          onDragEnd={onSettingsCommit}
-        />
       )}
     </Layer>
   );

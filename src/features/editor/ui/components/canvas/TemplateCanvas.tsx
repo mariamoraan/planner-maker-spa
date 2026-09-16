@@ -1,7 +1,9 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Stage, Layer } from 'react-konva';
 import type Konva from 'konva';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
+import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
+import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { CanvasFloatingControls } from './canvas-floating-controls';
 import { CanvasPageImage } from './canvas-page-image';
 import { CanvasRectangleList } from './canvas-rectangle-list';
@@ -9,6 +11,7 @@ import { CanvasSelectionOverlays } from './canvas-selection-overlays';
 import { CanvasGridEditLayer } from './canvas-grid-edit-layer';
 import { GridAddDimensionControls } from './grid-add-dimension-controls';
 import { GridCellGuides } from './grid-cell-guides';
+import { SelectionActionHandles } from './selection-action-handles';
 import { useTemplateCanvasController } from './use-template-canvas-controller';
 import './template-canva.scss';
 
@@ -16,6 +19,9 @@ export const TemplateCanvas: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
+  const [rotationPreview, setRotationPreview] = useState<number | null>(null);
+  const { updateArea } = useManageAreas();
+  const { rotateGridGroup } = useGridGroupOps();
 
   const c = useTemplateCanvasController({
     containerRef,
@@ -24,6 +30,17 @@ export const TemplateCanvas: React.FC = () => {
   });
 
   const { scale, offset } = c.viewport;
+
+  const handleRotateCommit = useCallback(
+    (payload: { kind: 'rect' | 'grid'; id: string; rotation: number }) => {
+      if (payload.kind === 'grid') {
+        rotateGridGroup(payload.id, payload.rotation);
+      } else {
+        updateArea(payload.id, { rotation: payload.rotation });
+      }
+    },
+    [rotateGridGroup, updateArea],
+  );
 
   return (
     <div
@@ -58,6 +75,8 @@ export const TemplateCanvas: React.FC = () => {
               currentImage={c.currentImage}
               plannerLocale={c.template?.locale}
               weekStartsOn={c.template?.weekStartsOn}
+              plannerStart={c.template?.startDate}
+              plannerEnd={c.template?.endDate}
               scale={scale}
               offset={offset}
               isSelectMode={c.isSelectMode}
@@ -70,6 +89,8 @@ export const TemplateCanvas: React.FC = () => {
               gridPreviewPositions={c.grid.gridPreviewPositions}
               gridSettingsPreviewPositions={c.grid.gridSettingsPreviewPositions}
               gridSettingsPreviewSizes={c.grid.gridSettingsPreviewSizes}
+              rotationPreview={rotationPreview}
+              rotationPreviewTargetIds={c.selection.selectedRectangleIds}
               onRectClick={c.selection.handleRectClick}
               onDragStart={c.drag.handleDragStart}
               onDragMove={c.drag.handleDragMove}
@@ -121,7 +142,8 @@ export const TemplateCanvas: React.FC = () => {
       {c.grid.lockedGridGroup &&
         c.grid.activeGridBounds &&
         c.grid.activeGridSettings &&
-        c.grid.gridEditFocus === 'grid' && (
+        c.grid.gridEditFocus === 'grid' &&
+        !c.grid.lockedGridGroup.rotation && (
           <GridAddDimensionControls
             groupId={c.grid.lockedGridGroup.id}
             bounds={c.grid.activeGridBounds}
@@ -132,6 +154,26 @@ export const TemplateCanvas: React.FC = () => {
             rows={c.grid.activeGridSettings.rows}
           />
         )}
+
+      {c.currentImage && (
+        <SelectionActionHandles
+          currentImage={c.currentImage}
+          selectedRectangleIds={c.selection.selectedRectangleIds}
+          isSelectMode={c.isSelectMode}
+          scale={scale}
+          offset={offset}
+          stageSize={c.viewport.stageSize}
+          dragOverlay={c.drag.dragOverlay}
+          pointerToImage={c.viewport.pointerToImage}
+          getStageElement={() => stageRef.current?.container() ?? null}
+          onRotateCommit={handleRotateCommit}
+          onMoveStart={c.drag.beginExternalMove}
+          onMoveUpdate={c.drag.updateExternalMove}
+          onMoveEnd={c.drag.endExternalMove}
+          rotationPreview={rotationPreview}
+          onRotationPreview={setRotationPreview}
+        />
+      )}
 
       <div className="template-canva__controls">
         <CanvasFloatingControls

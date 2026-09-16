@@ -1,7 +1,7 @@
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useHistoryStore } from '@/features/editor/ui/stores/history-store';
-import { FieldType, Rectangle, type GridGroup } from '@/features/template';
+import { DEFAULT_COMPOSITE_PARTS, FieldType, Rectangle, type GridGroup } from '@/features/template';
 import { getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
 import { removeGridGroupsFullyCoveredBy } from '@/features/editor/domain/services/grid-group';
 import {
@@ -271,9 +271,12 @@ export const useManageAreas = () => {
             const rectangle = currentImage?.rectangles.find(r => r.id === id);
             if (!rectangle) return;
 
-            const updates = {
+            const updates: Partial<Rectangle> = {
               fieldType: type,
               formatVariant: getDefaultFormatVariant(type),
+              ...(type === 'composite' && !rectangle.compositeParts?.length
+                ? { compositeParts: [...DEFAULT_COMPOSITE_PARTS] }
+                : {}),
             };
 
             pushHistory(templateId, {
@@ -283,6 +286,7 @@ export const useManageAreas = () => {
               before: {
                 fieldType: rectangle.fieldType,
                 formatVariant: rectangle.formatVariant,
+                compositeParts: rectangle.compositeParts,
               },
               after: updates,
             });

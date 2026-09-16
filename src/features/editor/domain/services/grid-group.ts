@@ -3,6 +3,7 @@ import { generateId } from '@/features/template/domain/services/id-generator';
 import type { GridEditSettings } from './grid-edit-types';
 import { normalizeGridSettings, toPersistedGridSettings } from './grid-edit-types';
 import { migrateGridSettingsToGapBetween, redistributeGridMoves, translateGridBounds, type GridBounds } from './grid-layout';
+import { normalizeRotation, pointInOrientedRect } from './block-geometry';
 
 export function createGridGroupId(): string {
   return `grid-${generateId()}`;
@@ -19,13 +20,9 @@ export function findGridGroupForRect(
 export function pointInGridBounds(
   point: { x: number; y: number },
   bounds: GridBounds,
+  rotation = 0,
 ): boolean {
-  return (
-    point.x >= bounds.x &&
-    point.x <= bounds.x + bounds.width &&
-    point.y >= bounds.y &&
-    point.y <= bounds.y + bounds.height
-  );
+  return pointInOrientedRect(point, { ...bounds, rotation });
 }
 
 export function findGridGroupAtPoint(
@@ -38,7 +35,9 @@ export function findGridGroupAtPoint(
     (a, b) => a.bounds.width * a.bounds.height - b.bounds.width * b.bounds.height,
   );
 
-  return groups.find(group => pointInGridBounds(point, group.bounds)) ?? null;
+  return (
+    groups.find(group => pointInGridBounds(point, group.bounds, group.rotation ?? 0)) ?? null
+  );
 }
 
 export function resolveGridGroupId(
@@ -206,8 +205,9 @@ export function buildGridGroup(
   bounds: GridBounds,
   settings: GridEditSettings,
   groupId?: string,
+  rotation?: number,
 ): GridGroup {
-  return {
+  const group: GridGroup = {
     id: groupId ?? createGridGroupId(),
     rectIds: [...rectIds],
     cols: settings.cols,
@@ -215,6 +215,10 @@ export function buildGridGroup(
     bounds: { ...bounds },
     settings: toPersistedGridSettings(normalizeGridSettings(settings)),
   };
+  if (rotation) {
+    group.rotation = normalizeRotation(rotation);
+  }
+  return group;
 }
 
 export function assignRectsToGroup(
@@ -311,11 +315,42 @@ export function translateGridGroupState(
     if (!move) return rect;
     return { ...rect, x: move.x, y: move.y };
   });
-  const nextGroup = buildGridGroup(group.rectIds, nextBounds, group.settings, groupId);
+  const nextGroup = buildGridGroup(
+    group.rectIds,
+    nextBounds,
+    group.settings,
+    groupId,
+    group.rotation,
+  );
   const assigned = assignRectsToGroup(nextRects, nextGroup);
   const nextGridGroups = upsertGridGroup(gridGroups, nextGroup);
 
   return { rectangles: assigned, gridGroups: nextGridGroups };
+}
+
+export function setGridGroupRotation(
+  rectangles: Rectangle[],
+  gridGroups: Record<string, GridGroup> | undefined,
+  groupId: string,
+  rotation: number,
+): { rectangles: Rectangle[]; gridGroups: Record<string, GridGroup> } | null {
+  const group = gridGroups?.[groupId];
+  if (!group) return null;
+
+  const nextRotation = normalizeRotation(rotation);
+  const prevRotation = group.rotation ?? 0;
+  if (nextRotation === prevRotation) return null;
+
+  const nextGroup = buildGridGroup(
+    group.rectIds,
+    group.bounds,
+    group.settings,
+    groupId,
+    nextRotation,
+  );
+  const nextGridGroups = upsertGridGroup(gridGroups, nextGroup);
+
+  return { rectangles, gridGroups: nextGridGroups };
 }
 
 export function canGroupSelection(selectedIds: string[], rectangles: Rectangle[]): boolean {

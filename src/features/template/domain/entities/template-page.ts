@@ -32,6 +32,8 @@ export interface GridGroup {
   rows: number;
   bounds: GridGroupBounds;
   settings: GridGroupSettings;
+  /** Degrees, clockwise. Rotates the whole grid around its bounds center. */
+  rotation?: number;
 }
 
 export interface TemplatePage {

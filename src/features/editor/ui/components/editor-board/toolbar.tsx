@@ -6,6 +6,7 @@ import { FIELD_TYPE_CONFIG } from '@/features/template'
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas'
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image'
 import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-style-controls'
+import { CompositePartsEditor } from '@/features/editor/ui/components/shared/composite-parts-editor'
 import { BlockDeleteButton } from '@/features/editor/ui/components/shared/block-delete-button'
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector'
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions'
@@ -92,6 +93,12 @@ export const Toolbar = () => {
         <div className="toolbar">
              <p className='toolbar__name'>{config.label} {order + 1}</p>
              <div className='toolbar__divider' />
+             {currentSelectedBox.fieldType === 'composite' ? (
+               <>
+                 <CompositePartsEditor rectangle={currentSelectedBox} />
+                 <div className='toolbar__divider' />
+               </>
+             ) : null}
              <AreaStyleControls rectangle={currentSelectedBox} variant="toolbar" />
              <div className='toolbar__divider' />
              <BlockTypeSelector

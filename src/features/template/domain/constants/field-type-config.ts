@@ -32,13 +32,25 @@ export const FIELD_TYPE_CONFIG: Record<
     label: 'Start Day',
     color: 'hsl(53, 95%, 45%)',
     bgColor: 'hsla(53, 95%, 53%, 0.2)',
-    description: 'Displays start day number',
+    description: 'Displays the start of the page date range',
   },
   endDay: {
     label: 'End Day',
     color: 'hsl(13, 95%, 53%)',
     bgColor: 'hsla(13, 95%, 53%, 0.2)',
-    description: 'Displays end day number',
+    description: 'Displays the end of the page date range',
+  },
+  weekNumber: {
+    label: 'Week',
+    color: 'hsl(200, 85%, 45%)',
+    bgColor: 'hsla(200, 85%, 45%, 0.2)',
+    description: 'Displays the ISO week number',
+  },
+  composite: {
+    label: 'Composite',
+    color: 'hsl(280, 70%, 55%)',
+    bgColor: 'hsla(280, 70%, 55%, 0.2)',
+    description: 'Combines date parts into one block',
   },
 };
 
@@ -67,7 +79,7 @@ export const TEMPLATE_TYPE_CONFIG: Record<
   },
   'daily-page': {
     label: 'Daily Page',
-    description: 'Single-day planning page',
+    description: 'Single-day planning pages',
   },
   extra: {
     label: 'Extra Page',

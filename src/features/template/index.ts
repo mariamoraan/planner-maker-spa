@@ -12,6 +12,8 @@ export type {
   YearFormatVariant,
   MonthFormatVariant,
   DayFormatVariant,
+  StartEndFormatVariant,
+  CompositePart,
 } from './domain/value-objects/field-style';
 export type {
   PlannerLocale,
@@ -23,6 +25,11 @@ export type { ImageRef } from './domain/value-objects/image-ref';
 // Constants
 export { FIELD_TYPE_CONFIG, TEMPLATE_TYPE_CONFIG } from './domain/constants/field-type-config';
 export { TEMPLATE_FIELD_TYPES } from './domain/constants/template-field-types';
+export {
+  COMPOSITE_PRESETS,
+  DEFAULT_COMPOSITE_PARTS,
+} from './domain/constants/composite-presets';
+export type { CompositePreset } from './domain/constants/composite-presets';
 
 // Ports
 export type { TemplateRepositoryPort, TemplatePageRecord, TemplateRecord } from './domain/ports/template.port';
