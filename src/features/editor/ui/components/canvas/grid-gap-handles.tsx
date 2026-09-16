@@ -22,7 +22,7 @@ interface GridGapHandlesProps {
   onDragEnd?: () => void;
 }
 
-const GAP_HIT_WIDTH = 12;
+const GAP_HIT_WIDTH = 16;
 const GRID_COLOR = 'hsl(168, 76%, 42%)';
 const GRID_COLOR_ACTIVE = 'hsl(168, 76%, 36%)';
 
@@ -69,6 +69,7 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
 
   const canDragX = normalized.cols >= 2;
   const canDragY = normalized.rows >= 2;
+  const highlightedAxis = activeAxis ?? hoveredAxis;
 
   const beginDrag = useCallback(
     (axis: 'x' | 'y') => (event: Konva.KonvaEventObject<DragEvent>) => {
@@ -148,11 +149,12 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
   const renderGapHandle = (
     axis: 'x' | 'y',
     linePos: number,
+    index: number,
     cursor: string,
   ) => {
-    const isActive = activeAxis === axis;
-    const isHovered = hoveredAxis === axis;
-    const highlighted = isActive || isHovered;
+    const highlighted = highlightedAxis === axis;
+    const lineWidth = highlighted ? 3 : 2;
+    const lineOpacity = highlighted ? 0.95 : 0.7;
 
     if (axis === 'x') {
       const stageX = toStage(linePos, scale, offset.x);
@@ -160,14 +162,14 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
       const stageH = bounds.height * scale;
 
       return (
-        <Group key="gap-x">
+        <Group key={`gap-x-${index}`}>
           <Rect
-            x={stageX - (highlighted ? 1.5 : 0.75)}
+            x={stageX - lineWidth / 2}
             y={stageY}
-            width={highlighted ? 3 : 1.5}
+            width={lineWidth}
             height={stageH}
             fill={highlighted ? GRID_COLOR_ACTIVE : GRID_COLOR}
-            opacity={highlighted ? 0.85 : 0.45}
+            opacity={lineOpacity}
             listening={false}
           />
           <Rect
@@ -200,14 +202,14 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
     const stageW = bounds.width * scale;
 
     return (
-      <Group key="gap-y">
+      <Group key={`gap-y-${index}`}>
         <Rect
           x={stageX}
-          y={stageY - (highlighted ? 1.5 : 0.75)}
+          y={stageY - lineWidth / 2}
           width={stageW}
-          height={highlighted ? 3 : 1.5}
+          height={lineWidth}
           fill={highlighted ? GRID_COLOR_ACTIVE : GRID_COLOR}
-          opacity={highlighted ? 0.85 : 0.45}
+          opacity={lineOpacity}
           listening={false}
         />
         <Rect
@@ -269,16 +271,22 @@ export const GridGapHandles: React.FC<GridGapHandlesProps> = ({
     );
   };
 
-  const showLabels = activeAxis !== null;
+  const showLabels = highlightedAxis !== null;
 
   return (
     <Group>
-      {canDragX && gapLines.vertical[0] !== undefined && renderGapHandle('x', gapLines.vertical[0]!, 'ew-resize')}
-      {canDragY && gapLines.horizontal[0] !== undefined && renderGapHandle('y', gapLines.horizontal[0]!, 'ns-resize')}
+      {canDragX &&
+        gapLines.vertical.map((linePos, index) =>
+          renderGapHandle('x', linePos, index, 'ew-resize'),
+        )}
+      {canDragY &&
+        gapLines.horizontal.map((linePos, index) =>
+          renderGapHandle('y', linePos, index, 'ns-resize'),
+        )}
       {showLabels && (
         <>
-          {activeAxis === 'x' && renderLabel(labels.gapX, 'gap-x-label')}
-          {activeAxis === 'y' && renderLabel(labels.gapY, 'gap-y-label')}
+          {highlightedAxis === 'x' && renderLabel(labels.gapX, 'gap-x-label')}
+          {highlightedAxis === 'y' && renderLabel(labels.gapY, 'gap-y-label')}
         </>
       )}
     </Group>

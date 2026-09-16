@@ -10,17 +10,12 @@ import {
   normalizeGridSettings,
   type GridEditSettings,
 } from '@/features/editor/domain/services/grid-edit-types';
-import {
-  FIELD_TYPE_CONFIG,
-  type GridGroup,
-  type Rectangle,
-} from '@/features/template';
+import type { GridGroup } from '@/features/template';
 
-const FALLBACK_STROKE = 'hsl(168, 76%, 42%)';
+const GRID_STROKE = 'hsl(168, 76%, 42%)';
 
 interface GridCellGuidesProps {
   gridGroups: Record<string, GridGroup> | undefined;
-  rectangles: Rectangle[];
   scale: number;
   offset: { x: number; y: number };
   previewGroupId?: string | null;
@@ -32,31 +27,14 @@ function toStage(value: number, scale: number, offsetValue: number): number {
   return offsetValue + value * scale;
 }
 
-function strokeForCell(
-  rectById: Map<string, Rectangle>,
-  group: GridGroup,
-  cellIndex: number,
-): string {
-  const rectId = group.rectIds[cellIndex];
-  const rect = rectId ? rectById.get(rectId) : undefined;
-  if (!rect) return FALLBACK_STROKE;
-  return FIELD_TYPE_CONFIG[rect.fieldType]?.color ?? FALLBACK_STROKE;
-}
-
 export const GridCellGuides: React.FC<GridCellGuidesProps> = ({
   gridGroups,
-  rectangles,
   scale,
   offset,
   previewGroupId = null,
   previewBounds = null,
   previewSettings = null,
 }) => {
-  const rectById = useMemo(
-    () => new Map(rectangles.map(rect => [rect.id, rect])),
-    [rectangles],
-  );
-
   const groups = useMemo(
     () => (gridGroups ? Object.values(gridGroups) : []),
     [gridGroups],
@@ -92,7 +70,7 @@ export const GridCellGuides: React.FC<GridCellGuidesProps> = ({
               width={slotSize.width * scale}
               height={slotSize.height * scale}
               fillEnabled={false}
-              stroke={strokeForCell(rectById, group, index)}
+              stroke={GRID_STROKE}
               strokeWidth={2}
               cornerRadius={4}
               listening={false}

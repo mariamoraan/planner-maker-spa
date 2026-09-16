@@ -46,7 +46,6 @@ export const CanvasGridEditLayer: React.FC<CanvasGridEditLayerProps> = ({
     <Layer>
       <GridOverlay
         bounds={activeGridBounds}
-        settings={activeGridSettings}
         scale={scale}
         offset={offset}
         mode={gridEditFocus === 'grid' ? 'edit' : 'preview'}

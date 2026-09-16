@@ -80,7 +80,6 @@ export const TemplateCanvas: React.FC = () => {
           {c.currentImage && c.showRectangleGuides && (
             <GridCellGuides
               gridGroups={c.currentImage.gridGroups}
-              rectangles={c.currentImage.rectangles ?? []}
               scale={scale}
               offset={offset}
               previewGroupId={c.grid.lockedGridGroup?.id}
