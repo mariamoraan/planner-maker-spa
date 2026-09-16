@@ -127,6 +127,7 @@ export const TemplateCanvas: React.FC = () => {
             bounds={c.grid.activeGridBounds}
             scale={scale}
             offset={offset}
+            stageSize={c.viewport.stageSize}
             cols={c.grid.activeGridSettings.cols}
             rows={c.grid.activeGridSettings.rows}
           />
