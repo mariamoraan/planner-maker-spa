@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type Konva from 'konva';
-import { canPanCanvas, clampCanvasPan, type CanvasPanContext } from '@/features/editor/domain/services/canvas-pan';
+import {
+  canPanCanvas,
+  clampCanvasPan,
+  computeCenteredFitOffset,
+  type CanvasPanContext,
+} from '@/features/editor/domain/services/canvas-pan';
 import {
   clampZoom,
   resolveWheelAction,
@@ -26,24 +31,18 @@ export function useCanvasViewport({
   const spacePressedRef = useRef(false);
   const zoomRef = useRef(1);
   const panRef = useRef({ x: 0, y: 0 });
-  const fitOffsetRef = useRef({ x: 0, y: 0 });
   const fitScaleRef = useRef(1);
   const stageSizeRef = useRef({ width: 800, height: 600 });
   const imageSizeRef = useRef({ width: 0, height: 0 });
 
   const [stageSize, setStageSize] = useState({ width: 800, height: 600 });
   const [fitScale, setFitScale] = useState(1);
-  const [fitOffset, setFitOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [spacePressed, setSpacePressed] = useState(false);
 
   const scale = fitScale * zoom;
-  const offset = useMemo(
-    () => ({ x: fitOffset.x + pan.x, y: fitOffset.y + pan.y }),
-    [fitOffset, pan],
-  );
 
   const setZoomWriteThrough = useCallback((value: number) => {
     zoomRef.current = value;
@@ -60,17 +59,50 @@ export function useCanvasViewport({
     setFitScale(value);
   }, []);
 
-  const setFitOffsetWriteThrough = useCallback((value: { x: number; y: number }) => {
-    fitOffsetRef.current = value;
-    setFitOffset(value);
-  }, []);
-
   const setStageSizeWriteThrough = useCallback((value: { width: number; height: number }) => {
     stageSizeRef.current = value;
     setStageSize(value);
   }, []);
 
   imageSizeRef.current = { width: imageWidth, height: imageHeight };
+
+  const buildPanContext = useCallback(
+    (nextZoom: number): CanvasPanContext => {
+      const base = {
+        zoom: nextZoom,
+        fitScale: fitScaleRef.current,
+        imageWidth: imageSizeRef.current.width,
+        imageHeight: imageSizeRef.current.height,
+        stageWidth: stageSizeRef.current.width,
+        stageHeight: stageSizeRef.current.height,
+        padding: CANVAS_PADDING,
+      };
+      return {
+        ...base,
+        fitOffset: computeCenteredFitOffset(base),
+      };
+    },
+    [],
+  );
+
+  const fitOffset = useMemo(
+    () =>
+      computeCenteredFitOffset({
+        zoom,
+        fitScale,
+        imageWidth,
+        imageHeight,
+        stageWidth: stageSize.width,
+        stageHeight: stageSize.height,
+        padding: CANVAS_PADDING,
+      }),
+    [zoom, fitScale, imageWidth, imageHeight, stageSize.width, stageSize.height],
+  );
+
+  const offset = useMemo(
+    () => ({ x: fitOffset.x + pan.x, y: fitOffset.y + pan.y }),
+    [fitOffset, pan],
+  );
 
   const panContext = useMemo<CanvasPanContext>(
     () => ({
@@ -86,16 +118,7 @@ export function useCanvasViewport({
     [zoom, fitOffset, fitScale, imageWidth, imageHeight, stageSize.width, stageSize.height],
   );
 
-  const getPanContext = useCallback((): CanvasPanContext => ({
-    zoom: zoomRef.current,
-    fitOffset: fitOffsetRef.current,
-    fitScale: fitScaleRef.current,
-    imageWidth: imageSizeRef.current.width,
-    imageHeight: imageSizeRef.current.height,
-    stageWidth: stageSizeRef.current.width,
-    stageHeight: stageSizeRef.current.height,
-    padding: CANVAS_PADDING,
-  }), []);
+  const getPanContext = useCallback((): CanvasPanContext => buildPanContext(zoomRef.current), [buildPanContext]);
 
   const applyPan = useCallback(
     (next: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => {
@@ -125,10 +148,6 @@ export function useCanvasViewport({
       );
       setFitScaleWriteThrough(newFitScale);
       setStageSizeWriteThrough({ width: containerRect.width, height: containerRect.height });
-      setFitOffsetWriteThrough({
-        x: CANVAS_PADDING + (containerWidth - imageWidth * newFitScale) / 2,
-        y: CANVAS_PADDING + (containerHeight - imageHeight * newFitScale) / 2,
-      });
     };
 
     updateSize();
@@ -147,7 +166,6 @@ export function useCanvasViewport({
     imageHeight,
     setFitScaleWriteThrough,
     setStageSizeWriteThrough,
-    setFitOffsetWriteThrough,
   ]);
 
   useEffect(() => {
@@ -173,41 +191,43 @@ export function useCanvasViewport({
 
   const zoomToPoint = useCallback((newZoom: number, pointer: { x: number; y: number }) => {
     const currentFitScale = fitScaleRef.current;
-    const currentFitOffset = fitOffsetRef.current;
     const currentZoom = zoomRef.current;
     const currentPan = panRef.current;
-    const currentStageSize = stageSizeRef.current;
     const { width: imgW, height: imgH } = imageSizeRef.current;
+    const stage = stageSizeRef.current;
 
     const clampedZoom = clampZoom(newZoom);
+    const oldContext = {
+      zoom: currentZoom,
+      fitScale: currentFitScale,
+      imageWidth: imgW,
+      imageHeight: imgH,
+      stageWidth: stage.width,
+      stageHeight: stage.height,
+      padding: CANVAS_PADDING,
+    };
+    const oldFitOffset = computeCenteredFitOffset(oldContext);
     const oldScale = currentFitScale * currentZoom;
-    const oldOffsetX = currentFitOffset.x + currentPan.x;
-    const oldOffsetY = currentFitOffset.y + currentPan.y;
+    const oldOffsetX = oldFitOffset.x + currentPan.x;
+    const oldOffsetY = oldFitOffset.y + currentPan.y;
     const imageX = (pointer.x - oldOffsetX) / oldScale;
     const imageY = (pointer.y - oldOffsetY) / oldScale;
+
+    const newFitOffset = computeCenteredFitOffset({ ...oldContext, zoom: clampedZoom });
     const newScale = currentFitScale * clampedZoom;
     const newOffsetX = pointer.x - imageX * newScale;
     const newOffsetY = pointer.y - imageY * newScale;
     const clampedPan = clampCanvasPan(
       {
-        x: newOffsetX - currentFitOffset.x,
-        y: newOffsetY - currentFitOffset.y,
+        x: newOffsetX - newFitOffset.x,
+        y: newOffsetY - newFitOffset.y,
       },
-      {
-        zoom: clampedZoom,
-        fitOffset: currentFitOffset,
-        fitScale: currentFitScale,
-        imageWidth: imgW,
-        imageHeight: imgH,
-        stageWidth: currentStageSize.width,
-        stageHeight: currentStageSize.height,
-        padding: CANVAS_PADDING,
-      },
+      buildPanContext(clampedZoom),
     );
 
     setZoomWriteThrough(clampedZoom);
     setPanWriteThrough(clampedPan);
-  }, [setZoomWriteThrough, setPanWriteThrough]);
+  }, [buildPanContext, setZoomWriteThrough, setPanWriteThrough]);
 
   const handleZoomIn = useCallback(() => {
     zoomToPoint(zoom * ZOOM_STEP, { x: stageSize.width / 2, y: stageSize.height / 2 });
@@ -232,33 +252,49 @@ export function useCanvasViewport({
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      const action = resolveWheelAction(e, getPanContext());
-      if (action.type === 'none') return;
+      // Ctrl/Cmd+wheel and trackpad pinch drive browser page zoom; cancel early.
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const action = resolveWheelAction(e, getPanContext());
+        if (action.type !== 'zoom') return;
 
-      e.preventDefault();
-
-      if (action.type === 'zoom') {
         const rect = container.getBoundingClientRect();
         const pointer = { x: e.clientX - rect.left, y: e.clientY - rect.top };
         zoomToPointRef.current(zoomRef.current * action.zoomFactor, pointer);
         return;
       }
 
+      const action = resolveWheelAction(e, getPanContext());
+      if (action.type !== 'pan') return;
+
+      e.preventDefault();
       applyPanRef.current(prev => ({
         x: prev.x - action.deltaX,
         y: prev.y - action.deltaY,
       }));
     };
 
+    const preventGestureZoom = (e: Event) => {
+      e.preventDefault();
+    };
+
     const preventMiddleClick = (e: MouseEvent) => {
       if (e.button === 1) e.preventDefault();
     };
 
+    const gestureEvents = ['gesturestart', 'gesturechange', 'gestureend'] as const;
+
     container.addEventListener('wheel', handleWheel, { passive: false });
     container.addEventListener('mousedown', preventMiddleClick);
+    for (const type of gestureEvents) {
+      container.addEventListener(type, preventGestureZoom);
+    }
     return () => {
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('mousedown', preventMiddleClick);
+      for (const type of gestureEvents) {
+        container.removeEventListener(type, preventGestureZoom);
+      }
     };
   }, [containerRef, getPanContext]);
 

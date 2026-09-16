@@ -8,6 +8,8 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
   animation: fadeIn 0.3s ease-in-out;
 
   &--measure {

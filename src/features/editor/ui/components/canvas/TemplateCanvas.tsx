@@ -26,12 +26,12 @@ export const TemplateCanvas: React.FC = () => {
 
   return (
     <div
-      key={c.currentImage?.id}
       ref={containerRef}
       className={c.containerClassName}
       {...blockSelectionZoneProps}
     >
       <Stage
+        key={c.currentImage?.id}
         ref={stageRef}
         width={c.viewport.stageSize.width}
         height={c.viewport.stageSize.height}

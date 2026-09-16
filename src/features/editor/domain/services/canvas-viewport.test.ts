@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { imageOverflowsViewport, type CanvasPanContext } from './canvas-pan';
+import { computeCenteredFitOffset, imageOverflowsViewport, type CanvasPanContext } from './canvas-pan';
 import {
   computeWheelZoomFactor,
   isMouseWheelDelta,
@@ -8,15 +8,19 @@ import {
   ZOOM_STEP,
 } from './canvas-viewport';
 
-const baseContext: CanvasPanContext = {
+const baseParams = {
   zoom: 2,
-  fitOffset: { x: 50, y: 40 },
   fitScale: 0.5,
   imageWidth: 1000,
   imageHeight: 800,
   stageWidth: 600,
   stageHeight: 500,
   padding: 16,
+} as const;
+
+const baseContext: CanvasPanContext = {
+  ...baseParams,
+  fitOffset: computeCenteredFitOffset(baseParams),
 };
 
 describe('normalizeWheelDelta', () => {
@@ -57,15 +61,19 @@ describe('isMouseWheelDelta', () => {
 
 describe('imageOverflowsViewport', () => {
   it('returns false when the scaled image fits inside the viewport', () => {
+    const fits = {
+      zoom: 1.2,
+      fitScale: 0.1,
+      imageWidth: 100,
+      imageHeight: 100,
+      stageWidth: 600,
+      stageHeight: 500,
+      padding: 16,
+    };
     expect(
       imageOverflowsViewport({
-        ...baseContext,
-        zoom: 1.2,
-        fitScale: 0.1,
-        imageWidth: 100,
-        imageHeight: 100,
-        stageWidth: 600,
-        stageHeight: 500,
+        ...fits,
+        fitOffset: computeCenteredFitOffset(fits),
       }),
     ).toBe(false);
   });
@@ -76,10 +84,19 @@ describe('imageOverflowsViewport', () => {
 });
 
 describe('resolveWheelAction', () => {
-  it('returns zoom when ctrl or meta is pressed', () => {
+  it('returns zoom when ctrl is pressed', () => {
     expect(
       resolveWheelAction(
         { ctrlKey: true, metaKey: false, deltaX: 0, deltaY: -10, deltaMode: 0 },
+        baseContext,
+      ),
+    ).toEqual({ type: 'zoom', zoomFactor: expect.any(Number) });
+  });
+
+  it('returns zoom when meta is pressed', () => {
+    expect(
+      resolveWheelAction(
+        { ctrlKey: false, metaKey: true, deltaX: 0, deltaY: -10, deltaMode: 0 },
         baseContext,
       ),
     ).toEqual({ type: 'zoom', zoomFactor: expect.any(Number) });
@@ -95,15 +112,18 @@ describe('resolveWheelAction', () => {
   });
 
   it('returns pan only on axes that overflow the viewport', () => {
-    const verticalOnly: CanvasPanContext = {
-      ...baseContext,
+    const verticalOnlyParams = {
       zoom: 2,
       fitScale: 0.5,
       imageWidth: 100,
       imageHeight: 1000,
       stageWidth: 600,
       stageHeight: 500,
-      fitOffset: { x: 250, y: 16 },
+      padding: 16,
+    };
+    const verticalOnly: CanvasPanContext = {
+      ...verticalOnlyParams,
+      fitOffset: computeCenteredFitOffset(verticalOnlyParams),
     };
 
     expect(

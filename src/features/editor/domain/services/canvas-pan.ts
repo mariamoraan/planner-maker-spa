@@ -25,10 +25,19 @@ export interface PanAxisRange {
   hasRange: boolean;
 }
 
-function getViewSize(context: CanvasPanContext): { width: number; height: number } {
+type CenteredFitOffsetInput = Pick<
+  CanvasPanContext,
+  'fitScale' | 'zoom' | 'imageWidth' | 'imageHeight' | 'stageWidth' | 'stageHeight' | 'padding'
+>;
+
+/** Image top-left at pan=0: always centered in the stage at the current zoom. */
+export function computeCenteredFitOffset(context: CenteredFitOffsetInput): { x: number; y: number } {
+  const scale = context.fitScale * context.zoom;
+  const viewWidth = context.stageWidth - context.padding * 2;
+  const viewHeight = context.stageHeight - context.padding * 2;
   return {
-    width: context.stageWidth - context.padding * 2,
-    height: context.stageHeight - context.padding * 2,
+    x: context.padding + (viewWidth - context.imageWidth * scale) / 2,
+    y: context.padding + (viewHeight - context.imageHeight * scale) / 2,
   };
 }
 
