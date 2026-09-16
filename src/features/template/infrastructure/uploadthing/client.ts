@@ -1,5 +1,5 @@
 import { generateReactHelpers } from '@uploadthing/react';
-import type { OurFileRouter } from '../../../server/uploadthing/core';
+import type { OurFileRouter } from '../../../../../server/uploadthing/core';
 import { getFirebaseIdToken } from '@/features/auth/infrastructure/firebase/get-id-token';
 
 function resolveUploadthingUrl(): string {
@@ -40,9 +40,15 @@ export type CloudImageResolveInput = {
 };
 
 export type CloudImageAccess = {
-  /** Signed CDN URL (browser → UploadThing). */
+  /**
+   * Signed CDN URL (browser → UploadThing).
+   * Prefer as srcAlt only — many networks cannot reach `*.ufs.sh`.
+   */
   url: string;
-  /** Same-origin content proxy (server streams bytes) — export / CORS fallback. */
+  /**
+   * Same-origin content proxy (server streams bytes).
+   * Prefer as primary display src for img/Konva.
+   */
   contentUrl: string;
   fileKey?: string;
 };
@@ -108,16 +114,15 @@ export async function resolveCloudImageAccess(
 }
 
 /**
- * Display URL for <img>/Konva: signed CDN first.
- * The content proxy is only a fallback when signing is unavailable —
- * it requires the Node server to reach UploadThing (often flaky in local/VPN).
+ * Display URL for <img>/Konva: prefer same-origin content proxy.
+ * Signed CDN is only a fallback when the proxy path is unavailable.
  */
 export async function resolveCloudImageUrl(
   input: CloudImageResolveInput
 ): Promise<string | null> {
   const access = await resolveCloudImageAccess(input);
   if (!access) return null;
-  return access.url || access.contentUrl || null;
+  return access.contentUrl || access.url || null;
 }
 
 export function extractFileKeyFromUploadthingUrl(url: string): string | null {

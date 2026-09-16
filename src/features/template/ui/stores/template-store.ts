@@ -15,7 +15,9 @@ import {
   reorderWithinType,
 } from '@/features/template/domain/services/template-image-order';
 import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImageRef, isCloudImageStorageEnabled } from '@/core/bootstrap/infra';
+import { isDataUrl } from '@/core/functions/image-data-url';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
+import { getCloudSrcAlt } from '@/features/template/infrastructure/uploadthing/image.adapter';
 import type { TemplatePageRecord } from '@/features/template/domain/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/canvas-snap';
 import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/domain/services/grid-group';
@@ -107,17 +109,19 @@ async function loadPageSrc(uid: string | null, image: TemplateImage): Promise<Te
   const candidates = buildImageRefCandidates(uid, image.id, image.imageRef);
   const loaded = await loadImageFromCandidates(candidates);
   const ref = loaded?.ref ?? resolveImageRef(uid, image.id, image.imageRef);
+  const srcAlt = getCloudSrcAlt(ref);
 
   return {
     ...image,
     imageRef: ref,
     src: loaded?.src ?? '',
+    srcAlt: srcAlt && srcAlt !== loaded?.src ? srcAlt : undefined,
     missingLocalAsset: !loaded,
   };
 }
 
 function needsImageLoad(image: TemplateImage): boolean {
-  // Need a src. Signed HTTPS URLs from /api/images/url are valid for <img>.
+  // Need a src. Same-origin content proxy URLs and data URLs are valid for <img>.
   return !image.src;
 }
 
@@ -464,7 +468,11 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     useEditorStore.getState().setCurrentImageId(id);
 
     await getInfra().images.save(imageRef, imageData);
-    const resolvedSrc = (await getInfra().images.load(imageRef)) ?? imageData;
+    // Keep the original data URL for display — never swap it for a CDN/proxy HTTPS
+    // that may fail on networks that cannot reach UploadThing.
+    const resolvedSrc = isDataUrl(imageData)
+      ? imageData
+      : ((await getInfra().images.load(imageRef)) ?? imageData);
 
     set(state => ({
       templates: state.templates.map(t => {
@@ -587,7 +595,11 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     useEditorStore.getState().setCurrentImageId(image.id);
 
     await getInfra().images.save(imageRef, imageData);
-    const resolvedSrc = (await getInfra().images.load(imageRef)) ?? imageData;
+    // Keep the original data URL for display — never swap it for a CDN/proxy HTTPS
+    // that may fail on networks that cannot reach UploadThing.
+    const resolvedSrc = isDataUrl(imageData)
+      ? imageData
+      : ((await getInfra().images.load(imageRef)) ?? imageData);
     const savedImage: TemplateImage = { ...imageWithSrc, src: resolvedSrc, imageRef };
 
     set(state => ({

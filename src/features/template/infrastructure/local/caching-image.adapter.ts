@@ -1,5 +1,9 @@
 import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
-import { isDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
+import { fetchAsDataUrl, isDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
+
+function isSameOriginContentUrl(src: string): boolean {
+  return src.includes('/api/images/content');
+}
 
 export class CachingImageAdapter implements ImageAssetPort {
   constructor(
@@ -28,7 +32,24 @@ export class CachingImageAdapter implements ImageAssetPort {
 
     if (isDataUrl(remote)) {
       await this.cache.save(ref, remote).catch(() => undefined);
-    } else if (cached && isHttpUrl(cached)) {
+      return remote;
+    }
+
+    // Hydrate IndexedDB from the same-origin content proxy so later loads
+    // do not depend on CDN or another proxy round-trip.
+    if (isSameOriginContentUrl(remote)) {
+      const absolute =
+        remote.startsWith('/') && typeof window !== 'undefined'
+          ? `${window.location.origin}${remote}`
+          : remote;
+      const dataUrl = await fetchAsDataUrl(absolute);
+      if (dataUrl) {
+        await this.cache.save(ref, dataUrl).catch(() => undefined);
+        return dataUrl;
+      }
+    }
+
+    if (cached && isHttpUrl(cached)) {
       // Drop unusable HTTP cache entries so we do not keep preferring them.
       await this.cache.delete(ref).catch(() => undefined);
     }

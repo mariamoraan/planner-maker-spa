@@ -8,7 +8,7 @@ export const uploadRouter = {
   plannerImage: f(
     {
       image: {
-        maxFileSize: '10MB',
+        maxFileSize: '16MB',
         maxFileCount: 1,
       },
     },

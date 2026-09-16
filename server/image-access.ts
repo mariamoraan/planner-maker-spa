@@ -63,9 +63,12 @@ export function verifyImageTicket(ticket: string): TicketPayload {
 }
 
 export type ResolvedImageAccess = {
-  /** Signed CDN URL for direct <img> load (browser → UploadThing). */
+  /**
+   * Signed CDN URL (browser → UploadThing).
+   * Client should use this as srcAlt; many networks cannot reach `*.ufs.sh`.
+   */
   url: string;
-  /** Same-origin proxy path for when the browser cannot reach the CDN. */
+  /** Same-origin proxy path — preferred primary display src for <img>/Konva. */
   contentPath: string;
   fileKey: string;
 };

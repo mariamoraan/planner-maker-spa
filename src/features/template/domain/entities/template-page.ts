@@ -47,6 +47,11 @@ export interface TemplatePage {
   createdAt: Date;
   updatedAt: Date;
   src: string;
+  /**
+   * Alternate display URL if `src` fails (e.g. signed CDN when the
+   * same-origin content proxy cannot reach UploadThing).
+   */
+  srcAlt?: string;
   imageRef?: ImageRef;
   missingLocalAsset?: boolean;
 }

@@ -3,6 +3,9 @@ import { CloudUpload, Loader2 } from 'lucide-react';
 import type { TemplateImage } from '@/features/template';
 import './template-cover-thumb.scss';
 
+const IMG_LOAD_TIMEOUT_MS = 20_000;
+const RESOLVE_GIVE_UP_MS = 12_000;
+
 export function isTemplateImagePending(image: TemplateImage | null | undefined): boolean {
   if (!image) return false;
   if (image.src) return false;
@@ -27,17 +30,60 @@ export const TemplateCoverThumb = ({
 }: TemplateCoverThumbProps) => {
   const [imgReady, setImgReady] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
+  const [resolveTimedOut, setResolveTimedOut] = useState(false);
+  const [activeSrc, setActiveSrc] = useState(image?.src ?? '');
+  const [triedAlt, setTriedAlt] = useState(false);
 
-  const src = image?.src ?? '';
-  const pendingResolve = isTemplateImagePending(image);
-  const showSpinner = pendingResolve || (Boolean(src) && !imgReady && !imgFailed);
-  const showImage = Boolean(src) && !imgFailed;
+  const pendingResolve = isTemplateImagePending(image) && !resolveTimedOut;
+  const showSpinner = pendingResolve || (Boolean(activeSrc) && !imgReady && !imgFailed);
+  const showImage = Boolean(activeSrc) && !imgFailed;
   const showEmpty = !showSpinner && !showImage;
 
   useEffect(() => {
+    setActiveSrc(image?.src ?? '');
+    setTriedAlt(false);
     setImgReady(false);
     setImgFailed(false);
-  }, [src]);
+  }, [image?.src, image?.srcAlt, image?.id]);
+
+  useEffect(() => {
+    setResolveTimedOut(false);
+  }, [image?.id]);
+
+  useEffect(() => {
+    if (!isTemplateImagePending(image)) {
+      setResolveTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setResolveTimedOut(true), RESOLVE_GIVE_UP_MS);
+    return () => window.clearTimeout(timer);
+  }, [image, image?.id, image?.src, image?.missingLocalAsset]);
+
+  useEffect(() => {
+    if (!activeSrc || imgReady || imgFailed) return;
+    const timer = window.setTimeout(() => {
+      const altSrc = image?.srcAlt;
+      if (!triedAlt && altSrc && altSrc !== activeSrc) {
+        setTriedAlt(true);
+        setImgReady(false);
+        setActiveSrc(altSrc);
+        return;
+      }
+      setImgFailed(true);
+    }, IMG_LOAD_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [activeSrc, imgReady, imgFailed, image?.srcAlt, triedAlt]);
+
+  const handleError = () => {
+    const altSrc = image?.srcAlt;
+    if (!triedAlt && altSrc && altSrc !== activeSrc) {
+      setTriedAlt(true);
+      setImgReady(false);
+      setActiveSrc(altSrc);
+      return;
+    }
+    setImgFailed(true);
+  };
 
   return (
     <span
@@ -58,11 +104,11 @@ export const TemplateCoverThumb = ({
           ]
             .filter(Boolean)
             .join(' ')}
-          src={src}
+          src={activeSrc}
           alt={alt}
           referrerPolicy="no-referrer"
           onLoad={() => setImgReady(true)}
-          onError={() => setImgFailed(true)}
+          onError={handleError}
         />
       ) : null}
 

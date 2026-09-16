@@ -1,11 +1,13 @@
 import { getFirebaseIdToken } from '@/features/auth/infrastructure/firebase/get-id-token';
+import { isDataUrl } from '@/core/functions/image-data-url';
 import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { pageIdFromImageRefKey } from '@/features/template/domain/ports/image-asset.port';
 import {
   extractFileKeyFromUploadthingUrl,
-  resolveCloudImageUrl,
+  resolveCloudImageAccess,
   resolveImageDeleteUrl,
   uploadFiles,
+  type CloudImageAccess,
 } from '@/features/template/infrastructure/uploadthing/client';
 
 function dataUrlToFile(dataUrl: string, filename: string): File {
@@ -25,11 +27,26 @@ function extensionForMime(mime: string): string {
   return 'png';
 }
 
-const sessionSrcCache = new Map<string, { src: string; expiresAt: number }>();
+const sessionSrcCache = new Map<string, { src: string; srcAlt?: string; expiresAt: number }>();
 const SESSION_SRC_TTL_MS = 5 * 60 * 60 * 1000;
+
+/** Last resolved access per cache key — used to populate TemplateImage.srcAlt. */
+const lastAccessByKey = new Map<string, CloudImageAccess>();
 
 function sessionCacheKey(ref: ImageRef): string {
   return ref.fileKey || ref.url || ref.key;
+}
+
+export function getCloudSrcAlt(ref: ImageRef | undefined): string | undefined {
+  if (!ref) return undefined;
+  const key = sessionCacheKey(ref);
+  const cached = sessionSrcCache.get(key);
+  if (cached?.srcAlt) return cached.srcAlt;
+  const access = lastAccessByKey.get(key);
+  if (!access) return undefined;
+  // Primary display is contentUrl; CDN signed URL is the fallback alt.
+  if (access.url && access.url !== access.contentUrl) return access.url;
+  return undefined;
 }
 
 export class UploadthingImageAdapter implements ImageAssetPort {
@@ -44,13 +61,14 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     const file = dataUrlToFile(data, `${pageId}.${extensionForMime(mime)}`);
     const previousFileKey = ref.fileKey;
 
+    // UploadThing drops `input` from opts types when strictNullChecks is off.
     const uploaded = await uploadFiles('plannerImage', {
       files: [file],
       input: { pageId, idToken: token, previousFileKey },
       headers: {
         Authorization: `Bearer ${token}`,
       },
-    });
+    } as Parameters<typeof uploadFiles>[1]);
 
     const result = uploaded[0];
     if (!result) {
@@ -59,7 +77,6 @@ export class UploadthingImageAdapter implements ImageAssetPort {
 
     const serverData = result.serverData as { url?: string; key?: string; fileKey?: string } | null;
     const fileKey = serverData?.fileKey ?? result.key;
-    // Prefer SDK ufsUrl (appId.ufs.sh). Never trust legacy utfs.io as canonical.
     const candidates = [result.ufsUrl, serverData?.url, result.url].filter(
       (value): value is string => typeof value === 'string' && value.length > 0
     );
@@ -80,6 +97,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     ref.fileKey = fileKey;
     ref.url = official ?? candidates[0];
     sessionSrcCache.delete(sessionCacheKey(ref));
+    lastAccessByKey.delete(sessionCacheKey(ref));
   }
 
   async load(ref: ImageRef): Promise<string | null> {
@@ -89,23 +107,37 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     const cacheKey = sessionCacheKey(ref);
     const cached = sessionSrcCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
-      return cached.src;
+      // Prefer durable data URLs; reuse same-origin proxy / HTTPS session entries.
+      if (
+        isDataUrl(cached.src) ||
+        /^https?:\/\//i.test(cached.src) ||
+        cached.src.startsWith('/')
+      ) {
+        return cached.src;
+      }
     }
 
-    // Signed CDN URL for <img> — browser talks to UploadThing directly.
-    const src = await resolveCloudImageUrl({
+    const access = await resolveCloudImageAccess({
       fileKey: fileKey ?? undefined,
       url: ref.url,
     });
-    if (src) {
-      sessionSrcCache.set(cacheKey, {
-        src,
-        expiresAt: Date.now() + SESSION_SRC_TTL_MS,
-      });
-      return src;
-    }
+    if (!access) return null;
 
-    return null;
+    lastAccessByKey.set(cacheKey, access);
+
+    // Prefer same-origin content proxy: browser often cannot reach `*.ufs.sh`.
+    // Signed CDN remains srcAlt for environments where the proxy fails.
+    const src = access.contentUrl || access.url;
+    if (!src) return null;
+
+    const srcAlt = access.url && access.url !== src ? access.url : undefined;
+
+    sessionSrcCache.set(cacheKey, {
+      src,
+      srcAlt,
+      expiresAt: Date.now() + SESSION_SRC_TTL_MS,
+    });
+    return src;
   }
 
   async delete(ref: ImageRef): Promise<void> {
@@ -117,6 +149,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     }
 
     sessionSrcCache.delete(sessionCacheKey(ref));
+    lastAccessByKey.delete(sessionCacheKey(ref));
 
     const response = await fetch(resolveImageDeleteUrl(), {
       method: 'POST',

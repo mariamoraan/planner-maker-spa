@@ -71,6 +71,13 @@ export const PageThumbnail = ({image}: Props) => {
                   alt={image.name}
                   src={image.src}
                   referrerPolicy="no-referrer"
+                  onError={event => {
+                    const alt = image.srcAlt;
+                    const el = event.currentTarget;
+                    if (alt && el.src !== alt) {
+                      el.src = alt;
+                    }
+                  }}
                 />
             </button>
 

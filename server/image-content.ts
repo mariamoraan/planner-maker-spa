@@ -14,7 +14,7 @@ try {
   // Older Node versions may not support this.
 }
 
-const UPSTREAM_TIMEOUT_MS = 12_000;
+const UPSTREAM_TIMEOUT_MS = 8_000;
 
 async function fetchUpstreamImage(downloadUrl: string): Promise<{
   buffer: Buffer;

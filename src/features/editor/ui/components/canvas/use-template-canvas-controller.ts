@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import useImage from 'use-image';
 import type Konva from 'konva';
@@ -10,6 +10,37 @@ import { useCanvasSelection } from './use-canvas-selection';
 import { useCanvasDragSnap } from './use-canvas-drag-snap';
 import { useCanvasGridEdit } from './use-canvas-grid-edit';
 import { useCanvasKeyboard } from './use-canvas-keyboard';
+
+function useCanvasImageSrc(src?: string, srcAlt?: string): string {
+  const [active, setActive] = useState(src ?? '');
+
+  useEffect(() => {
+    if (!src) {
+      setActive('');
+      return;
+    }
+
+    let cancelled = false;
+    setActive(src);
+
+    const probe = new Image();
+    probe.referrerPolicy = 'no-referrer';
+    probe.onload = () => {
+      if (!cancelled) setActive(src);
+    };
+    probe.onerror = () => {
+      if (cancelled) return;
+      if (srcAlt && srcAlt !== src) setActive(srcAlt);
+    };
+    probe.src = src;
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, srcAlt]);
+
+  return active;
+}
 
 interface UseTemplateCanvasControllerParams {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -26,7 +57,8 @@ export function useTemplateCanvasController({
 
   const currentImage = useCurrentImage();
   const template = useCurrentTemplate();
-  const [image] = useImage(currentImage?.src ?? '');
+  const displaySrc = useCanvasImageSrc(currentImage?.src, currentImage?.srcAlt);
+  const [image] = useImage(displaySrc);
 
   const canvasTool = useEditorStore(state => state.canvasTool);
   const showRectangleGuides = useEditorStore(state => state.showRectangleGuides);
