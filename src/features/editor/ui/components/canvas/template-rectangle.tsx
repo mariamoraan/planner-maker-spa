@@ -144,6 +144,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
             fill={config.bgColor}
             stroke={config.color}
             strokeWidth={2}
+            strokeEnabled={!rect.gridGroupId}
             cornerRadius={4}
           />
   

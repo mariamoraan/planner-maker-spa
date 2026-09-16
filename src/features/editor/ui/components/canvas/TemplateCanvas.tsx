@@ -7,6 +7,7 @@ import { CanvasPageImage } from './canvas-page-image';
 import { CanvasRectangleList } from './canvas-rectangle-list';
 import { CanvasSelectionOverlays } from './canvas-selection-overlays';
 import { CanvasGridEditLayer } from './canvas-grid-edit-layer';
+import { GridCellGuides } from './grid-cell-guides';
 import { useTemplateCanvasController } from './use-template-canvas-controller';
 import './template-canva.scss';
 
@@ -73,6 +74,18 @@ export const TemplateCanvas: React.FC = () => {
               onDragMove={c.drag.handleDragMove}
               onDragEnd={c.drag.handleDragEnd}
               onTransformEnd={c.drag.handleTransformEnd}
+            />
+          )}
+
+          {c.currentImage && c.showRectangleGuides && (
+            <GridCellGuides
+              gridGroups={c.currentImage.gridGroups}
+              rectangles={c.currentImage.rectangles ?? []}
+              scale={scale}
+              offset={offset}
+              previewGroupId={c.grid.lockedGridGroup?.id}
+              previewBounds={c.grid.activeGridBounds}
+              previewSettings={c.grid.activeGridSettings}
             />
           )}
 
