@@ -7,9 +7,12 @@ import { blockSelectionZoneProps } from '@/features/editor/domain/services/block
 import {
   aabbFromRects,
   angleFromCenter,
+  formatRotationDegrees,
+  KEY_ROTATION_ANGLES,
   normalizeRotation,
   resolveWorldRect,
   shortestRotationDelta,
+  snapToKeyRotation,
   type AxisAlignedBounds,
 } from '@/features/editor/domain/services/block-geometry';
 import { translateGridBounds } from '@/features/editor/domain/services/grid-layout';
@@ -169,6 +172,28 @@ export const SelectionActionHandles = ({
     ? (lockedGrid.rotation ?? 0)
     : (selectedRects[0]?.rotation ?? 0);
 
+  const resolveLiveRotation = (
+    session: NonNullable<typeof rotateSessionRef.current>,
+    imagePos: { x: number; y: number },
+    shiftKey: boolean,
+  ) => {
+    const delta = shortestRotationDelta(
+      session.startAngle,
+      angleFromCenter(session.center, imagePos),
+    );
+    const raw = session.startRotation + delta;
+    if (shiftKey) {
+      return normalizeRotation(Math.round(raw / 15) * 15);
+    }
+    return snapToKeyRotation(raw).rotation;
+  };
+
+  const isKeyAngle =
+    rotationPreview !== null &&
+    KEY_ROTATION_ANGLES.some(
+      key => Math.abs(shortestRotationDelta(rotationPreview, key)) < 0.05,
+    );
+
   const beginRotate = (event: React.PointerEvent<HTMLButtonElement>) => {
     if (!canRotate) return;
     event.preventDefault();
@@ -191,22 +216,14 @@ export const SelectionActionHandles = ({
       startRotation: baseRotation,
     };
     setIsInteracting(true);
-    onRotationPreview(baseRotation);
+    onRotationPreview(snapToKeyRotation(baseRotation).rotation);
 
     const onMove = (moveEvent: PointerEvent) => {
       const session = rotateSessionRef.current;
       if (!session) return;
       const pt = resolveStagePoint(moveEvent, stageEl);
       if (!pt) return;
-      const img = pointerToImage(pt);
-      const currentAngle = angleFromCenter(session.center, img);
-      let delta = shortestRotationDelta(session.startAngle, currentAngle);
-      if (moveEvent.shiftKey) {
-        const absolute = session.startRotation + delta;
-        const snapped = Math.round(absolute / 15) * 15;
-        delta = snapped - session.startRotation;
-      }
-      onRotationPreview(normalizeRotation(session.startRotation + delta));
+      onRotationPreview(resolveLiveRotation(session, pointerToImage(pt), moveEvent.shiftKey));
     };
 
     const onUp = (upEvent: PointerEvent) => {
@@ -222,20 +239,9 @@ export const SelectionActionHandles = ({
       }
 
       const pt = resolveStagePoint(upEvent, stageEl);
-      let nextRotation = session.startRotation;
-      if (pt) {
-        const img = pointerToImage(pt);
-        let delta = shortestRotationDelta(
-          session.startAngle,
-          angleFromCenter(session.center, img),
-        );
-        if (upEvent.shiftKey) {
-          nextRotation = Math.round((session.startRotation + delta) / 15) * 15;
-        } else {
-          nextRotation = session.startRotation + delta;
-        }
-      }
-      nextRotation = normalizeRotation(nextRotation);
+      const nextRotation = pt
+        ? resolveLiveRotation(session, pointerToImage(pt), upEvent.shiftKey)
+        : normalizeRotation(session.startRotation);
       onRotationPreview(null);
       onRotateCommit({ kind: session.kind, id: session.id, rotation: nextRotation });
     };
@@ -286,6 +292,19 @@ export const SelectionActionHandles = ({
       style={{ left, top }}
       {...blockSelectionZoneProps}
     >
+      {rotationPreview !== null && (
+        <div
+          className={[
+            'selection-action-handles__angle',
+            isKeyAngle ? 'selection-action-handles__angle--snapped' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          aria-live="polite"
+        >
+          {formatRotationDegrees(rotationPreview)}
+        </div>
+      )}
       {canRotate && (
         <button
           type="button"

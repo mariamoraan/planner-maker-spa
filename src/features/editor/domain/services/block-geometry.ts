@@ -152,6 +152,47 @@ export function shortestRotationDelta(fromDeg: number, toDeg: number): number {
   return normalizeRotation(toDeg - fromDeg);
 }
 
+/** Common angles that feel "right" while drag-rotating (normalized to (-180, 180]). */
+export const KEY_ROTATION_ANGLES = [0, 45, 90, 135, 180, -45, -90, -135] as const;
+
+/** Soft magnetic pull toward key angles, in degrees. */
+export const ROTATION_SNAP_THRESHOLD_DEG = 6;
+
+/**
+ * Pull a rotation toward the nearest key angle when close enough.
+ * 270° is represented as -90° after normalizeRotation.
+ */
+export function snapToKeyRotation(
+  degrees: number,
+  threshold = ROTATION_SNAP_THRESHOLD_DEG,
+): { rotation: number; snapped: boolean } {
+  const normalized = normalizeRotation(degrees);
+  let bestAngle = normalized;
+  let bestDist = Infinity;
+
+  for (const key of KEY_ROTATION_ANGLES) {
+    const dist = Math.abs(shortestRotationDelta(normalized, key));
+    if (dist < bestDist) {
+      bestDist = dist;
+      bestAngle = key;
+    }
+  }
+
+  if (bestDist <= threshold) {
+    return { rotation: bestAngle, snapped: true };
+  }
+
+  return { rotation: normalized, snapped: false };
+}
+
+/** Human-readable rotation label for live rotate feedback. */
+export function formatRotationDegrees(degrees: number): string {
+  const rounded = Math.round(normalizeRotation(degrees));
+  // Prefer 0–359 for display so 270° reads as 270°, not -90°.
+  const display = ((rounded % 360) + 360) % 360;
+  return `${display}°`;
+}
+
 /** Resolve a rectangle's on-canvas pose, including parent grid rotation. */
 export function resolveWorldRect(
   rect: OrientedRect & { gridGroupId?: string; id?: string },

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   aabbFromRects,
+  formatRotationDegrees,
   normalizeRotation,
   orientedRectAabb,
   pointInOrientedRect,
   resolveWorldRect,
   rotatePointAround,
   shortestRotationDelta,
+  snapToKeyRotation,
 } from './block-geometry';
 
 describe('block-geometry', () => {
@@ -76,5 +78,26 @@ describe('block-geometry', () => {
       y: expect.closeTo(2),
     });
     expect(shortestRotationDelta(170, -170)).toBeCloseTo(20);
+  });
+
+  it('magnetically snaps near key rotations', () => {
+    expect(snapToKeyRotation(88).rotation).toBe(90);
+    expect(snapToKeyRotation(88).snapped).toBe(true);
+    expect(snapToKeyRotation(3).rotation).toBe(0);
+    expect(snapToKeyRotation(268).rotation).toBe(-90); // 270°
+    expect(snapToKeyRotation(42).rotation).toBe(45);
+    expect(snapToKeyRotation(178).rotation).toBe(180);
+  });
+
+  it('does not snap when outside magnetic threshold', () => {
+    expect(snapToKeyRotation(80).snapped).toBe(false);
+    expect(snapToKeyRotation(80).rotation).toBe(80);
+  });
+
+  it('formats rotation degrees for display', () => {
+    expect(formatRotationDegrees(-90)).toBe('270°');
+    expect(formatRotationDegrees(90)).toBe('90°');
+    expect(formatRotationDegrees(0)).toBe('0°');
+    expect(formatRotationDegrees(181)).toBe('181°');
   });
 });
