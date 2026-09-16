@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { FieldType } from '@/features/template';
 import { FIELD_TYPE_CONFIG, TEMPLATE_FIELD_TYPES } from '@/features/template';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
+import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group';
 import { YearIcon } from './year-icon';
 import { MonthIcon } from './month-icon';
 import { DayIcon } from './day-icon';
@@ -71,7 +72,10 @@ export const FieldTypeSelector = () => {
   const selectedRects = currentImage.rectangles.filter(rect =>
     selectedRectangleIds.includes(rect.id),
   );
+  const isGridSelected =
+    getGridGroupForSelection(selectedRectangleIds, currentImage.gridGroups) !== null;
   const highlightedType =
+    !isGridSelected &&
     selectedRects.length > 0 &&
     selectedRects.every(rect => rect.fieldType === selectedRects[0].fieldType)
       ? selectedRects[0].fieldType
@@ -116,7 +120,7 @@ export const FieldTypeSelector = () => {
 
       <button
         type="button"
-        className="field-type-selector__grid-btn"
+        className={`field-type-selector__grid-btn${isGridSelected ? ' field-type-selector__grid-btn--active' : ''}`}
         onClick={handleAddGrid}
         aria-label={t('editor.gridAddGrid')}
         title={t('editor.gridAddGrid')}

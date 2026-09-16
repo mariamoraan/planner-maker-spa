@@ -60,14 +60,17 @@
     padding: 0;
     border: 1px solid transparent;
     border-radius: 12px;
-    background: transparent;
+    background: #dcfcdc;
     transition: 200ms ease;
     outline: none;
     cursor: pointer;
-    background: #dcfcdc !important;
 
     &:hover {
       opacity: 0.8;
+    }
+
+    &--active {
+      border-color: grey;
     }
 
     &__icon-wrapper {
