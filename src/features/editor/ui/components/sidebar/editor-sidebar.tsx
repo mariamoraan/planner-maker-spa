@@ -89,9 +89,9 @@ export const EditorSidebar: React.FC = () => {
           ) : (
             <div className="editor-sidebar__header__title">
               <div className="editor-sidebar__header__title__meta">
-                <p className="editor-sidebar__header__title__name">{template?.name ?? 'Template'}</p>
+                <p className="editor-sidebar__header__title__meta__name">{template?.name ?? 'Template'}</p>
                 {paperSizeLabel ? (
-                  <span className="editor-sidebar__header__title__format">{paperSizeLabel}</span>
+                  <span className="editor-sidebar__header__title__meta__format">{paperSizeLabel}</span>
                 ) : null}
               </div>
               <button
