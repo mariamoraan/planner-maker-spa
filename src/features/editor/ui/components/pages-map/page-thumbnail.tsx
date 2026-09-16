@@ -66,7 +66,12 @@ export const PageThumbnail = ({image}: Props) => {
             onClick={selectPage} 
             onContextMenu={openContextMenu}
             >
-                <img className='page-thumbnail__button__img' alt={image.name} src={image.src} />
+                <img
+                  className='page-thumbnail__button__img'
+                  alt={image.name}
+                  src={image.src}
+                  referrerPolicy="no-referrer"
+                />
             </button>
 
             {isContextMenuOpen && menuPosition && createPortal(

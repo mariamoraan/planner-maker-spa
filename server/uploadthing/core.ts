@@ -65,8 +65,15 @@ export const uploadRouter = {
       };
     })
     .onUploadComplete(async ({ metadata, file }) => {
+      // Prefer file.ufsUrl (https://<appId>.ufs.sh/...). Avoid legacy utfs.io.
+      const url =
+        file.ufsUrl && !file.ufsUrl.includes('utfs.io')
+          ? file.ufsUrl
+          : file.url && !file.url.includes('utfs.io')
+            ? file.url
+            : file.ufsUrl ?? file.url;
       return {
-        url: file.ufsUrl ?? file.url,
+        url,
         key: metadata.pageKey,
         fileKey: file.key,
       };

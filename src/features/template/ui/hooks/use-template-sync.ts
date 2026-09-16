@@ -42,9 +42,18 @@ export function useTemplateSync() {
         await repairDuplicatePageOrder(uid);
         if (cancelled) return;
 
-        const unsubscribe = getInfra().templates.subscribe(uid, templates => {
-          if (!cancelled) hydrateFromRemote(templates);
-        });
+        const unsubscribe = getInfra().templates.subscribe(
+          uid,
+          templates => {
+            if (!cancelled) hydrateFromRemote(templates);
+          },
+          error => {
+            console.error('[template-sync] subscribe failed:', error);
+            if (!cancelled) {
+              setSyncError(error.message || 'Sync failed');
+            }
+          }
+        );
 
         return unsubscribe;
       } catch (error) {

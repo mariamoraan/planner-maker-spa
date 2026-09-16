@@ -1,5 +1,6 @@
 import { generateReactHelpers } from '@uploadthing/react';
 import type { OurFileRouter } from '../../../server/uploadthing/core';
+import { getFirebaseIdToken } from '@/features/auth/infrastructure/firebase/get-id-token';
 
 function resolveUploadthingUrl(): string {
   const configured = import.meta.env.VITE_UPLOADTHING_URL;
@@ -21,4 +22,148 @@ export function resolveImageDeleteUrl(): string {
     return `${window.location.origin}/api/images/delete`;
   }
   return '/api/images/delete';
+}
+
+export function resolveImageUrlApi(): string {
+  const configured = import.meta.env.VITE_IMAGE_URL_API;
+  if (configured) return configured;
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}/api/images/url`;
+  }
+  return '/api/images/url';
+}
+
+export type CloudImageResolveInput = {
+  url?: string;
+  fileKey?: string;
+  key?: string;
+};
+
+export type CloudImageAccess = {
+  /** Signed CDN URL (browser → UploadThing). */
+  url: string;
+  /** Same-origin content proxy (server streams bytes). */
+  contentUrl: string;
+  fileKey?: string;
+};
+
+function toAbsoluteContentUrl(contentPath: string): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.origin}${contentPath}`;
+  }
+  return contentPath;
+}
+
+/** Resolve signed CDN + same-origin content URLs for a cloud image. */
+export async function resolveCloudImageAccess(
+  input: CloudImageResolveInput
+): Promise<CloudImageAccess | null> {
+  if (!input.url && !input.fileKey && !input.key) return null;
+
+  try {
+    const token = await getFirebaseIdToken();
+    if (!token) return null;
+
+    const response = await fetch(resolveImageUrlApi(), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: input.url,
+        fileKey: input.fileKey,
+        key: input.key,
+      }),
+    });
+
+    if (!response.ok) return null;
+    const payload = (await response.json()) as {
+      url?: string;
+      contentUrl?: string;
+      fileKey?: string;
+    };
+
+    const signed =
+      typeof payload.url === 'string' && /^https?:\/\//i.test(payload.url) && !/utfs\.io/i.test(payload.url)
+        ? payload.url
+        : null;
+    const contentPath =
+      typeof payload.contentUrl === 'string' && payload.contentUrl.startsWith('/')
+        ? payload.contentUrl
+        : null;
+
+    if (!signed && !contentPath) return null;
+
+    return {
+      url: signed ?? (contentPath ? toAbsoluteContentUrl(contentPath) : ''),
+      contentUrl: contentPath ? toAbsoluteContentUrl(contentPath) : signed ?? '',
+      fileKey: payload.fileKey,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pick a display URL: prefer same-origin content when the proxy is healthy,
+ * otherwise fall back to the signed CDN URL for the browser to load directly.
+ */
+let contentProxyHealthy: boolean | null = null;
+let contentProxyCheckedAt = 0;
+const CONTENT_HEALTH_TTL_MS = 60_000;
+
+async function pickDisplayUrl(access: CloudImageAccess): Promise<string> {
+  const now = Date.now();
+  const healthFresh = contentProxyHealthy !== null && now - contentProxyCheckedAt < CONTENT_HEALTH_TTL_MS;
+
+  if (healthFresh && contentProxyHealthy === false) {
+    return access.url || access.contentUrl;
+  }
+  if (healthFresh && contentProxyHealthy === true) {
+    return access.contentUrl || access.url;
+  }
+
+  if (access.contentUrl) {
+    try {
+      const probe = await fetch(access.contentUrl, {
+        method: 'HEAD',
+        signal: AbortSignal.timeout(4_000),
+      });
+      contentProxyHealthy = probe.ok;
+      contentProxyCheckedAt = Date.now();
+      if (probe.ok) return access.contentUrl;
+    } catch {
+      contentProxyHealthy = false;
+      contentProxyCheckedAt = Date.now();
+    }
+  }
+
+  return access.url || access.contentUrl;
+}
+
+export async function resolveCloudImageUrl(
+  input: CloudImageResolveInput
+): Promise<string | null> {
+  const access = await resolveCloudImageAccess(input);
+  if (!access) return null;
+  return pickDisplayUrl(access);
+}
+
+export function extractFileKeyFromUploadthingUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.toLowerCase();
+    const allowed =
+      host === 'ufs.sh' ||
+      host === 'utfs.io' ||
+      host.endsWith('.ufs.sh') ||
+      host.endsWith('.utfs.io');
+    if (!allowed) return null;
+    const match = parsed.pathname.match(/\/f\/(.+)$/);
+    if (!match?.[1]) return null;
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
 }

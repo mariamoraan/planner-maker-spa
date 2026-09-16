@@ -74,6 +74,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
                               className="home-rail__recent-thumb"
                               src={cover.src}
                               alt=""
+                              referrerPolicy="no-referrer"
                             />
                           ) : (
                             <span className="home-rail__recent-placeholder" aria-hidden="true">

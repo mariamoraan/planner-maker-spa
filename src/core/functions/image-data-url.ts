@@ -6,9 +6,17 @@ export function isDataUrl(src: string): boolean {
   return src.startsWith('data:');
 }
 
-export async function fetchAsDataUrl(url: string): Promise<string | null> {
+const DEFAULT_FETCH_TIMEOUT_MS = 8_000;
+
+export async function fetchAsDataUrl(
+  url: string,
+  timeoutMs = DEFAULT_FETCH_TIMEOUT_MS
+): Promise<string | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
-    const response = await fetch(url, { mode: 'cors' });
+    const response = await fetch(url, { mode: 'cors', signal: controller.signal });
     if (!response.ok) return null;
     const blob = await response.blob();
     return await new Promise<string>((resolve, reject) => {
@@ -19,6 +27,8 @@ export async function fetchAsDataUrl(url: string): Promise<string | null> {
     });
   } catch {
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

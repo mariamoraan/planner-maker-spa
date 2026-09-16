@@ -164,10 +164,21 @@ function pagesRef(uid: string, templateId: string) {
 }
 
 export class FirebaseTemplateRepository implements TemplateRepositoryPort {
-  subscribe(uid: string, onChange: (templates: Template[]) => void): Unsubscribe {
+  subscribe(
+    uid: string,
+    onChange: (templates: Template[]) => void,
+    onError?: (error: Error) => void
+  ): Unsubscribe {
     const pageUnsubs = new Map<string, FirestoreUnsubscribe>();
     let templateMeta = new Map<string, Record<string, unknown>>();
     let pagesByTemplate = new Map<string, TemplatePageRecord[]>();
+    let reportedError = false;
+
+    const reportError = (error: Error) => {
+      if (reportedError) return;
+      reportedError = true;
+      onError?.(error);
+    };
 
     const emit = () => {
       const templates = Array.from(templateMeta.entries())
@@ -176,38 +187,46 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       onChange(templates);
     };
 
-    const unsubTemplates = onSnapshot(templatesRef(uid), snap => {
-      const activeIds = new Set(snap.docs.map(d => d.id));
+    const unsubTemplates = onSnapshot(
+      templatesRef(uid),
+      snap => {
+        const activeIds = new Set(snap.docs.map(d => d.id));
 
-      for (const [id, unsub] of pageUnsubs) {
-        if (!activeIds.has(id)) {
-          unsub();
-          pageUnsubs.delete(id);
-          templateMeta.delete(id);
-          pagesByTemplate.delete(id);
+        for (const [id, unsub] of pageUnsubs) {
+          if (!activeIds.has(id)) {
+            unsub();
+            pageUnsubs.delete(id);
+            templateMeta.delete(id);
+            pagesByTemplate.delete(id);
+          }
         }
-      }
 
-      snap.docs.forEach(docSnap => {
-        templateMeta.set(docSnap.id, docSnap.data());
-        if (pageUnsubs.has(docSnap.id)) return;
+        snap.docs.forEach(docSnap => {
+          templateMeta.set(docSnap.id, docSnap.data());
+          if (pageUnsubs.has(docSnap.id)) return;
 
-        const unsubPages = onSnapshot(pagesRef(uid, docSnap.id), pagesSnap => {
-          pagesByTemplate.set(
-            docSnap.id,
-            pagesSnap.docs.map(d => mapPage(d.id, d.data()))
+          const unsubPages = onSnapshot(
+            pagesRef(uid, docSnap.id),
+            pagesSnap => {
+              pagesByTemplate.set(
+                docSnap.id,
+                pagesSnap.docs.map(d => mapPage(d.id, d.data()))
+              );
+              emit();
+            },
+            error => reportError(error)
           );
-          emit();
+          pageUnsubs.set(docSnap.id, unsubPages);
         });
-        pageUnsubs.set(docSnap.id, unsubPages);
-      });
 
-      if (snap.empty) {
-        templateMeta.clear();
-        pagesByTemplate.clear();
-        emit();
-      }
-    });
+        if (snap.empty) {
+          templateMeta.clear();
+          pagesByTemplate.clear();
+          emit();
+        }
+      },
+      error => reportError(error)
+    );
 
     return () => {
       unsubTemplates();

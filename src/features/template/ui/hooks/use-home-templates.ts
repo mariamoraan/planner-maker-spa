@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
 export const useHomeTemplates = () => {
   const templates = useTemplateStore(state => state.templates);
   const isSyncReady = useTemplateStore(state => state.isSyncReady);
   const loadAllTemplateImages = useTemplateStore(state => state.loadAllTemplateImages);
-  const [isLoading, setIsLoading] = useState(true);
 
   const imageFingerprint = useMemo(
     () =>
@@ -16,27 +15,26 @@ export const useHomeTemplates = () => {
   );
 
   useEffect(() => {
+    if (!isSyncReady || !imageFingerprint) return;
+
     let cancelled = false;
 
     const load = async () => {
-      if (!isSyncReady || !imageFingerprint) {
-        setIsLoading(!isSyncReady);
-        return;
-      }
-
-      setIsLoading(true);
-      await loadAllTemplateImages();
-      if (!cancelled) {
-        setIsLoading(false);
+      try {
+        await loadAllTemplateImages();
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('[home-templates] image load failed:', error);
+        }
       }
     };
 
-    load();
+    void load();
 
     return () => {
       cancelled = true;
     };
   }, [imageFingerprint, isSyncReady, loadAllTemplateImages]);
 
-  return { templates, isLoading };
+  return { templates, isLoading: !isSyncReady };
 };

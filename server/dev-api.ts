@@ -2,6 +2,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createRouteHandler } from 'uploadthing/server';
 import { UTApi } from 'uploadthing/server';
 import { assertKeyBelongsToUser, verifyFirebaseToken, preloadFirebaseAdminFromEnv } from './firebase-admin';
+import {
+  statusForImageUrlError,
+  type ImageUrlResolveBody,
+} from './uploadthing-url';
+import { resolveUploadthingImageAccess } from './image-access';
+import { loadImageBytesForTicket, statusForImageContentError } from './image-content';
 import { uploadRouter } from './uploadthing/core';
 
 let uploadthingHandler: ReturnType<typeof createRouteHandler> | null = null;
@@ -126,8 +132,97 @@ export async function handleImageDeleteApi(req: IncomingMessage, res: ServerResp
   }
 }
 
+export async function handleImageUrlApi(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  if (req.method !== 'POST') {
+    res.statusCode = 405;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  try {
+    const rawBody = await readRequestBody(req);
+    const body = JSON.parse(rawBody.toString('utf8') || '{}') as ImageUrlResolveBody;
+    const uid = await verifyFirebaseToken(req.headers.authorization);
+    const { fileKey, url, key } = body ?? {};
+
+    if (!fileKey && !url && !key) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'fileKey or url is required' }));
+      return;
+    }
+
+    if (key) {
+      assertKeyBelongsToUser(key, uid);
+    }
+
+    const access = await resolveUploadthingImageAccess(uid, { fileKey, url, key });
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(
+      JSON.stringify({
+        url: access.url,
+        contentUrl: access.contentPath,
+        fileKey: access.fileKey,
+      })
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'URL resolve failed';
+    res.statusCode = statusForImageUrlError(message);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: message }));
+  }
+}
+
+export async function handleImageContentApi(
+  req: IncomingMessage,
+  res: ServerResponse,
+  url: URL
+): Promise<void> {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.statusCode = 405;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Method not allowed' }));
+    return;
+  }
+
+  try {
+    const ticket = url.searchParams.get('t');
+    if (!ticket) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({ error: 'ticket is required' }));
+      return;
+    }
+
+    const { buffer, contentType } = await loadImageBytesForTicket(ticket);
+
+    res.statusCode = 200;
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.setHeader('Content-Length', String(buffer.byteLength));
+    if (req.method === 'HEAD') {
+      res.end();
+      return;
+    }
+    res.end(buffer);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Content resolve failed';
+    console.error('[dev-api/images/content]', message);
+    res.statusCode = statusForImageContentError(message);
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: message }));
+  }
+}
+
 export function isDevApiPath(pathname: string): boolean {
-  return pathname === '/api/uploadthing' || pathname === '/api/images/delete';
+  return (
+    pathname === '/api/uploadthing' ||
+    pathname === '/api/images/delete' ||
+    pathname === '/api/images/url' ||
+    pathname === '/api/images/content'
+  );
 }
 
 export async function handleDevApi(
@@ -142,6 +237,16 @@ export async function handleDevApi(
 
   if (url.pathname === '/api/images/delete') {
     await handleImageDeleteApi(req, res);
+    return true;
+  }
+
+  if (url.pathname === '/api/images/url') {
+    await handleImageUrlApi(req, res);
+    return true;
+  }
+
+  if (url.pathname === '/api/images/content') {
+    await handleImageContentApi(req, res, url);
     return true;
   }
 

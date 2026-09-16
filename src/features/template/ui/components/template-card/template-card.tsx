@@ -52,6 +52,7 @@ export const TemplateCard = ({ template, index, onOpen, onDelete }: TemplateCard
             className="template-card__thumbnail"
             src={cover.src}
             alt={template.name}
+            referrerPolicy="no-referrer"
           />
         ) : (
           <div className="template-card__placeholder" aria-hidden="true">

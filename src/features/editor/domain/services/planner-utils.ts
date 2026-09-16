@@ -419,6 +419,7 @@ import { ensureDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
 
 /**
  * Load an image from base64 or URL (canvas-safe for export).
+ * Same-origin `/api/images/content` URLs fetch cleanly; CDN URLs may fail CORS.
  */
 export async function loadImage(src: string): Promise<HTMLImageElement> {
   const resolvedSrc = await ensureDataUrl(src);

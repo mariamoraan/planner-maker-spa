@@ -22,7 +22,33 @@ import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/d
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
 const RECTANGLE_SYNC_DELAY_MS = 500;
+const IMAGE_LOAD_CONCURRENCY = 3;
 const rectangleSyncTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+  if (items.length === 0) return [];
+  const results: PromiseSettledResult<R>[] = new Array(items.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = { status: 'fulfilled', value: await mapper(items[index]) };
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason };
+      }
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+}
 
 function resolveImageRef(uid: string | null, pageId: string, existing?: ImageRef): ImageRef {
   if (existing) return existing;
@@ -91,6 +117,7 @@ async function loadPageSrc(uid: string | null, image: TemplateImage): Promise<Te
 }
 
 function needsImageLoad(image: TemplateImage): boolean {
+  // Need a src. Signed HTTPS URLs from /api/images/url are valid for <img>.
   return !image.src;
 }
 
@@ -346,8 +373,14 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     const toLoad = template.images.filter(needsImageLoad);
     if (toLoad.length === 0) return;
 
-    const loaded = await Promise.all(toLoad.map(img => loadPageSrc(uid, img)));
-    const loadedById = new Map(loaded.map(img => [img.id, img]));
+    const results = await mapWithConcurrency(toLoad, IMAGE_LOAD_CONCURRENCY, img =>
+      loadPageSrc(uid, img)
+    );
+    const loadedById = new Map(
+      results
+        .filter((r): r is PromiseFulfilledResult<TemplateImage> => r.status === 'fulfilled')
+        .map(r => [r.value.id, r.value])
+    );
 
     set(state => ({
       templates: state.templates.map(t =>
@@ -371,8 +404,14 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     );
     if (toLoad.length === 0) return;
 
-    const loaded = await Promise.all(toLoad.map(img => loadPageSrc(uid, img)));
-    const loadedById = new Map(loaded.map(img => [img.id, img]));
+    const results = await mapWithConcurrency(toLoad, IMAGE_LOAD_CONCURRENCY, img =>
+      loadPageSrc(uid, img)
+    );
+    const loadedById = new Map(
+      results
+        .filter((r): r is PromiseFulfilledResult<TemplateImage> => r.status === 'fulfilled')
+        .map(r => [r.value.id, r.value])
+    );
 
     set(state => ({
       templates: state.templates.map(t => ({

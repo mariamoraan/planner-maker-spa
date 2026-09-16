@@ -1,0 +1,20 @@
+.field-type-icon {
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  border-radius: 12px;
+  aspect-ratio: 1 / 1;
+  font-weight: 800;
+  border: 2px solid;
+  transition: 200ms ease;
+  font-size: 0.75rem;
+  line-height: 1;
+
+  &--composite {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.65rem;
+  }
+}

@@ -1,7 +1,12 @@
 import { getFirebaseIdToken } from '@/features/auth/infrastructure/firebase/get-id-token';
 import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { pageIdFromImageRefKey } from '@/features/template/domain/ports/image-asset.port';
-import { resolveImageDeleteUrl, uploadFiles } from '@/features/template/infrastructure/uploadthing/client';
+import {
+  extractFileKeyFromUploadthingUrl,
+  resolveCloudImageUrl,
+  resolveImageDeleteUrl,
+  uploadFiles,
+} from '@/features/template/infrastructure/uploadthing/client';
 
 function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(',');
@@ -18,6 +23,13 @@ function extensionForMime(mime: string): string {
   if (mime.includes('jpeg') || mime.includes('jpg')) return 'jpg';
   if (mime.includes('webp')) return 'webp';
   return 'png';
+}
+
+const sessionSrcCache = new Map<string, { src: string; expiresAt: number }>();
+const SESSION_SRC_TTL_MS = 5 * 60 * 60 * 1000;
+
+function sessionCacheKey(ref: ImageRef): string {
+  return ref.fileKey || ref.url || ref.key;
 }
 
 export class UploadthingImageAdapter implements ImageAssetPort {
@@ -46,20 +58,54 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     }
 
     const serverData = result.serverData as { url?: string; key?: string; fileKey?: string } | null;
-    const url = serverData?.url ?? result.url ?? result.ufsUrl;
     const fileKey = serverData?.fileKey ?? result.key;
+    // Prefer SDK ufsUrl (appId.ufs.sh). Never trust legacy utfs.io as canonical.
+    const candidates = [result.ufsUrl, serverData?.url, result.url].filter(
+      (value): value is string => typeof value === 'string' && value.length > 0
+    );
+    const official = candidates.find(value => {
+      try {
+        const host = new URL(value).hostname.toLowerCase();
+        return host.endsWith('.ufs.sh') || host === 'ufs.sh';
+      } catch {
+        return false;
+      }
+    });
 
-    if (!url) {
+    if (!fileKey && !official) {
       throw new Error('Upload completed without a file URL');
     }
 
     ref.provider = 'uploadthing';
-    ref.url = url;
     ref.fileKey = fileKey;
+    ref.url = official ?? candidates[0];
+    sessionSrcCache.delete(sessionCacheKey(ref));
   }
 
   async load(ref: ImageRef): Promise<string | null> {
-    return ref.url ?? null;
+    const fileKey = ref.fileKey ?? (ref.url ? extractFileKeyFromUploadthingUrl(ref.url) : null);
+    if (!fileKey && !ref.url) return null;
+
+    const cacheKey = sessionCacheKey(ref);
+    const cached = sessionSrcCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.src;
+    }
+
+    // Prefer healthy content proxy; fall back to signed CDN URL for <img>.
+    const src = await resolveCloudImageUrl({
+      fileKey: fileKey ?? undefined,
+      url: ref.url,
+    });
+    if (src) {
+      sessionSrcCache.set(cacheKey, {
+        src,
+        expiresAt: Date.now() + SESSION_SRC_TTL_MS,
+      });
+      return src;
+    }
+
+    return null;
   }
 
   async delete(ref: ImageRef): Promise<void> {
@@ -69,6 +115,8 @@ export class UploadthingImageAdapter implements ImageAssetPort {
     if (!token) {
       throw new Error('You must be signed in to delete cloud images');
     }
+
+    sessionSrcCache.delete(sessionCacheKey(ref));
 
     const response = await fetch(resolveImageDeleteUrl(), {
       method: 'POST',
@@ -89,6 +137,6 @@ export class UploadthingImageAdapter implements ImageAssetPort {
   }
 
   async exists(ref: ImageRef): Promise<boolean> {
-    return Boolean(ref.url);
+    return Boolean(ref.fileKey || ref.url);
   }
 }

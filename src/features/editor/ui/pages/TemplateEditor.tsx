@@ -37,11 +37,16 @@ const TemplateEditor: React.FC = () => {
     const handleLoadImages = async () => {
       if (!templateId) return;
       setIsLoadingImages(true);
-      await loadTemplateImages(templateId);
-      if (cancelled) return;
-      normalizeImageOrder(templateId);
-      if (!cancelled) {
-        setIsLoadingImages(false);
+      try {
+        await loadTemplateImages(templateId);
+        if (cancelled) return;
+        normalizeImageOrder(templateId);
+      } catch (error) {
+        console.warn('[TemplateEditor] image load failed:', error);
+      } finally {
+        if (!cancelled) {
+          setIsLoadingImages(false);
+        }
       }
     };
 
@@ -82,7 +87,7 @@ const TemplateEditor: React.FC = () => {
         variants={fadeUp}
         transition={{ duration: 0.6 }}
       >
-        {currentImage?.missingLocalAsset && !currentImage.src ? (
+        {currentImage && !currentImage.src ? (
           <MissingPageImage pageId={currentImage.id} pageName={currentImage.name} />
         ) : (
           <EditorBoard />

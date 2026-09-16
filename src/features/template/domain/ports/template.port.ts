@@ -26,7 +26,11 @@ export type TemplateRecord = {
 export type Unsubscribe = () => void;
 
 export interface TemplateRepositoryPort {
-  subscribe(uid: string, onChange: (templates: Template[]) => void): Unsubscribe;
+  subscribe(
+    uid: string,
+    onChange: (templates: Template[]) => void,
+    onError?: (error: Error) => void
+  ): Unsubscribe;
   createTemplate(uid: string, template: Template): Promise<void>;
   updateTemplate(uid: string, templateId: string, updates: Partial<TemplateRecord>): Promise<void>;
   deleteTemplate(uid: string, templateId: string): Promise<void>;

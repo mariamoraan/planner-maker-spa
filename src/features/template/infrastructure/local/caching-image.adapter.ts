@@ -1,5 +1,5 @@
 import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
-import { ensureDataUrl, isDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
+import { isDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
 
 export class CachingImageAdapter implements ImageAssetPort {
   constructor(
@@ -7,44 +7,33 @@ export class CachingImageAdapter implements ImageAssetPort {
     private readonly cache: ImageAssetPort
   ) {}
 
-  private async normalizeForCache(data: string): Promise<string> {
-    if (isDataUrl(data)) return data;
-    if (isHttpUrl(data)) {
-      const converted = await ensureDataUrl(data);
-      return converted;
-    }
-    return data;
-  }
-
   async save(ref: ImageRef, data: string): Promise<void> {
     await this.cache.delete(ref).catch(() => undefined);
     await this.primary.save(ref, data);
-    const fromPrimary = (await this.primary.load(ref)) ?? ref.url ?? data;
-    const toCache = isDataUrl(data)
-      ? data
-      : await this.normalizeForCache(fromPrimary);
-    await this.cache.save(ref, toCache);
+    // Persist original upload bytes locally for instant reload / offline.
+    if (isDataUrl(data)) {
+      await this.cache.save(ref, data);
+    }
   }
 
   async load(ref: ImageRef): Promise<string | null> {
     const cached = await this.cache.load(ref);
-    if (cached) {
-      if (isHttpUrl(cached)) {
-        const dataUrl = await ensureDataUrl(cached);
-        if (dataUrl !== cached) {
-          await this.cache.save(ref, dataUrl);
-        }
-        return dataUrl;
-      }
+    // Only trust durable data URLs. Stale HTTP CDN entries cause broken <img>.
+    if (cached && isDataUrl(cached)) {
       return cached;
     }
 
     const remote = await this.primary.load(ref);
     if (!remote) return null;
 
-    const resolved = await this.normalizeForCache(remote);
-    await this.cache.save(ref, resolved);
-    return resolved;
+    if (isDataUrl(remote)) {
+      await this.cache.save(ref, remote).catch(() => undefined);
+    } else if (cached && isHttpUrl(cached)) {
+      // Drop unusable HTTP cache entries so we do not keep preferring them.
+      await this.cache.delete(ref).catch(() => undefined);
+    }
+
+    return remote;
   }
 
   async delete(ref: ImageRef): Promise<void> {
