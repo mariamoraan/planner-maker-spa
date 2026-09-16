@@ -31,6 +31,7 @@ import {
   orderRectIdsRowMajor,
   rectSizeFromGap,
   gapLinePositions,
+  gapGutterBands,
   maxGridGap,
   maxGridPadding,
   paddingFromBlockPosition,
@@ -833,6 +834,48 @@ describe('gapLinePositions with zero gap', () => {
     const lines = gapLinePositions(config);
     expect(lines.vertical).toEqual([100, 200]);
     expect(lines.horizontal).toEqual([]);
+  });
+});
+
+describe('gapGutterBands', () => {
+  it('places edges on cell-slot faces matching guides when gap is zero', () => {
+    const config = gridConfigFromBounds(
+      { x: 0, y: 0, width: 300, height: 100 },
+      3,
+      1,
+      { width: 100, height: 100 },
+      'top-left',
+      { x: 0, y: 0 },
+      { x: 0, y: 0 },
+    );
+    const bands = gapGutterBands(config);
+    expect(bands.vertical).toEqual([
+      { axis: 'x', index: 0, x: 100, y: 0, width: 0, height: 100, edge: 100 },
+      { axis: 'x', index: 1, x: 200, y: 0, width: 0, height: 100, edge: 200 },
+    ]);
+    expect(bands.horizontal).toEqual([]);
+  });
+
+  it('sizes gutters from slot gap when gap is positive', () => {
+    const config = gridConfigFromBounds(
+      { x: 0, y: 0, width: 220, height: 100 },
+      2,
+      1,
+      { width: 100, height: 100 },
+      'top-left',
+      { x: 0, y: 0 },
+      { x: 20, y: 0 },
+    );
+    const bands = gapGutterBands(config);
+    expect(bands.vertical).toHaveLength(1);
+    // slot width = (220 - 20) / 2 = 100; edge at 100; gap width 20
+    expect(bands.vertical[0]).toMatchObject({
+      axis: 'x',
+      index: 0,
+      edge: 100,
+      width: 20,
+      height: 100,
+    });
   });
 });
 

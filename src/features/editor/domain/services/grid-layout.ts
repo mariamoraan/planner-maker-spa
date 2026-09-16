@@ -1123,6 +1123,83 @@ export function gapLinePositions(config: GridLayoutConfig): {
   return { vertical, horizontal };
 }
 
+/** Visual gutter between adjacent cell-slot edges (matches cell guides). */
+export interface GridGapGutterBand {
+  axis: 'x' | 'y';
+  index: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Slot edge to grab: right edge of left slot (x) or bottom edge of top slot (y). */
+  edge: number;
+}
+
+/**
+ * Gutter bands between neighboring cell slots (same geometry as cell guides).
+ * Edge sits on the shared slot face that opens into the gutter.
+ */
+export function gapGutterBands(config: GridLayoutConfig): {
+  vertical: GridGapGutterBand[];
+  horizontal: GridGapGutterBand[];
+} {
+  const gap = effectiveGap(config.gap ?? DEFAULT_GAP, config.cols, config.rows);
+  const slot = gridSlotSize(
+    config.bounds,
+    config.cols,
+    config.rows,
+    config.rectSize,
+    config.gap ?? DEFAULT_GAP,
+  );
+
+  const vertical: GridGapGutterBand[] = [];
+  const horizontal: GridGapGutterBand[] = [];
+
+  if (config.cols >= 2) {
+    const top = cellSlotOrigin(0, 0, config);
+    const bottom = cellSlotOrigin(0, config.rows - 1, config);
+    const bandY = top.y;
+    const bandH = bottom.y + slot.height - top.y;
+
+    for (let col = 0; col < config.cols - 1; col++) {
+      const left = cellSlotOrigin(col, 0, config);
+      const edge = left.x + slot.width;
+      vertical.push({
+        axis: 'x',
+        index: col,
+        x: edge,
+        y: bandY,
+        width: gap.x,
+        height: bandH,
+        edge,
+      });
+    }
+  }
+
+  if (config.rows >= 2) {
+    const left = cellSlotOrigin(0, 0, config);
+    const right = cellSlotOrigin(config.cols - 1, 0, config);
+    const bandX = left.x;
+    const bandW = right.x + slot.width - left.x;
+
+    for (let row = 0; row < config.rows - 1; row++) {
+      const top = cellSlotOrigin(0, row, config);
+      const edge = top.y + slot.height;
+      horizontal.push({
+        axis: 'y',
+        index: row,
+        x: bandX,
+        y: edge,
+        width: bandW,
+        height: gap.y,
+        edge,
+      });
+    }
+  }
+
+  return { vertical, horizontal };
+}
+
 export interface GridDimensionLabelSpec {
   x: number;
   y: number;

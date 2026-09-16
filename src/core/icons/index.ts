@@ -18,6 +18,9 @@ import {
     Grid3X3,
     AlignHorizontalSpaceAround,
     AlignHorizontalSpaceBetween,
+    Plus,
+    Rows3,
+    Columns3,
 } from 'lucide-react';
 
 
@@ -41,4 +44,7 @@ export {
     Grid3X3 as GridIcon,
     AlignHorizontalSpaceAround as PaddingIcon,
     AlignHorizontalSpaceBetween as GapIcon,
+    Plus as PlusIcon,
+    Rows3 as RowsIcon,
+    Columns3 as ColumnsIcon,
 };

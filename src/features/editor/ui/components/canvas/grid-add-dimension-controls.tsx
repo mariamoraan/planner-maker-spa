@@ -1,6 +1,7 @@
 import './grid-add-dimension-controls.scss';
 
 import { useTranslation } from 'react-i18next';
+import { ColumnsIcon, PlusIcon, RowsIcon } from '@/core/icons';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import type { GridBounds } from '@/features/editor/domain/services/grid-layout';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
@@ -52,7 +53,8 @@ export const GridAddDimensionControls = ({
         title={t('editor.gridAddRow')}
         aria-label={t('editor.gridAddRow')}
       >
-        {t('editor.gridAddRow')}
+        <RowsIcon size={14} />
+        <PlusIcon size={11} className="grid-add-dimension-controls__plus" />
       </button>
       <button
         type="button"
@@ -62,7 +64,8 @@ export const GridAddDimensionControls = ({
         title={t('editor.gridAddColumn')}
         aria-label={t('editor.gridAddColumn')}
       >
-        {t('editor.gridAddColumn')}
+        <ColumnsIcon size={14} />
+        <PlusIcon size={11} className="grid-add-dimension-controls__plus" />
       </button>
     </div>
   );
