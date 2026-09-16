@@ -7,7 +7,7 @@ import type { GridBounds } from '@/features/editor/domain/services/grid-layout';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 
 const MAX_DIMENSION = 20;
-const OUTSET_PX = 20;
+const OUTSET_PX = 6;
 
 function clampDimension(value: number): number {
   return Math.min(MAX_DIMENSION, Math.max(1, value));
