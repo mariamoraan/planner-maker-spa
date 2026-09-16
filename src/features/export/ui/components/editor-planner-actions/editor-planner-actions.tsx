@@ -33,7 +33,7 @@ export const EditorPlannerActions = ({ variant }: EditorPlannerActionsProps) => 
   }
 
   return (
-    <div className="editor-planner-actions editor-planner-actions--sidebar">
+    <div className="editor-planner-actions editor-planner-actions--sidebar" data-tour-anchor="generate">
       <button
         className="editor-planner-actions__generate editor-planner-actions__generate--sidebar"
         type="button"

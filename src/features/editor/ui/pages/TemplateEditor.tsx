@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { MissingPageImage } from '@/features/editor/ui/components/canvas/missing-page-image';
-import { EmptyCanvasState } from '@/features/editor/ui/components/canvas/ImageUploader';
 import { GeneratorDialog } from '@/features/export/ui/components/planner-generator-dialog/planner-generator-dialog';
 import { ExportProgressCard } from '@/features/export/ui/components/export-progress-card/export-progress-card';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
@@ -83,14 +82,10 @@ const TemplateEditor: React.FC = () => {
         variants={fadeUp}
         transition={{ duration: 0.6 }}
       >
-        {currentImage ? (
-          currentImage.missingLocalAsset && !currentImage.src ? (
-            <MissingPageImage pageId={currentImage.id} pageName={currentImage.name} />
-          ) : (
-            <EditorBoard />
-          )
+        {currentImage?.missingLocalAsset && !currentImage.src ? (
+          <MissingPageImage pageId={currentImage.id} pageName={currentImage.name} />
         ) : (
-          <EmptyCanvasState />
+          <EditorBoard />
         )}
 
         {currentTemplate && (

@@ -3,6 +3,10 @@
     "appName": "Forma",
     "loading": "Cargando…",
     "cancel": "Cancelar",
+    "continue": "Continuar",
+    "next": "Siguiente",
+    "skip": "Saltar",
+    "gotIt": "Entendido",
     "continueWithGoogle": "Continuar con Google",
     "signOut": "Cerrar sesión",
     "backToHome": "Volver al inicio",
@@ -300,7 +304,29 @@
     "reuploadImage": "Volver a subir imagen",
     "replacePageImage": "Reemplazar imagen",
     "replacePageImageHint": "Sube una nueva imagen de fondo. Se mantienen el tipo, el orden y los bloques configurados.",
-    "replacePageImageInProgress": "Reemplazando imagen…"
+    "replacePageImageInProgress": "Reemplazando imagen…",
+    "setup": {
+      "stepIndicator": "Paso {{current}} de {{total}}",
+      "preferencesTitle": "Configura tu planner",
+      "preferencesDescription": "Elige el idioma y el inicio de semana para las páginas datadas. Podrás cambiarlo después en ajustes.",
+      "uploadTitle": "Sube tu primera página",
+      "uploadDescription": "Añade un PNG, JPEG o WebP de tu diseño para empezar a colocar bloques dinámicos.",
+      "uploadCta": "Subir primera página",
+      "uploadFormats": "PNG, JPEG o WebP",
+      "backToPreferences": "Volver a preferencias",
+      "addBlocksHint": "Disponible cuando subas tu primera página."
+    },
+    "tour": {
+      "stepIndicator": "{{current}} / {{total}}",
+      "addBlocksTitle": "Añade bloques dinámicos",
+      "addBlocksBody": "Elige un tipo de campo y dibújalo sobre tu diseño: nombres de mes, fechas y más se rellenan solos.",
+      "toolbarTitle": "Edita los bloques",
+      "toolbarBody": "Selecciona un bloque en el canvas para cambiar su tipo, estilo y capa desde la barra superior.",
+      "pagesTitle": "Gestiona las páginas",
+      "pagesBody": "Añade más diseños aquí y cambia entre ellos mientras montas tu planner.",
+      "generateTitle": "Genera tu planner",
+      "generateBody": "Cuando los bloques estén listos, exporta un PDF datado para cualquier rango de fechas."
+    }
   },
   "generator": {
     "title": "Exportar planner",

@@ -1,0 +1,219 @@
+.empty-planner-setup {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  &__page {
+    display: flex;
+    flex-direction: column;
+    width: auto;
+    height: min(100%, 72vh);
+    max-width: 100%;
+    background: hsl(var(--card));
+    border-radius: 4px;
+    box-shadow:
+      0 1px 2px hsl(0 0% 0% / 0.04),
+      0 8px 24px hsl(0 0% 0% / 0.08);
+    overflow: hidden;
+  }
+
+  &__page-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  &__step-indicator {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    letter-spacing: 0.01em;
+  }
+
+  &__step-dots {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    span {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: hsl(var(--border));
+
+      &.is-active {
+        background: hsl(var(--accent));
+        width: 16px;
+      }
+
+      &.is-done {
+        background: hsl(var(--accent) / 0.45);
+      }
+    }
+  }
+
+  &__page-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 28px 28px 24px;
+    overflow: auto;
+  }
+
+  &__intro {
+    margin-bottom: 1.5rem;
+    text-align: left;
+  }
+
+  &__title {
+    margin: 0 0 0.4rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: hsl(var(--foreground));
+    line-height: 1.3;
+  }
+
+  &__description {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1.125rem;
+    margin-bottom: auto;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  &__label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &__select {
+    width: 100%;
+    margin-top: 0.2rem;
+  }
+
+  &__dropzone {
+    flex: 1;
+    min-height: 160px;
+    margin-bottom: 1rem;
+
+    .image-uploader {
+      width: 100%;
+      height: 100%;
+      min-height: 160px;
+    }
+  }
+
+  &__dropzone-inner {
+    height: 100%;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border: 1px dashed hsl(0 0% 80%);
+    border-radius: 8px;
+    background: hsl(var(--muted) / 0.25);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+    transition:
+      border-color 150ms ease,
+      color 150ms ease,
+      background 150ms ease;
+  }
+
+  &__dropzone:hover &__dropzone-inner {
+    border-color: hsl(var(--accent));
+    color: hsl(var(--accent));
+    background: hsl(var(--accent) / 0.06);
+  }
+
+  &__dropzone-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 999px;
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-sm);
+    color: inherit;
+
+    svg {
+      width: 1.125rem;
+      height: 1.125rem;
+    }
+  }
+
+  &__dropzone-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+  }
+
+  &__dropzone:hover &__dropzone-label {
+    color: hsl(var(--accent));
+  }
+
+  &__dropzone-hint {
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid hsl(var(--border));
+  }
+
+  &__back {
+    margin-right: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    font-size: 0.8125rem;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+
+    &:hover {
+      color: hsl(var(--foreground));
+    }
+  }
+}

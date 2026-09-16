@@ -3,6 +3,10 @@
     "appName": "Forma",
     "loading": "Loading…",
     "cancel": "Cancel",
+    "continue": "Continue",
+    "next": "Next",
+    "skip": "Skip",
+    "gotIt": "Got it",
     "continueWithGoogle": "Continue with Google",
     "signOut": "Sign out",
     "backToHome": "Back to home",
@@ -300,7 +304,29 @@
     "reuploadImage": "Re-upload image",
     "replacePageImage": "Replace image",
     "replacePageImageHint": "Upload a new background image. The page type, order, and configured blocks are preserved.",
-    "replacePageImageInProgress": "Replacing image…"
+    "replacePageImageInProgress": "Replacing image…",
+    "setup": {
+      "stepIndicator": "Step {{current}} of {{total}}",
+      "preferencesTitle": "Set up your planner",
+      "preferencesDescription": "Choose the language and week start for dated pages. You can change these later in settings.",
+      "uploadTitle": "Upload your first page",
+      "uploadDescription": "Add a PNG, JPEG, or WebP of your design to start placing dynamic blocks.",
+      "uploadCta": "Upload first page",
+      "uploadFormats": "PNG, JPEG or WebP",
+      "backToPreferences": "Back to preferences",
+      "addBlocksHint": "Available after you upload your first page."
+    },
+    "tour": {
+      "stepIndicator": "{{current}} / {{total}}",
+      "addBlocksTitle": "Add dynamic blocks",
+      "addBlocksBody": "Pick a field type and draw it on your design — month names, dates, and more fill in automatically.",
+      "toolbarTitle": "Edit selected blocks",
+      "toolbarBody": "Select a block on the canvas to change its type, style, and layer from the toolbar.",
+      "pagesTitle": "Manage pages",
+      "pagesBody": "Add more page designs here and switch between them as you build your planner.",
+      "generateTitle": "Generate your planner",
+      "generateBody": "When your blocks are ready, export a dated PDF for any date range."
+    }
   },
   "generator": {
     "title": "Export Planner",

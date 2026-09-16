@@ -39,7 +39,10 @@ export const EditorSidebar: React.FC = () => {
   const updateTemplate = useTemplateStore(state => state.updateTemplate);
   const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
   const [templateName, setTemplateName] = useState(template?.name ?? '');
-  const [sectionOpen, setSectionOpen] = useState(DEFAULT_SECTION_STATE);
+  const [sectionOpen, setSectionOpen] = useState({
+    ...DEFAULT_SECTION_STATE,
+    plannerSettings: !currentImage,
+  });
 
   const isDemo = pathname.includes('landing-demo');
   const paperSizeLabel = template ? getTemplatePaperSizeLabel(template) : null;
@@ -108,9 +111,14 @@ export const EditorSidebar: React.FC = () => {
       </div>
       <div className="editor-sidebar__main">
         {template && currentImage ? (
-          <div className="editor-sidebar__add-blocks">
+          <div className="editor-sidebar__add-blocks" data-tour-anchor="add-blocks">
             <p className="editor-sidebar__add-blocks__title">{t('editor.addBlocks')}</p>
             <FieldTypeSelector />
+          </div>
+        ) : template ? (
+          <div className="editor-sidebar__add-blocks editor-sidebar__add-blocks--empty">
+            <p className="editor-sidebar__add-blocks__title">{t('editor.addBlocks')}</p>
+            <p className="editor-sidebar__add-blocks__hint">{t('editor.setup.addBlocksHint')}</p>
           </div>
         ) : null}
         <EditorSidebarSection

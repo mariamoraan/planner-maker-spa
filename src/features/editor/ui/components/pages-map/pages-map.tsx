@@ -14,6 +14,7 @@ import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-templ
 import { useManageImages } from '@/features/editor/ui/hooks/use-manage-images';
 import { groupImagesByType, TEMPLATE_TYPE_ORDER } from '@/features/template/domain/services/template-image-order';
 import { PagesMapGroup } from './pages-map-group';
+import { markPendingControlsTour } from '@/features/editor/ui/components/editor-controls-tour/controls-tour-storage';
 
 export const PagesMap = () => {
   const template = useCurrentTemplate();
@@ -43,20 +44,31 @@ export const PagesMap = () => {
     reorderImages(String(active.id), String(over.id));
   };
 
-  if (!images?.length) return null;
+  const addPageUploader = (
+    <div className="pages-map__add">
+      <span className="pages-map__add-spacer" aria-hidden="true" />
+      <ImageUploader
+        onUploadComplete={!images?.length ? markPendingControlsTour : undefined}
+        customButton={
+          <button type="button" className="pages-map__add-page-button">
+            <Plus />
+          </button>
+        }
+      />
+    </div>
+  );
+
+  if (!images?.length) {
+    return (
+      <div className="pages-map" data-tour-anchor="pages-map">
+        {addPageUploader}
+      </div>
+    );
+  }
 
   return (
-    <div className="pages-map">
-      <div className="pages-map__add">
-        <span className="pages-map__add-spacer" aria-hidden="true" />
-        <ImageUploader
-          customButton={
-            <button type="button" className="pages-map__add-page-button">
-              <Plus />
-            </button>
-          }
-        />
-      </div>
+    <div className="pages-map" data-tour-anchor="pages-map">
+      {addPageUploader}
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

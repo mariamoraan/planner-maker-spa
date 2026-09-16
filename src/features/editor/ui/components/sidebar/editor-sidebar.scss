@@ -149,6 +149,18 @@
             text-transform: uppercase;
             color: hsl(var(--muted-foreground));
         }
+
+        &__hint {
+            margin: 0;
+            padding: 2px 2px 4px;
+            font-size: 12px;
+            line-height: 1.45;
+            color: hsl(var(--muted-foreground));
+        }
+
+        &--empty {
+            opacity: 0.85;
+        }
     }
 
     &__main {
