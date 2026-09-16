@@ -11,7 +11,11 @@ import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions'
 import { LayerControls } from '@/features/editor/ui/components/shared/layer-controls'
 import { ToolbarHistoryButtons } from '@/features/editor/ui/components/shared/toolbar-history-buttons'
-import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group'
+import {
+  canGroupSelection,
+  getGridGroupForSelection,
+} from '@/features/editor/domain/services/grid-group'
+import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops'
 import { GridToolbarControls } from './grid-toolbar-controls'
 
 export const Toolbar = () => {
@@ -27,7 +31,9 @@ export const Toolbar = () => {
       selectedRectangleIds,
       currentImage?.gridGroups,
     );
-
+    const rectangles = currentImage?.rectangles ?? [];
+    const canGroup = canGroupSelection(selectedRectangleIds, rectangles);
+    const { groupSelectionAsGrid } = useGridGroupOps();
     const { updateAreaType, deleteAreas } = useManageAreas();
 
     if (lockedGridGroup) {
@@ -46,6 +52,18 @@ export const Toolbar = () => {
                 </p>
                 <div className="toolbar__divider" />
                 <LayerControls selectedIds={selectedRectangleIds} />
+                {canGroup ? (
+                  <>
+                    <div className="toolbar__divider" />
+                    <button
+                      type="button"
+                      className="toolbar__group-as-grid"
+                      onClick={() => groupSelectionAsGrid([...selectedRectangleIds])}
+                    >
+                      {t('editor.gridGroupAsGrid')}
+                    </button>
+                  </>
+                ) : null}
                 <div className="toolbar__divider" />
                 <button
                     type="button"

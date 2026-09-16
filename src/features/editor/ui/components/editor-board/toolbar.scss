@@ -88,6 +88,24 @@ $toolbar-padding-x-compact: 16px;
         }
     }
 
+    &__group-as-grid {
+        flex-shrink: 0;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        color: hsl(168, 50%, 28%);
+        background: rgba(0, 200, 180, 0.08);
+        border: 1px solid hsl(168, 76%, 42%);
+        border-radius: 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: opacity 150ms ease;
+
+        &:hover {
+            opacity: 0.85;
+        }
+    }
+
     &--grid {
         width: 100%;
         max-width: min(900px, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
