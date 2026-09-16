@@ -31,16 +31,28 @@ $toolbar-padding-x-compact: 16px;
 
     &__undo,
     &__redo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
         color: grey;
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+        -webkit-appearance: none;
+        appearance: none;
         transition: 200ms ease;
-    }
-    &__undo:hover,
-    &__redo:hover {
-        opacity: 0.5;
-    }
-    &__undo:disabled,
-    &__redo:disabled {
-        opacity: 0.5;
+
+        &:hover {
+            opacity: 0.5;
+            background: transparent;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            background: transparent;
+        }
     }
 }
 
