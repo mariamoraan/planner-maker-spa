@@ -135,7 +135,7 @@ function persistGroup(
 
 export const DEFAULT_GRID_COLS = 4;
 export const DEFAULT_GRID_ROWS = 4;
-export const DEFAULT_GRID_RECT_SIZE = { width: 48, height: 36 };
+export const DEFAULT_GRID_RECT_SIZE = { width: 72, height: 54 };
 
 export function useGridGroupOps() {
   const currentImage = useCurrentImage();
@@ -181,7 +181,10 @@ export function useGridGroupOps() {
     () => {
       if (!currentImage) return;
 
-      const preset = getGridToolPreset(currentImage.type);
+      const preset = getGridToolPreset(currentImage.type, undefined, {
+        width: currentImage.width,
+        height: currentImage.height,
+      });
       const rectSize = preset.rectSize;
       const gap = { x: 0, y: 0 };
       const contentW = preset.cols * rectSize.width;
@@ -207,7 +210,7 @@ export function useGridGroupOps() {
         height: frameH,
       };
 
-      createGrid(bounds, settings, 'day');
+      createGrid(bounds, settings, preset.fieldType);
     },
     [currentImage, createGrid],
   );

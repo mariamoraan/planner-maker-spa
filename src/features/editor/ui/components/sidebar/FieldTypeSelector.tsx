@@ -13,12 +13,11 @@ import { EndWeekDayIcon } from './end-week-day-icon';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { getDefaultFieldStyle, getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
+import { getDefaultBlockSize } from '@/features/editor/domain/services/default-block-size';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { GridIcon } from '@/core/icons';
 
 const DEFAULT_ICON_SIZE = 50;
-const DEFAULT_BLOCK_WIDTH = 150;
-const DEFAULT_BLOCK_HEIGHT = 150;
 
 export function getFieldIcon(type: FieldType, size = DEFAULT_ICON_SIZE): React.ReactNode {
   const iconProps = { showActiveStyle: false as const, width: size, height: size };
@@ -87,11 +86,13 @@ export const FieldTypeSelector = () => {
   const handleSelectType = (type: FieldType) => {
     setSelectedFieldType(type);
 
+    const { width, height } = getDefaultBlockSize(type, currentImage.width, currentImage.height);
+
     addArea({
-      x: currentImage.width / 2 - DEFAULT_BLOCK_WIDTH / 2,
-      y: currentImage.height / 2 - DEFAULT_BLOCK_HEIGHT / 2,
-      width: DEFAULT_BLOCK_WIDTH,
-      height: DEFAULT_BLOCK_HEIGHT,
+      x: currentImage.width / 2 - width / 2,
+      y: currentImage.height / 2 - height / 2,
+      width,
+      height,
       fieldType: type,
       order: currentImage.rectangles.length,
       formatVariant: getDefaultFormatVariant(type),

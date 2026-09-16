@@ -1,5 +1,9 @@
 import type { FieldType, TemplateType } from '@/features/template';
 import { TEMPLATE_FIELD_TYPES } from '@/features/template';
+import {
+  BASELINE_GRID_RECT_SIZE,
+  getDefaultGridRectSize,
+} from '@/features/editor/domain/services/default-block-size';
 
 export interface GridToolPreset {
   cols: number;
@@ -9,28 +13,27 @@ export interface GridToolPreset {
   align: 'top-left' | 'center';
 }
 
-const PAGE_PRESETS: Partial<Record<TemplateType, Omit<GridToolPreset, 'fieldType'> & { fieldType?: FieldType }>> = {
+const PAGE_PRESETS: Partial<
+  Record<TemplateType, Omit<GridToolPreset, 'fieldType' | 'rectSize'> & { fieldType?: FieldType }>
+> = {
   'monthly-calendar': {
     cols: 7,
     rows: 5,
     fieldType: 'day',
-    rectSize: { width: 48, height: 36 },
     align: 'top-left',
   },
   'weekly-calendar': {
     cols: 7,
     rows: 1,
     fieldType: 'day',
-    rectSize: { width: 48, height: 36 },
     align: 'top-left',
   },
 };
 
-const DEFAULT_PRESET: GridToolPreset = {
+const DEFAULT_PRESET: Omit<GridToolPreset, 'rectSize'> = {
   cols: 3,
   rows: 3,
   fieldType: 'day',
-  rectSize: { width: 48, height: 36 },
   align: 'top-left',
 };
 
@@ -45,18 +48,27 @@ function resolveFieldType(pageType: TemplateType, selectedFieldType?: FieldType)
   return 'day';
 }
 
+function resolveRectSize(pageWidth?: number, pageHeight?: number): { width: number; height: number } {
+  if (pageWidth != null && pageHeight != null && pageWidth > 0 && pageHeight > 0) {
+    return getDefaultGridRectSize(pageWidth, pageHeight);
+  }
+  return { width: BASELINE_GRID_RECT_SIZE.width, height: BASELINE_GRID_RECT_SIZE.height };
+}
+
 export function getGridToolPreset(
   pageType: TemplateType,
   selectedFieldType?: FieldType,
+  pageSize?: { width: number; height: number },
 ): GridToolPreset {
   const pagePreset = PAGE_PRESETS[pageType];
   const fieldType = pagePreset?.fieldType ?? resolveFieldType(pageType, selectedFieldType);
+  const rectSize = resolveRectSize(pageSize?.width, pageSize?.height);
 
   if (pagePreset) {
     return {
       cols: pagePreset.cols,
       rows: pagePreset.rows,
-      rectSize: pagePreset.rectSize,
+      rectSize,
       align: pagePreset.align,
       fieldType,
     };
@@ -64,6 +76,7 @@ export function getGridToolPreset(
 
   return {
     ...DEFAULT_PRESET,
+    rectSize,
     fieldType: resolveFieldType(pageType, selectedFieldType),
   };
 }

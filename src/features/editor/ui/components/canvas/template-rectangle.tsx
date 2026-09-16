@@ -1,5 +1,6 @@
 import { getEditorPreviewContext, getFieldValue } from "@/features/editor/domain/services/planner-utils";
 import { buildKonvaFontStyle, resolveFieldStyle, resolveFontFamily } from "@/features/editor/domain/services/field-style-config";
+import { resolveFieldFontSize } from "@/features/editor/domain/services/resolve-field-font-size";
 import { resolveLocale } from "@/features/template/domain/services/locale-config";
 import { FIELD_TYPE_CONFIG, FieldType, PlannerLocale, Rectangle, TemplateImage, WeekStartsOn } from "@/features/template";
 import { DEFAULT_WEEK_STARTS_ON } from "@/features/template/domain/services/locale-config";
@@ -7,6 +8,21 @@ import Konva from "konva";
 import { useMemo, useRef } from "react";
 import { Group, Rect, Text } from "react-konva";
 import { useKonvaFade } from "./use-konva-fade";
+
+function measureKonvaTextWidth(
+  text: string,
+  fontSize: number,
+  fontFamily: string,
+  fontStyle: string,
+): number {
+  const probe = new Konva.Text({
+    text,
+    fontSize,
+    fontFamily,
+    fontStyle,
+  });
+  return probe.getTextWidth();
+}
 
 interface TemplateRectangleProps {
     rect: Rectangle;
@@ -94,6 +110,14 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     const height = displayHeight * scale;
     const displayX = previewPosition?.x ?? rect.x;
     const displayY = previewPosition?.y ?? rect.y;
+
+    const fontSize = useMemo(
+      () =>
+        resolveFieldFontSize(width, height, fieldValue, size =>
+          measureKonvaTextWidth(fieldValue, size, fontFamily, fontStyle),
+        ),
+      [width, height, fieldValue, fontFamily, fontStyle],
+    );
   
     return (
       <Group
@@ -129,7 +153,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
             height={height}
             align={style.textAlign}
             verticalAlign="middle"
-            fontSize={height * 0.7}
+            fontSize={fontSize}
             fontFamily={fontFamily}
             fill={config.color}
             fontStyle={fontStyle}
@@ -144,7 +168,7 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
           height={height}
           align={style.textAlign}
           verticalAlign="middle"
-          fontSize={height * 0.7}
+          fontSize={fontSize}
           fontFamily={fontFamily}
           fill={fieldColor}
           fontStyle={fontStyle}

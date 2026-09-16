@@ -1,24 +1,36 @@
 import { describe, it, expect } from 'vitest';
 import { canRedistributeSelection, getGridToolPreset } from './grid-tool-presets';
+import { BASELINE_GRID_RECT_SIZE } from './default-block-size';
 
 describe('getGridToolPreset', () => {
-  it('returns monthly calendar defaults', () => {
+  it('returns monthly calendar defaults at baseline size', () => {
     expect(getGridToolPreset('monthly-calendar')).toEqual({
       cols: 7,
       rows: 5,
       fieldType: 'day',
-      rectSize: { width: 48, height: 36 },
+      rectSize: { width: BASELINE_GRID_RECT_SIZE.width, height: BASELINE_GRID_RECT_SIZE.height },
       align: 'top-left',
     });
   });
 
-  it('returns weekly calendar defaults', () => {
+  it('returns weekly calendar defaults at baseline size', () => {
     expect(getGridToolPreset('weekly-calendar')).toEqual({
       cols: 7,
       rows: 1,
       fieldType: 'day',
-      rectSize: { width: 48, height: 36 },
+      rectSize: { width: BASELINE_GRID_RECT_SIZE.width, height: BASELINE_GRID_RECT_SIZE.height },
       align: 'top-left',
+    });
+  });
+
+  it('scales rectSize to page dimensions', () => {
+    const preset = getGridToolPreset('monthly-calendar', undefined, {
+      width: 2400,
+      height: 3200,
+    });
+    expect(preset.rectSize).toEqual({
+      width: BASELINE_GRID_RECT_SIZE.width * 2,
+      height: BASELINE_GRID_RECT_SIZE.height * 2,
     });
   });
 
