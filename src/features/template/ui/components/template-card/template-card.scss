@@ -31,33 +31,6 @@
     }
   }
 
-  &__thumbnail {
-    display: block;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    object-fit: cover;
-    background: hsl(var(--muted));
-  }
-
-  &__placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: linear-gradient(
-      135deg,
-      hsl(var(--muted)) 0%,
-      hsl(var(--accent) / 0.08) 100%
-    );
-  }
-
-  &__placeholder-icon {
-    width: 2rem;
-    height: 2rem;
-    color: hsl(var(--muted-foreground));
-  }
-
   &__footer {
     display: flex;
     align-items: flex-start;

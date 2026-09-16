@@ -92,7 +92,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
       return cached.src;
     }
 
-    // Prefer healthy content proxy; fall back to signed CDN URL for <img>.
+    // Signed CDN URL for <img> — browser talks to UploadThing directly.
     const src = await resolveCloudImageUrl({
       fileKey: fileKey ?? undefined,
       url: ref.url,

@@ -1,8 +1,9 @@
-import { CloudUpload, EllipsisIcon, TrashIcon } from 'lucide-react';
+import { EllipsisIcon, TrashIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ActionMenuButton from '@/core/components/action-menu-button/action-menu-button';
 import type { Template, TemplateImage } from '@/features/template';
 import { getTemplatePaperSizeLabel } from '@/features/template';
+import { TemplateCoverThumb } from '@/features/template/ui/components/template-cover-thumb/template-cover-thumb';
 import './template-card.scss';
 
 const fadeUp = {
@@ -47,18 +48,7 @@ export const TemplateCard = ({ template, index, onOpen, onDelete }: TemplateCard
         onClick={onOpen}
         aria-label={`Abrir ${template.name}`}
       >
-        {cover?.src ? (
-          <img
-            className="template-card__thumbnail"
-            src={cover.src}
-            alt={template.name}
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="template-card__placeholder" aria-hidden="true">
-            <CloudUpload className="template-card__placeholder-icon" />
-          </div>
-        )}
+        <TemplateCoverThumb image={cover} alt={template.name} size="card" />
       </button>
 
       <div className="template-card__footer">

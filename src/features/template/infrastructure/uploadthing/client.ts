@@ -42,7 +42,7 @@ export type CloudImageResolveInput = {
 export type CloudImageAccess = {
   /** Signed CDN URL (browser → UploadThing). */
   url: string;
-  /** Same-origin content proxy (server streams bytes). */
+  /** Same-origin content proxy (server streams bytes) — export / CORS fallback. */
   contentUrl: string;
   fileKey?: string;
 };
@@ -85,7 +85,9 @@ export async function resolveCloudImageAccess(
     };
 
     const signed =
-      typeof payload.url === 'string' && /^https?:\/\//i.test(payload.url) && !/utfs\.io/i.test(payload.url)
+      typeof payload.url === 'string' &&
+      /^https?:\/\//i.test(payload.url) &&
+      !/utfs\.io/i.test(payload.url)
         ? payload.url
         : null;
     const contentPath =
@@ -106,48 +108,16 @@ export async function resolveCloudImageAccess(
 }
 
 /**
- * Pick a display URL: prefer same-origin content when the proxy is healthy,
- * otherwise fall back to the signed CDN URL for the browser to load directly.
+ * Display URL for <img>/Konva: signed CDN first.
+ * The content proxy is only a fallback when signing is unavailable —
+ * it requires the Node server to reach UploadThing (often flaky in local/VPN).
  */
-let contentProxyHealthy: boolean | null = null;
-let contentProxyCheckedAt = 0;
-const CONTENT_HEALTH_TTL_MS = 60_000;
-
-async function pickDisplayUrl(access: CloudImageAccess): Promise<string> {
-  const now = Date.now();
-  const healthFresh = contentProxyHealthy !== null && now - contentProxyCheckedAt < CONTENT_HEALTH_TTL_MS;
-
-  if (healthFresh && contentProxyHealthy === false) {
-    return access.url || access.contentUrl;
-  }
-  if (healthFresh && contentProxyHealthy === true) {
-    return access.contentUrl || access.url;
-  }
-
-  if (access.contentUrl) {
-    try {
-      const probe = await fetch(access.contentUrl, {
-        method: 'HEAD',
-        signal: AbortSignal.timeout(4_000),
-      });
-      contentProxyHealthy = probe.ok;
-      contentProxyCheckedAt = Date.now();
-      if (probe.ok) return access.contentUrl;
-    } catch {
-      contentProxyHealthy = false;
-      contentProxyCheckedAt = Date.now();
-    }
-  }
-
-  return access.url || access.contentUrl;
-}
-
 export async function resolveCloudImageUrl(
   input: CloudImageResolveInput
 ): Promise<string | null> {
   const access = await resolveCloudImageAccess(input);
   if (!access) return null;
-  return pickDisplayUrl(access);
+  return access.url || access.contentUrl || null;
 }
 
 export function extractFileKeyFromUploadthingUrl(url: string): string | null {

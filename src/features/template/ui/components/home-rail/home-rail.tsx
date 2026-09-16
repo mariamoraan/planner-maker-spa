@@ -4,13 +4,13 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
-  CloudUpload,
   Image as ImageIcon,
   Layers,
   LayoutTemplate,
 } from 'lucide-react';
 import { AddTemplateButton } from '@/features/template/ui/components/add-template-button/add-template-button';
 import { getCoverImage } from '@/features/template/ui/components/template-card/template-card';
+import { TemplateCoverThumb } from '@/features/template/ui/components/template-cover-thumb/template-cover-thumb';
 import { PATHS } from '@/core/routes/paths';
 import type { Template } from '@/features/template';
 import { getTemplatePaperSizeLabel } from '@/features/template';
@@ -69,18 +69,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
                           onClick={() => onOpenTemplate(template.id)}
                           aria-label={`Abrir ${template.name}`}
                         >
-                          {cover?.src ? (
-                            <img
-                              className="home-rail__recent-thumb"
-                              src={cover.src}
-                              alt=""
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <span className="home-rail__recent-placeholder" aria-hidden="true">
-                              <CloudUpload className="home-rail__recent-placeholder-icon" />
-                            </span>
-                          )}
+                          <TemplateCoverThumb image={cover} size="rail" />
                           <span className="home-rail__recent-name">
                             <span className="home-rail__recent-name-text">{template.name}</span>
                             {paperSizeLabel ? (

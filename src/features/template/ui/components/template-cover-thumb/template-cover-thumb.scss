@@ -1,0 +1,75 @@
+.template-cover-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: hsl(var(--muted));
+
+  &--card {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+  }
+
+  &--rail {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+  }
+
+  &__img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 180ms ease;
+
+    &--ready {
+      opacity: 1;
+    }
+  }
+
+  &__loading,
+  &__empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--accent) / 0.08) 100%
+    );
+  }
+
+  &__spinner {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: hsl(var(--muted-foreground));
+    animation: template-cover-thumb-spin 0.8s linear infinite;
+  }
+
+  &--rail &__spinner {
+    width: 14px;
+    height: 14px;
+  }
+
+  &__empty-icon {
+    width: 2rem;
+    height: 2rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &--rail &__empty-icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@keyframes template-cover-thumb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
