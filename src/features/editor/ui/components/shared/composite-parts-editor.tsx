@@ -19,10 +19,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react';
 import {
   COMPOSITE_PRESETS,
-  DEFAULT_COMPOSITE_PARTS,
   type CompositeDateSource,
   type CompositePart,
   type Rectangle,
@@ -224,7 +223,7 @@ const SortablePartRow = ({
         {...attributes}
         {...listeners}
       >
-        <GripVertical size={14} />
+        <GripVertical size={14} strokeWidth={1.75} />
       </button>
 
       {part.kind === 'literal' ? (
@@ -237,6 +236,9 @@ const SortablePartRow = ({
         />
       ) : part.kind === 'linebreak' ? (
         <span className="composite-parts-editor__linebreak-chip">
+          <span className="composite-parts-editor__linebreak-badge" aria-hidden="true">
+            ↵
+          </span>
           {t('editor.compositePartLinebreak')}
         </span>
       ) : (
@@ -244,18 +246,26 @@ const SortablePartRow = ({
       )}
 
       {formatChoices && currentVariant !== undefined ? (
-        <select
-          className="composite-parts-editor__format-select"
-          value={currentVariant}
+        <div
+          className="composite-parts-editor__segmented"
+          role="group"
           aria-label={t('editor.compositePartFormat')}
-          onChange={e => onUpdateVariant(e.target.value)}
         >
           {formatChoices.map(choice => (
-            <option key={choice.variant} value={choice.variant}>
-              {t(choice.labelKey)} ({choice.preview})
-            </option>
+            <button
+              key={choice.variant}
+              type="button"
+              className={clsx('composite-parts-editor__segmented-item', {
+                'composite-parts-editor__segmented-item--active':
+                  currentVariant === choice.variant,
+              })}
+              title={`${t(choice.labelKey)} · ${choice.preview}`}
+              onClick={() => onUpdateVariant(choice.variant)}
+            >
+              {t(choice.labelKey)}
+            </button>
           ))}
-        </select>
+        </div>
       ) : null}
 
       <button
@@ -264,7 +274,7 @@ const SortablePartRow = ({
         onClick={onRemove}
         aria-label={t('editor.compositeRemovePart')}
       >
-        ×
+        <X size={14} strokeWidth={2} />
       </button>
     </div>
   );
@@ -324,22 +334,27 @@ export const CompositePartsEditor = ({ rectangle }: CompositePartsEditorProps) =
       close();
     };
 
-    const handleScrollOrResize = () => close();
+    const handleScroll = (event: Event) => {
+      const target = event.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) return;
+      close();
+    };
+
+    const handleResize = () => close();
 
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('touchstart', handlePointerDown);
-    window.addEventListener('scroll', handleScrollOrResize, true);
-    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('touchstart', handlePointerDown);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
 
-  // Stamp stable ids once when the content menu opens
   useEffect(() => {
     if (!isOpen) return;
     const resolved = resolveCompositeParts(rectangle);
@@ -408,10 +423,10 @@ export const CompositePartsEditor = ({ rectangle }: CompositePartsEditorProps) =
       <button
         key={option.id}
         type="button"
-        className="composite-parts-editor__add-btn"
+        className="composite-parts-editor__chip"
         onClick={() => addToken(option.part)}
       >
-        + {t(option.labelKey)}
+        {t(option.labelKey)}
       </button>
     ));
 
@@ -440,99 +455,117 @@ export const CompositePartsEditor = ({ rectangle }: CompositePartsEditorProps) =
               onMouseDown={e => e.stopPropagation()}
               onPointerDown={e => e.stopPropagation()}
             >
-              <p className="composite-parts-editor__section-label">
-                {t('editor.compositePresets')}
-              </p>
-              <div className="composite-parts-editor__presets">
-                {COMPOSITE_PRESETS.map(preset => (
+              <section className="composite-parts-editor__section">
+                <p className="composite-parts-editor__section-label">
+                  {t('editor.compositePresets')}
+                </p>
+                <div className="composite-parts-editor__presets">
+                  {COMPOSITE_PRESETS.map(preset => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className="composite-parts-editor__preset"
+                      title={preset.preview}
+                      onClick={() => applyPreset(preset.parts)}
+                    >
+                      {preset.preview}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="composite-parts-editor__section">
+                <p className="composite-parts-editor__section-label">
+                  {t('editor.compositeParts')}
+                </p>
+                <div className="composite-parts-editor__parts">
+                  {parts.length === 0 ? (
+                    <p className="composite-parts-editor__empty">
+                      {t('editor.compositePartsEmpty')}
+                    </p>
+                  ) : (
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext items={partIds} strategy={verticalListSortingStrategy}>
+                        {parts.map((part, index) => (
+                          <SortablePartRow
+                            key={partIds[index]}
+                            id={partIds[index]}
+                            part={part}
+                            t={t}
+                            onRemove={() => removePart(index)}
+                            onUpdateLiteral={value => updateLiteral(index, value)}
+                            onUpdateVariant={variant => updateVariant(index, variant)}
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
+                  )}
+                </div>
+              </section>
+
+              <section className="composite-parts-editor__section">
+                <p className="composite-parts-editor__section-label">
+                  {t('editor.compositeAddSeparators')}
+                </p>
+                <div className="composite-parts-editor__chips">
                   <button
-                    key={preset.id}
                     type="button"
-                    className="composite-parts-editor__preset"
-                    title={preset.preview}
-                    onClick={() => applyPreset(preset.parts)}
+                    className="composite-parts-editor__chip"
+                    onClick={() => addLiteral(' ')}
                   >
-                    {preset.preview}
+                    {t('editor.compositeAddSpace')}
                   </button>
-                ))}
-              </div>
-
-              <p className="composite-parts-editor__section-label">
-                {t('editor.compositeParts')}
-              </p>
-              <div className="composite-parts-editor__parts">
-                {parts.length === 0 ? (
-                  <p className="composite-parts-editor__empty">{t('editor.compositePartsEmpty')}</p>
-                ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
+                  <button
+                    type="button"
+                    className="composite-parts-editor__chip"
+                    onClick={() => addLiteral('/')}
                   >
-                    <SortableContext items={partIds} strategy={verticalListSortingStrategy}>
-                      {parts.map((part, index) => (
-                        <SortablePartRow
-                          key={partIds[index]}
-                          id={partIds[index]}
-                          part={part}
-                          t={t}
-                          onRemove={() => removePart(index)}
-                          onUpdateLiteral={value => updateLiteral(index, value)}
-                          onUpdateVariant={variant => updateVariant(index, variant)}
-                        />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </div>
+                    /
+                  </button>
+                  <button
+                    type="button"
+                    className="composite-parts-editor__chip"
+                    onClick={addLinebreak}
+                  >
+                    {t('editor.compositeAddLinebreak')}
+                  </button>
+                  <button
+                    type="button"
+                    className="composite-parts-editor__chip"
+                    onClick={() => addLiteral(t('editor.compositeDefaultText'))}
+                  >
+                    {t('editor.compositeAddText')}
+                  </button>
+                </div>
+              </section>
 
-              <p className="composite-parts-editor__section-label">
-                {t('editor.compositeAddCurrent')}
-              </p>
-              <div className="composite-parts-editor__add">
-                {renderAddButtons(CURRENT_TOKEN_OPTIONS)}
-              </div>
-
-              <p className="composite-parts-editor__section-label">
-                {t('editor.compositeAddRange')}
-              </p>
-              <div className="composite-parts-editor__add">
-                {renderAddButtons(RANGE_TOKEN_OPTIONS)}
-              </div>
-
-              <p className="composite-parts-editor__section-label">
-                {t('editor.compositeAddSeparators')}
-              </p>
-              <div className="composite-parts-editor__add">
-                <button
-                  type="button"
-                  className="composite-parts-editor__add-btn"
-                  onClick={() => addLiteral(' ')}
-                >
-                  + {t('editor.compositeAddSpace')}
-                </button>
-                <button
-                  type="button"
-                  className="composite-parts-editor__add-btn"
-                  onClick={() => addLiteral('/')}
-                >
-                  + /
-                </button>
-                <button
-                  type="button"
-                  className="composite-parts-editor__add-btn"
-                  onClick={addLinebreak}
-                >
-                  + {t('editor.compositeAddLinebreak')}
-                </button>
-                <button
-                  type="button"
-                  className="composite-parts-editor__add-btn"
-                  onClick={() => addLiteral(t('editor.compositeDefaultText'))}
-                >
-                  + {t('editor.compositeAddText')}
-                </button>
-              </div>
+              <section className="composite-parts-editor__section">
+                <p className="composite-parts-editor__section-label">
+                  {t('editor.compositeAdd')}
+                </p>
+                <div className="composite-parts-editor__add-groups">
+                  <div className="composite-parts-editor__add-group">
+                    <p className="composite-parts-editor__add-group-label">
+                      {t('editor.compositeAddCurrent')}
+                    </p>
+                    <div className="composite-parts-editor__chips">
+                      {renderAddButtons(CURRENT_TOKEN_OPTIONS)}
+                    </div>
+                  </div>
+                  <div className="composite-parts-editor__add-group">
+                    <p className="composite-parts-editor__add-group-label">
+                      {t('editor.compositeAddRange')}
+                    </p>
+                    <div className="composite-parts-editor__chips">
+                      {renderAddButtons(RANGE_TOKEN_OPTIONS)}
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>,
             document.body,
           )

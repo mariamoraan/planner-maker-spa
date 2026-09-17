@@ -134,61 +134,66 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     handleFormatChange(getDefaultStartEndVariantForPart(part));
   };
 
-  const formatOptionButtons = (options: typeof formatOptions) =>
+  const formatOptionButtons = (
+    options: typeof formatOptions,
+    { closeOnSelect = false }: { closeOnSelect?: boolean } = {},
+  ) =>
     options.map(option => (
       <button
         key={option.id}
         type="button"
-        className={clsx(
-          'area-style-controls__option',
-          'area-style-controls__option--format-row',
-          {
-            'area-style-controls__option--active': formatVariant === option.id,
-          },
-        )}
+        className={clsx('area-style-controls__format-row', {
+          'area-style-controls__format-row--active': formatVariant === option.id,
+        })}
         title={option.preview}
-        onClick={() => handleFormatChange(option.id as FormatVariant)}
+        onClick={() => {
+          handleFormatChange(option.id as FormatVariant);
+          if (closeOnSelect) setOpenPopover(null);
+        }}
       >
-        <span>{option.label}</span>
-        <span className="area-style-controls__option-preview">{option.preview}</span>
+        <span className="area-style-controls__format-row-label">{option.label}</span>
+        <span className="area-style-controls__format-row-preview">{option.preview}</span>
       </button>
     ));
 
-  const startEndPartButtons = () =>
-    START_END_DATE_PART_OPTIONS.map(option => (
-      <button
-        key={option.id}
-        type="button"
-        className={clsx('area-style-controls__option', 'area-style-controls__option--part', {
-          'area-style-controls__option--active': startEndPart === option.id,
-        })}
-        onClick={() => handleStartEndPartChange(option.id)}
-      >
-        {option.label}
-      </button>
-    ));
+  const startEndPartButtons = () => (
+    <div className="area-style-controls__segmented" role="group" aria-label="Mostrar">
+      {START_END_DATE_PART_OPTIONS.map(option => (
+        <button
+          key={option.id}
+          type="button"
+          className={clsx('area-style-controls__segmented-item', {
+            'area-style-controls__segmented-item--active': startEndPart === option.id,
+          })}
+          onClick={() => handleStartEndPartChange(option.id)}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+
+  const formatList = (options: typeof formatOptions, closeOnSelect = false) => (
+    <div className="area-style-controls__format-list">
+      {formatOptionButtons(options, { closeOnSelect })}
+    </div>
+  );
 
   const formatGroup = isStartEndField ? (
     <>
       <div className="area-style-controls__group">
-        <p className="area-style-controls__label">Parte</p>
-        <div className="area-style-controls__options area-style-controls__options--parts">
-          {startEndPartButtons()}
-        </div>
+        <p className="area-style-controls__label">Mostrar</p>
+        {startEndPartButtons()}
       </div>
       <div className="area-style-controls__group">
         <p className="area-style-controls__label">Formato</p>
-        <div className="area-style-controls__options area-style-controls__options--format">
-          {formatOptionButtons(startEndFormatOptions)}
-        </div>
+        {formatList(startEndFormatOptions)}
       </div>
     </>
   ) : (
     <div className="area-style-controls__group">
       <p className="area-style-controls__label">Formato</p>
-      <div className="area-style-controls__options area-style-controls__options--format">
-        {formatOptionButtons(formatOptions)}
-      </div>
+      {formatList(formatOptions)}
     </div>
   );
 
@@ -337,22 +342,16 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
           onMouseDown={e => e.stopPropagation()}
         >
           {isStartEndField ? (
-            <>
-              <p className="area-style-controls__label">Parte</p>
-              <div className="area-style-controls__options area-style-controls__options--parts">
-                {startEndPartButtons()}
-              </div>
+            <div className="area-style-controls__format-panel">
+              <p className="area-style-controls__label">Mostrar</p>
+              {startEndPartButtons()}
               <p className="area-style-controls__label area-style-controls__label--nested">
                 Formato
               </p>
-              <div className="area-style-controls__options area-style-controls__options--format">
-                {formatOptionButtons(startEndFormatOptions)}
-              </div>
-            </>
-          ) : (
-            <div className="area-style-controls__options area-style-controls__options--format">
-              {formatOptionButtons(formatOptions)}
+              {formatList(startEndFormatOptions, true)}
             </div>
+          ) : (
+            formatList(formatOptions, true)
           )}
         </div>
       </button>
