@@ -1,15 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import {
   FIELD_FORMAT_REGISTRY,
   getFormatVariant,
   isValidHexColor,
   resolveFieldStyle,
+  resolvePlannerDefaultFontId,
 } from '@/features/editor/domain/services/field-style-config';
 import type { FieldStyle, FormatVariant, Rectangle } from '@/features/template';
 
 export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => {
   const { updateArea } = useManageAreas();
+  const template = useCurrentTemplate();
+  const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
   const [hexInput, setHexInput] = useState('');
 
   useEffect(() => {
@@ -20,7 +24,7 @@ export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => 
     return null;
   }
 
-  const style = resolveFieldStyle(rectangle);
+  const style = resolveFieldStyle(rectangle, plannerFontId);
   const formatVariant = getFormatVariant(rectangle);
   const formatOptions = FIELD_FORMAT_REGISTRY[rectangle.fieldType];
 

@@ -2,6 +2,10 @@ import React from 'react';
 import { Group, Rect, Text } from 'react-konva';
 import type { GridGroup } from '@/features/template';
 import { boundsFromRectanglesWithPadding } from '@/features/editor/domain/services/grid-layout';
+import {
+  EDITOR_CHROME_INK,
+  EDITOR_CHROME_INK_FILL,
+} from '@/features/editor/domain/constants/editor-chrome';
 
 interface GridGroupOverlayProps {
   group: GridGroup;
@@ -35,19 +39,19 @@ export const GridGroupOverlay: React.FC<GridGroupOverlayProps> = ({
         y={frameY}
         width={bounds.width * scale}
         height={bounds.height * scale}
-        stroke="hsl(168, 76%, 42%)"
-        strokeWidth={2}
-        dash={[8, 4]}
-        cornerRadius={6}
-        fill="rgba(0, 200, 180, 0.05)"
+        stroke={EDITOR_CHROME_INK}
+        strokeWidth={1.5}
+        dash={[6, 4]}
+        cornerRadius={0}
+        fill={EDITOR_CHROME_INK_FILL}
       />
       <Rect
         x={frameX + 8}
         y={frameY - 22}
         width={label.length * 7 + 24}
         height={18}
-        fill="hsl(168, 76%, 42%)"
-        cornerRadius={4}
+        fill={EDITOR_CHROME_INK}
+        cornerRadius={0}
       />
       <Text
         x={frameX + 16}

@@ -1,7 +1,7 @@
 .field-type-selector {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   z-index: 1;
 
   &__no-available-dynamic-areas {
@@ -13,6 +13,22 @@
       margin-top: 12px;
       font-weight: bold;
     }
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__group-label {
+    margin: 0;
+    padding: 0 2px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
   }
 
   &__types {
@@ -39,8 +55,8 @@
     }
 
     &--active {
-      border-color: grey;
-      background: hsl(168, 76%, 95%);
+      border-color: hsl(175, 18%, 36%);
+      background: hsla(175, 18%, 36%, 0.1);
     }
 
     &__icon-wrapper {
@@ -60,7 +76,8 @@
     padding: 0;
     border: 1px solid transparent;
     border-radius: 12px;
-    background: #dcfcdc;
+    background: hsla(175, 18%, 36%, 0.1);
+    color: hsl(175, 18%, 36%);
     transition: 200ms ease;
     outline: none;
     cursor: pointer;
@@ -70,7 +87,7 @@
     }
 
     &--active {
-      border-color: grey;
+      border-color: hsl(175, 18%, 36%);
     }
 
     &__icon-wrapper {

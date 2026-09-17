@@ -1,5 +1,10 @@
 import { getEditorPreviewContext, getFieldValue } from "@/features/editor/domain/services/planner-utils";
-import { buildKonvaFontStyle, resolveFieldStyle, resolveFontFamily } from "@/features/editor/domain/services/field-style-config";
+import {
+  buildKonvaFontStyle,
+  resolveFieldStyle,
+  resolveFontFamily,
+  resolvePlannerDefaultFontId,
+} from "@/features/editor/domain/services/field-style-config";
 import { resolveFieldFontSize } from "@/features/editor/domain/services/resolve-field-font-size";
 import { resolveLocale } from "@/features/template/domain/services/locale-config";
 import { FIELD_TYPE_CONFIG, FieldType, PlannerLocale, Rectangle, TemplateImage, WeekStartsOn } from "@/features/template";
@@ -8,6 +13,7 @@ import Konva from "konva";
 import { useMemo, useRef } from "react";
 import { Group, Rect, Text } from "react-konva";
 import { useKonvaFade } from "./use-konva-fade";
+import { useCurrentTemplate } from "@/features/editor/ui/hooks/use-current-template";
 
 function measureKonvaTextWidth(
   text: string,
@@ -76,6 +82,8 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
   }) => {
     const styledContentRef = useRef<Konva.Group>(null);
     const plainTextRef = useRef<Konva.Text>(null);
+    const template = useCurrentTemplate();
+    const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
   
     useKonvaFade(
     styledContentRef,
@@ -108,7 +116,10 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
       [rect, templateImage, previewContext, dateLocale, weekStartsOn],
     );
 
-    const style = useMemo(() => resolveFieldStyle(rect), [rect]);
+    const style = useMemo(
+      () => resolveFieldStyle(rect, plannerFontId),
+      [rect, plannerFontId],
+    );
     const fontFamily = resolveFontFamily(style.fontId);
     const fontStyle = buildKonvaFontStyle(style);
   
@@ -159,9 +170,9 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
             height={height}
             fill={config.bgColor}
             stroke={config.color}
-            strokeWidth={2}
+            strokeWidth={1}
             strokeEnabled={!rect.gridGroupId}
-            cornerRadius={4}
+            cornerRadius={0}
           />
   
           <Text
@@ -196,10 +207,10 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
           <Rect
             width={width}
             height={height}
-            stroke="rgba(0, 200, 255, 0.9)"
-            strokeWidth={2}
-            dash={[6, 4]}
-            cornerRadius={4}
+            stroke="hsla(215, 22%, 42%, 0.85)"
+            strokeWidth={1}
+            dash={[4, 3]}
+            cornerRadius={0}
             listening={false}
           />
         )}
@@ -208,10 +219,10 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
           <Rect
             width={width}
             height={height}
-            fill="rgba(22, 163, 136, 0.12)"
-            stroke="hsl(168, 76%, 42%)"
-            strokeWidth={2}
-            cornerRadius={4}
+            fill="hsla(175, 18%, 36%, 0.08)"
+            stroke="hsl(175, 18%, 36%)"
+            strokeWidth={1.5}
+            cornerRadius={0}
             listening={false}
           />
         )}

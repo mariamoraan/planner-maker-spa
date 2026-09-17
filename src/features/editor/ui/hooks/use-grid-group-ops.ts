@@ -38,7 +38,12 @@ import {
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
-import { getDefaultFormatVariant, resolveFieldStyle } from '@/features/editor/domain/services/field-style-config';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
+import {
+  getDefaultFormatVariant,
+  resolveFieldStyle,
+  resolvePlannerDefaultFontId,
+} from '@/features/editor/domain/services/field-style-config';
 
 function applyGridLayout(
   rectangles: Rectangle[],
@@ -141,6 +146,8 @@ export const DEFAULT_GRID_RECT_SIZE = { width: 72, height: 54 };
 
 export function useGridGroupOps() {
   const currentImage = useCurrentImage();
+  const template = useCurrentTemplate();
+  const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
   const setSelectedRectangleIds = useEditorStore(state => state.setSelectedRectangleIds);
   const { updatePageGridState } = useManageAreas();
 
@@ -159,7 +166,13 @@ export function useGridGroupOps() {
         normalized.gap,
       );
 
-      const rects = buildGridRectangles(config, fieldType, currentImage.rectangles.length);
+      const rects = buildGridRectangles(
+        config,
+        fieldType,
+        currentImage.rectangles.length,
+        undefined,
+        plannerFontId,
+      );
       const rectsWithIds: Rectangle[] = rects.map(rect => ({
         ...rect,
         id: generateId(),
@@ -176,7 +189,7 @@ export function useGridGroupOps() {
         setSelectedRectangleIds,
       );
     },
-    [currentImage, updatePageGridState, setSelectedRectangleIds],
+    [currentImage, plannerFontId, updatePageGridState, setSelectedRectangleIds],
   );
 
   const createDefaultGrid = useCallback(

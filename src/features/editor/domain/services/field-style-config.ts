@@ -11,6 +11,10 @@ import type {
   DayFormatVariant,
   StartEndFormatVariant,
 } from '@/features/template'
+import {
+  DEFAULT_PLANNER_FONT_ID,
+  LEGACY_DEFAULT_FONT_ID,
+} from '@/features/template'
 
 export const MAIN_COLOR = '#1f2a3d';
 export const SECONDARY_COLOR = '#929599';
@@ -58,6 +62,9 @@ export const TEXT_ALIGN_REGISTRY: readonly TextAlignOption[] = [
 ] as const;
 
 export const FONT_REGISTRY: readonly FontOption[] = [
+  { id: 'playfair', label: 'Playfair', family: 'Playfair Display' },
+  { id: 'source-serif', label: 'Source Serif', family: 'Source Serif 4' },
+  { id: 'dm-sans', label: 'DM Sans', family: 'DM Sans' },
   { id: 'gloria', label: 'Gloria', family: 'Gloria Hallelujah' },
   { id: 'great-vibes', label: 'Great Vibes', family: 'Great Vibes' },
   { id: 'lato', label: 'Lato', family: 'Lato' },
@@ -117,15 +124,21 @@ export function getDefaultFormatVariant(fieldType: FieldType): FormatVariant {
   return DEFAULT_FORMAT_BY_FIELD_TYPE[fieldType];
 }
 
-export function getDefaultFieldStyle(): FieldStyle {
+export function getDefaultFieldStyle(fontId: FontId = DEFAULT_PLANNER_FONT_ID): FieldStyle {
   return {
     color: MAIN_COLOR,
-    fontId: 'gloria',
+    fontId,
     bold: false,
     italic: false,
     textCase: 'capitalize',
     textAlign: 'center',
   };
+}
+
+export function resolvePlannerDefaultFontId(
+  defaultFontId: FontId | undefined,
+): FontId {
+  return defaultFontId ?? LEGACY_DEFAULT_FONT_ID;
 }
 
 export function normalizeStartEndFormatVariant(
@@ -154,9 +167,12 @@ export function getFormatVariant(rectangle: Rectangle): FormatVariant {
   return raw;
 }
 
-export function resolveFieldStyle(rectangle: Rectangle): FieldStyle {
+export function resolveFieldStyle(
+  rectangle: Rectangle,
+  plannerDefaultFontId: FontId = DEFAULT_PLANNER_FONT_ID,
+): FieldStyle {
   return {
-    ...getDefaultFieldStyle(),
+    ...getDefaultFieldStyle(plannerDefaultFontId),
     ...rectangle.style,
   };
 }

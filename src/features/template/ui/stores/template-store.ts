@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Template, TemplateImage, Rectangle, TemplateType } from '@/features/template';
+import { DEFAULT_PLANNER_FONT_ID } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import { detectPlannerLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import {
@@ -330,6 +331,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       updatedAt: now,
       locale: detectPlannerLocale(),
       weekStartsOn: DEFAULT_WEEK_STARTS_ON,
+      defaultFontId: DEFAULT_PLANNER_FONT_ID,
     };
     set(state => ({ templates: [...state.templates, template] }));
     trackEvent('planner_created');
@@ -358,6 +360,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
         endDate: updates.endDate,
         locale: updates.locale,
         weekStartsOn: updates.weekStartsOn,
+        defaultFontId: updates.defaultFontId,
         paperSize: updates.paperSize,
       });
     }

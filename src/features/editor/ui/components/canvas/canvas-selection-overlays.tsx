@@ -3,6 +3,9 @@ import type { RefObject } from 'react';
 import { Rect, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import type { SnapGuide } from '@/features/editor/domain/services/canvas-snap';
+import {
+  EDITOR_CHROME_INK,
+} from '@/features/editor/domain/constants/editor-chrome';
 import { SnapGuidesOverlay } from './snap-guides-overlay';
 import type { MarqueeRect } from './canvas-interaction-types';
 
@@ -52,10 +55,10 @@ export const CanvasSelectionOverlays: React.FC<CanvasSelectionOverlaysProps> = (
         y={offset.y + groupSelectionBounds.y * scale}
         width={groupSelectionBounds.width * scale}
         height={groupSelectionBounds.height * scale}
-        stroke="hsl(168, 76%, 42%)"
+        stroke={EDITOR_CHROME_INK}
         strokeWidth={1.5}
         dash={[6, 4]}
-        cornerRadius={6}
+        cornerRadius={0}
         listening={false}
       />
     )}
@@ -69,8 +72,8 @@ export const CanvasSelectionOverlays: React.FC<CanvasSelectionOverlaysProps> = (
       }
       rotateEnabled={false}
       anchorSize={8}
-      borderStroke="hsl(168, 76%, 42%)"
-      anchorFill="hsl(168, 76%, 42%)"
+      borderStroke={EDITOR_CHROME_INK}
+      anchorFill={EDITOR_CHROME_INK}
       anchorStroke="white"
     />
   </>

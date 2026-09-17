@@ -15,10 +15,12 @@ import { WeekNumberIcon } from './week-number-icon';
 import { CompositeIcon } from './composite-icon';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
-import { getDefaultFieldStyle, getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
+import { getDefaultFieldStyle, getDefaultFormatVariant, resolvePlannerDefaultFontId } from '@/features/editor/domain/services/field-style-config';
 import { getDefaultBlockSize } from '@/features/editor/domain/services/default-block-size';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { GridIcon } from '@/core/icons';
+import { EDITOR_CHROME_INK } from '@/features/editor/domain/constants/editor-chrome';
 
 const DEFAULT_ICON_SIZE = 50;
 
@@ -60,6 +62,8 @@ export const FieldTypeSelector = () => {
   const { addArea } = useManageAreas();
   const { createDefaultGrid } = useGridGroupOps();
   const currentImage = useCurrentImage();
+  const template = useCurrentTemplate();
+  const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
 
   if (!currentImage) return null;
 
@@ -102,7 +106,7 @@ export const FieldTypeSelector = () => {
       fieldType: type,
       order: currentImage.rectangles.length,
       formatVariant: getDefaultFormatVariant(type),
-      style: getDefaultFieldStyle(),
+      style: getDefaultFieldStyle(plannerFontId),
       ...(type === 'composite' ? { compositeParts: [...DEFAULT_COMPOSITE_PARTS] } : {}),
     });
   };
@@ -113,29 +117,39 @@ export const FieldTypeSelector = () => {
 
   return (
     <div className="field-type-selector">
-      <div className="field-type-selector__types">
-        {availableTypes.map(type => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => handleSelectType(type)}
-            className={`field-type-selector__button${highlightedType === type ? ' field-type-selector__button--active' : ''}`}
-            title={FIELD_TYPE_CONFIG[type].label}
-          >
-            <div className="field-type-selector__button__icon-wrapper">{FIELD_ICONS[type]}</div>
-          </button>
-        ))}
+      <div className="field-type-selector__group">
+        <p className="field-type-selector__group-label">{t('editor.addBlocksFields')}</p>
+        <div className="field-type-selector__types">
+          {availableTypes.map(type => (
+            <button
+              key={type}
+              type="button"
+              onClick={() => handleSelectType(type)}
+              className={`field-type-selector__button${highlightedType === type ? ' field-type-selector__button--active' : ''}`}
+              title={FIELD_TYPE_CONFIG[type].label}
+            >
+              <div className="field-type-selector__button__icon-wrapper">{FIELD_ICONS[type]}</div>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <button
-        type="button"
-        className={`field-type-selector__grid-btn${isGridSelected ? ' field-type-selector__grid-btn--active' : ''}`}
-        onClick={handleAddGrid}
-        aria-label={t('editor.gridAddGrid')}
-        title={t('editor.gridAddGrid')}
-      >
-         <div className="field-type-selector__grid-btn__icon-wrapper"><GridIcon size={30} color='#7af87a' /></div>
-      </button>
+      <div className="field-type-selector__group">
+        <p className="field-type-selector__group-label">{t('editor.addBlocksLayout')}</p>
+        <div className="field-type-selector__types">
+          <button
+            type="button"
+            className={`field-type-selector__grid-btn${isGridSelected ? ' field-type-selector__grid-btn--active' : ''}`}
+            onClick={handleAddGrid}
+            aria-label={t('editor.gridAddGrid')}
+            title={t('editor.gridAddGrid')}
+          >
+            <div className="field-type-selector__grid-btn__icon-wrapper">
+              <GridIcon size={30} color={EDITOR_CHROME_INK} />
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

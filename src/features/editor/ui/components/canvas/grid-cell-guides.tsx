@@ -11,8 +11,9 @@ import {
   type GridEditSettings,
 } from '@/features/editor/domain/services/grid-edit-types';
 import type { GridGroup } from '@/features/template';
+import { EDITOR_CHROME_INK } from '@/features/editor/domain/constants/editor-chrome';
 
-const GRID_STROKE = 'hsl(168, 76%, 42%)';
+const GRID_STROKE = EDITOR_CHROME_INK;
 
 interface GridCellGuidesProps {
   gridGroups: Record<string, GridGroup> | undefined;
@@ -78,8 +79,8 @@ export const GridCellGuides: React.FC<GridCellGuidesProps> = ({
               height={slotSize.height * scale}
               fillEnabled={false}
               stroke={GRID_STROKE}
-              strokeWidth={2}
-              cornerRadius={4}
+              strokeWidth={1.5}
+              cornerRadius={0}
               listening={false}
             />
           );

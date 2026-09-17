@@ -2,6 +2,7 @@ import type { Template } from '../entities/template';
 import type { TemplatePage } from '../entities/template-page';
 import type { Rectangle } from '../entities/rectangle';
 import type { PlannerLocale, WeekStartsOn } from '../value-objects/planner-locale';
+import type { FontId } from '../value-objects/field-style';
 import type { ImageRef } from '../value-objects/image-ref';
 import type { PaperSize } from '../services/paper-size';
 
@@ -21,6 +22,7 @@ export type TemplateRecord = {
   locale?: PlannerLocale;
   weekStartsOn?: WeekStartsOn;
   paperSize?: PaperSize;
+  defaultFontId?: FontId;
 };
 
 export type Unsubscribe = () => void;

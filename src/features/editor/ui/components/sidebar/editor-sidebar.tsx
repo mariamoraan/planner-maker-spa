@@ -10,8 +10,22 @@ import { Link, useLocation } from 'react-router-dom';
 import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
-import { TEMPLATE_TYPE_CONFIG, type PlannerLocale, type WeekStartsOn, getTemplatePaperSizeLabel } from '@/features/template';
+import {
+  TEMPLATE_TYPE_CONFIG,
+  type FontId,
+  type PlannerLocale,
+  type WeekStartsOn,
+  getTemplatePaperSizeLabel,
+} from '@/features/template';
 import { DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
+import {
+  FONT_REGISTRY,
+  resolvePlannerDefaultFontId,
+} from '@/features/editor/domain/services/field-style-config';
+import {
+  applyPlannerFontToRectangle,
+  shouldFollowPlannerFont,
+} from '@/features/editor/domain/services/planner-default-font';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { EditorPlannerActions } from '@/features/export/ui/components/editor-planner-actions/editor-planner-actions';
 import { ReplacePageImageButton } from './replace-page-image-button';
@@ -37,6 +51,7 @@ export const EditorSidebar: React.FC = () => {
   const template = useCurrentTemplate();
   const currentImage = useCurrentImage();
   const updateTemplate = useTemplateStore(state => state.updateTemplate);
+  const updateRectangles = useTemplateStore(state => state.updateRectangles);
   const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
   const [templateName, setTemplateName] = useState(template?.name ?? '');
   const [sectionOpen, setSectionOpen] = useState({
@@ -46,6 +61,7 @@ export const EditorSidebar: React.FC = () => {
 
   const isDemo = pathname.includes('landing-demo');
   const paperSizeLabel = template ? getTemplatePaperSizeLabel(template) : null;
+  const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
 
   const setSectionOpenState = (id: SidebarSectionId, open: boolean) => {
     setSectionOpen(prev => ({ ...prev, [id]: open }));
@@ -59,6 +75,28 @@ export const EditorSidebar: React.FC = () => {
   const handleWeekStartsOnChange = (weekStartsOn: WeekStartsOn) => {
     if (!template) return;
     updateTemplate(template.id, { weekStartsOn });
+  };
+
+  const handleDefaultFontChange = (nextFontId: FontId) => {
+    if (!template || nextFontId === plannerFontId) return;
+
+    const previousFontId = plannerFontId;
+    updateTemplate(template.id, { defaultFontId: nextFontId });
+
+    for (const page of template.images) {
+      const updates = page.rectangles
+        .filter(rect => shouldFollowPlannerFont(rect, previousFontId))
+        .map(rect => ({
+          rectangleId: rect.id,
+          changes: {
+            style: applyPlannerFontToRectangle(rect, nextFontId).style,
+          },
+        }));
+
+      if (updates.length > 0) {
+        updateRectangles(template.id, page.id, updates);
+      }
+    }
   };
 
   const commitTemplateName = () => {
@@ -170,6 +208,27 @@ export const EditorSidebar: React.FC = () => {
                 <SelectContent>
                   <SelectItem value="monday">{t('editor.weekStartsOnMonday')}</SelectItem>
                   <SelectItem value="sunday">{t('editor.weekStartsOnSunday')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="editor-sidebar__locale">
+              <Label className="editor-sidebar__locale-label" htmlFor="planner-default-font">
+                {t('editor.plannerDefaultFont')}
+              </Label>
+              <p className="editor-sidebar__locale-hint">{t('editor.plannerDefaultFontHint')}</p>
+              <Select
+                value={plannerFontId}
+                onValueChange={(value) => handleDefaultFontChange(value as FontId)}
+              >
+                <SelectTrigger id="planner-default-font" className="editor-sidebar__locale-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FONT_REGISTRY.map(font => (
+                    <SelectItem key={font.id} value={font.id}>
+                      <span style={{ fontFamily: font.family }}>{font.label}</span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

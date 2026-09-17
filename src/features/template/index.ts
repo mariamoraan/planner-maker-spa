@@ -15,6 +15,10 @@ export type {
   StartEndFormatVariant,
   CompositePart,
 } from './domain/value-objects/field-style';
+export {
+  DEFAULT_PLANNER_FONT_ID,
+  LEGACY_DEFAULT_FONT_ID,
+} from './domain/value-objects/field-style';
 export type {
   PlannerLocale,
   WeekStartsOn,

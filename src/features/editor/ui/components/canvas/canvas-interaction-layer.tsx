@@ -4,6 +4,7 @@ import { Layer, Rect, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import type { SnapGuide } from '@/features/editor/domain/services/canvas-snap';
 import type { Rectangle } from '@/features/template';
+import { EDITOR_CHROME_INK } from '@/features/editor/domain/constants/editor-chrome';
 import { CanvasCameraGroup, type CanvasCamera, screenPx } from './canvas-camera-group';
 import { SnapGuidesOverlay } from './snap-guides-overlay';
 import type { MarqueeRect } from './canvas-interaction-types';
@@ -86,10 +87,10 @@ export const CanvasInteractionLayer: React.FC<CanvasInteractionLayerProps> = Rea
               y={groupSelectionBounds.y}
               width={groupSelectionBounds.width}
               height={groupSelectionBounds.height}
-              stroke="hsl(168, 76%, 42%)"
+              stroke={EDITOR_CHROME_INK}
               strokeWidth={screenPx(1.5, camera.scale)}
               dash={[6 * inv, 4 * inv]}
-              cornerRadius={6 * inv}
+              cornerRadius={0}
               listening={false}
             />
           )}
@@ -103,8 +104,8 @@ export const CanvasInteractionLayer: React.FC<CanvasInteractionLayerProps> = Rea
             }
             rotateEnabled={false}
             anchorSize={8}
-            borderStroke="hsl(168, 76%, 42%)"
-            anchorFill="hsl(168, 76%, 42%)"
+            borderStroke={EDITOR_CHROME_INK}
+            anchorFill={EDITOR_CHROME_INK}
             anchorStroke="white"
           />
         </CanvasCameraGroup>

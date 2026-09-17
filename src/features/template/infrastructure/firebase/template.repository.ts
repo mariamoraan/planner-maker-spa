@@ -143,6 +143,7 @@ function mapTemplate(
     endDate: data.endDate ? toDate(data.endDate) : undefined,
     locale: data.locale as Template['locale'],
     weekStartsOn: data.weekStartsOn as Template['weekStartsOn'],
+    defaultFontId: data.defaultFontId as Template['defaultFontId'],
     paperSize: normalizePaperSize(data.paperSize),
   };
 }
@@ -244,6 +245,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       endDate: template.endDate ?? null,
       locale: template.locale ?? null,
       weekStartsOn: template.weekStartsOn ?? null,
+      defaultFontId: template.defaultFontId ?? null,
       paperSize: template.paperSize ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -263,6 +265,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     if (updates.endDate !== undefined) payload.endDate = updates.endDate ?? null;
     if (updates.locale !== undefined) payload.locale = updates.locale ?? null;
     if (updates.weekStartsOn !== undefined) payload.weekStartsOn = updates.weekStartsOn ?? null;
+    if (updates.defaultFontId !== undefined) payload.defaultFontId = updates.defaultFontId ?? null;
     if (updates.paperSize !== undefined) payload.paperSize = updates.paperSize ?? null;
     await updateDoc(templateRef(uid, templateId), payload);
   }

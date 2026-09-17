@@ -11,6 +11,11 @@ import {
 } from '@/features/editor/domain/services/grid-layout';
 import type { GridEditSettings } from '@/features/editor/domain/services/grid-edit-types';
 import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
+import {
+  EDITOR_CHROME_INK,
+  EDITOR_CHROME_INK_ACTIVE,
+  EDITOR_CHROME_INK_GUTTER,
+} from '@/features/editor/domain/constants/editor-chrome';
 
 interface GridGapHandlesProps {
   bounds: GridBounds;
@@ -24,9 +29,9 @@ interface GridGapHandlesProps {
 
 const GAP_HIT_MIN = 12;
 const EDGE_STROKE = 2;
-const GRID_COLOR = 'hsl(168, 76%, 42%)';
-const GRID_COLOR_ACTIVE = 'hsl(168, 76%, 36%)';
-const GUTTER_FILL = 'hsla(168, 76%, 42%, 0.2)';
+const GRID_COLOR = EDITOR_CHROME_INK;
+const GRID_COLOR_ACTIVE = EDITOR_CHROME_INK_ACTIVE;
+const GUTTER_FILL = EDITOR_CHROME_INK_GUTTER;
 
 function toStage(value: number, scale: number, offsetValue: number): number {
   return offsetValue + value * scale;

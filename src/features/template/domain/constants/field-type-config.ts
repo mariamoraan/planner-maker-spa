@@ -1,6 +1,7 @@
 import type { FieldType } from '../value-objects/field-style';
 import type { TemplateType } from '../value-objects/planner-locale';
 
+/** Modern editorial ink palette — muted hues, low-fill chrome. */
 export const FIELD_TYPE_CONFIG: Record<
   FieldType,
   {
@@ -12,44 +13,44 @@ export const FIELD_TYPE_CONFIG: Record<
 > = {
   year: {
     label: 'Year',
-    color: 'hsl(258, 90%, 66%)',
-    bgColor: 'hsla(258, 90%, 66%, 0.2)',
+    color: 'hsl(215, 22%, 42%)',
+    bgColor: 'hsla(215, 22%, 42%, 0.1)',
     description: 'Displays the year (e.g., 2024)',
   },
   month: {
     label: 'Month',
-    color: 'hsl(168, 76%, 42%)',
-    bgColor: 'hsla(168, 76%, 42%, 0.2)',
+    color: 'hsl(175, 18%, 36%)',
+    bgColor: 'hsla(175, 18%, 36%, 0.1)',
     description: 'Displays the month name (e.g., January)',
   },
   day: {
     label: 'Day',
-    color: 'hsl(25, 95%, 53%)',
-    bgColor: 'hsla(25, 95%, 53%, 0.2)',
+    color: 'hsl(18, 28%, 44%)',
+    bgColor: 'hsla(18, 28%, 44%, 0.1)',
     description: 'Displays day numbers or date ranges',
   },
   startDay: {
     label: 'Start Day',
-    color: 'hsl(53, 95%, 45%)',
-    bgColor: 'hsla(53, 95%, 53%, 0.2)',
+    color: 'hsl(38, 24%, 42%)',
+    bgColor: 'hsla(38, 24%, 42%, 0.1)',
     description: 'Displays the start of the page date range',
   },
   endDay: {
     label: 'End Day',
-    color: 'hsl(13, 95%, 53%)',
-    bgColor: 'hsla(13, 95%, 53%, 0.2)',
+    color: 'hsl(8, 30%, 44%)',
+    bgColor: 'hsla(8, 30%, 44%, 0.1)',
     description: 'Displays the end of the page date range',
   },
   weekNumber: {
     label: 'Week',
-    color: 'hsl(200, 85%, 45%)',
-    bgColor: 'hsla(200, 85%, 45%, 0.2)',
+    color: 'hsl(205, 20%, 40%)',
+    bgColor: 'hsla(205, 20%, 40%, 0.1)',
     description: 'Displays the ISO week number',
   },
   composite: {
     label: 'Composite',
-    color: 'hsl(280, 70%, 55%)',
-    bgColor: 'hsla(280, 70%, 55%, 0.2)',
+    color: 'hsl(265, 16%, 44%)',
+    bgColor: 'hsla(265, 16%, 44%, 0.1)',
     description: 'Combines date parts into one block',
   },
 };

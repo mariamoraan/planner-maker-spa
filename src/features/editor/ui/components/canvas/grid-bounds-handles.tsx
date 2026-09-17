@@ -12,6 +12,10 @@ import {
   resolveDragAxisLock,
   type DragAxisLock,
 } from '@/features/editor/domain/services/drag-axis-lock';
+import {
+  EDITOR_CHROME_INK,
+  EDITOR_CHROME_INK_FILL,
+} from '@/features/editor/domain/constants/editor-chrome';
 
 export type GridInteractionHandle = GridBoundsHandle | 'move';
 
@@ -187,7 +191,7 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         radius={HANDLE_RADIUS}
         hitStrokeWidth={14}
         fill="white"
-        stroke="hsl(168, 76%, 42%)"
+        stroke={EDITOR_CHROME_INK}
         strokeWidth={2}
         draggable
         dragBoundFunc={() => ({ x: cx, y: cy })}
@@ -214,8 +218,8 @@ export const GridBoundsHandles: React.FC<GridBoundsHandlesProps> = ({
         y={frameY}
         width={frameW}
         height={frameH}
-        fill="rgba(0, 200, 180, 0.04)"
-        stroke="hsl(168, 76%, 42%)"
+        fill={EDITOR_CHROME_INK_FILL}
+        stroke={EDITOR_CHROME_INK}
         strokeWidth={1.5}
         dash={[6, 4]}
         draggable

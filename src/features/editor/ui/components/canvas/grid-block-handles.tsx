@@ -19,6 +19,11 @@ import {
   resolveDragAxisLock,
   type DragAxisLock,
 } from '@/features/editor/domain/services/drag-axis-lock';
+import {
+  EDITOR_CHROME_INK,
+  EDITOR_CHROME_INK_FILL,
+  EDITOR_CHROME_INK_FILL_STRONG,
+} from '@/features/editor/domain/constants/editor-chrome';
 
 export type GridBlockHandle = GridBlockResizeHandle | 'move';
 
@@ -32,7 +37,7 @@ interface GridBlockHandlesProps {
   onDragEnd?: () => void;
 }
 
-const GRID_COLOR = 'hsl(168, 76%, 42%)';
+const GRID_COLOR = EDITOR_CHROME_INK;
 
 function toStage(value: number, scale: number, offsetValue: number): number {
   return offsetValue + value * scale;
@@ -270,7 +275,7 @@ export const GridBlockHandles: React.FC<GridBlockHandlesProps> = ({
         y={frameY}
         width={frameW}
         height={frameH}
-        fill={isFrameHovered || isDragging ? 'rgba(0, 200, 180, 0.12)' : 'rgba(0, 200, 180, 0.08)'}
+        fill={isFrameHovered || isDragging ? EDITOR_CHROME_INK_FILL_STRONG : EDITOR_CHROME_INK_FILL}
         stroke={GRID_COLOR}
         strokeWidth={isFrameHovered || isDragging ? 2 : 1.5}
         draggable

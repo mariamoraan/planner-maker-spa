@@ -35,7 +35,19 @@ export type CompositePart =
   | { kind: 'weekNumber' }
   | { kind: 'literal'; value: string };
 
-export type FontId = 'gloria' | 'great-vibes' | 'lato';
+export type FontId =
+  | 'playfair'
+  | 'source-serif'
+  | 'dm-sans'
+  | 'gloria'
+  | 'great-vibes'
+  | 'lato';
+
+/** Default for new planners (Amark brand serif). */
+export const DEFAULT_PLANNER_FONT_ID: FontId = 'playfair';
+
+/** Pre-brand default stamped on older blocks without `defaultFontId`. */
+export const LEGACY_DEFAULT_FONT_ID: FontId = 'gloria';
 
 export type TextCase = 'default' | 'uppercase' | 'lowercase' | 'capitalize';
 

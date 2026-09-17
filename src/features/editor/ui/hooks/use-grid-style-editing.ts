@@ -5,14 +5,18 @@ import {
   getFormatVariant,
   isValidHexColor,
   resolveFieldStyle,
+  resolvePlannerDefaultFontId,
 } from '@/features/editor/domain/services/field-style-config';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 
 export const useGridStyleEditing = (
   group: GridGroup | null | undefined,
   rectangles: Rectangle[],
 ) => {
   const { updateGroupStyle, updateGroupFormatVariant } = useGridGroupOps();
+  const template = useCurrentTemplate();
+  const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
   const [hexInput, setHexInput] = useState('');
 
   const representativeRect = group
@@ -27,7 +31,7 @@ export const useGridStyleEditing = (
     return null;
   }
 
-  const style = resolveFieldStyle(representativeRect);
+  const style = resolveFieldStyle(representativeRect, plannerFontId);
   const formatVariant = getFormatVariant(representativeRect);
   const formatOptions = FIELD_FORMAT_REGISTRY[representativeRect.fieldType];
 
