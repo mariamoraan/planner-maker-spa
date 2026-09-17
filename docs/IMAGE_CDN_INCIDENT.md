@@ -115,7 +115,13 @@ UploadThingError: Invalid token … Length must be a multiple of 4, but is 171
 
 This was masked because `getUploadthingAppId()` used `Buffer.from(token, 'base64')`, which is lenient and happily returned an `appId`. The result would be `/api/images/url` returning 200 while signing silently failed and reads degraded to unsigned URLs — exactly the "url OK / content 502" pattern reported earlier.
 
-**Not the production cause:** the Vercel env var holds the correct 168-character token. `.env.prod` is a local reference file that nothing in the codebase reads. Fixed anyway, since copy-pasting it into Vercel would have broken prod.
+**This *was* also the production cause.** An earlier revision of this report claimed the Vercel env var held the correct 168-character token; that was an unverified assumption. Vercel returns `[SENSITIVE]` instead of the real value for encrypted env vars, so the stored token cannot be read back and validated locally. Once the module-load crashes (0 and 0b) were fixed and the handler finally ran, production answered:
+
+```json
+{"message":"Invalid token. A token is a base64 encoded JSON object matching { apiKey: string, appId: string, regions: string[] }."}
+```
+
+That error comes from the UploadThing SDK parsing `UPLOADTHING_TOKEN` inside the function, which proves the value stored in Vercel is malformed — almost certainly the broken `.env.prod` value pasted in verbatim. The fix is to re-set the env var from the corrected 168-character token.
 
 ### 6. Vercel 4.5 MB response cap (latent)
 
