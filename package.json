@@ -14,6 +14,12 @@
     "capture:landing": "node scripts/capture-landing-assets.mjs",
     "record:landing": "node scripts/record-landing-demo.mjs"
   },
+  "//overrides": "jwks-rsa@4 (via firebase-admin) calls require('jose') but declares jose@^6, which is ESM-only. Vercel runs functions with --no-experimental-require-module, making that require() a hard ERR_REQUIRE_ESM crash at module load. jose@5 ships a CommonJS build and exposes the same importJWK/exportSPKI that jwks-rsa uses. Drop this once jwks-rsa loads jose lazily (auth0/node-jwks-rsa#508).",
+  "overrides": {
+    "jwks-rsa": {
+      "jose": "^5.10.0"
+    }
+  },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

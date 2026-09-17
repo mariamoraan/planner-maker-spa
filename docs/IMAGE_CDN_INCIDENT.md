@@ -15,7 +15,7 @@ There were two independent causes, one per environment.
 
 **Locally**, the cause was client-side state management: the app resolved an image URL once, silently swallowed any failure, and never tried again. Because a successful resolve is cached as a data URL in IndexedDB, the failure only showed up when that cache was cold — which is why it looked intermittent and why "clear site data" reproduced it so reliably.
 
-**In production**, nothing ever worked: all four API routes crashed on module load with `ERR_MODULE_NOT_FOUND` because relative imports lacked the `.js` extension that Node's ESM resolver requires. This is why the prod UploadThing project held zero files. It was masked throughout the investigation because Vite and `tsx` resolve extensionless imports, so local dev and the local simulation both passed.
+**In production**, nothing ever worked: all four API routes crashed on module load, for two stacked reasons. First `ERR_MODULE_NOT_FOUND`, because relative imports lacked the `.js` extension that Node's ESM resolver requires; then, once that was fixed, `ERR_REQUIRE_ESM`, because `firebase-admin` pulls in a CommonJS package that `require()`s an ESM-only `jose`. This is why the prod UploadThing project held zero files. Both were masked throughout the investigation because local dev resolves extensionless imports *and* allows `require()` of ESM, while Vercel's loader does neither.
 
 Neither cause was CDN reachability.
 
@@ -64,6 +64,27 @@ This explains the observations the client-side causes below could not: uploads n
 
 Reproduced and confirmed locally by compiling `api/**` with `tsc` and importing the output with plain `node`: extensionless imports throw the identical error, `.js` specifiers load cleanly.
 
+### 0b. `firebase-admin` crashed on module load via an ESM-only transitive dep (production)
+
+With root cause 0 fixed, the functions found their modules and immediately hit the next module-load crash:
+
+```
+Error [ERR_REQUIRE_ESM]: require() of ES Module /var/task/node_modules/jose/dist/webapi/index.js
+    from /var/task/node_modules/jwks-rsa/src/utils.js not supported.
+Node.js process exited with exit status: 1.
+```
+
+`firebase-admin@14` depends on `jwks-rsa@4`, which calls `require('jose')` while declaring `jose@^6`. Every `jose@6` release is ESM-only (`"type": "module"`, no `require` export condition), so the package is internally inconsistent: a CommonJS `require` against a range that can only resolve to ESM. This is a known upstream bug ([firebase-admin-node#3181](https://github.com/firebase/firebase-admin-node/issues/3181), [node-jwks-rsa#507](https://github.com/auth0/node-jwks-rsa/issues/507)).
+
+It only manifests in production because **Vercel starts functions with `--no-experimental-require-module`**, which disables Node's `require()`-of-ESM support. Local dev runs on Node 24 with that support enabled by default, so the same code loads fine — the project's configured runtime being `nodejs24.x` is irrelevant, the flag is what decides.
+
+Reproduced locally with the exact production error by adding the flag:
+
+```bash
+node --no-experimental-require-module -e "require('jwks-rsa')"
+# ERR_REQUIRE_ESM: require() of ES Module …/jose/dist/webapi/index.js
+```
+
 ### 1. Failures were swallowed and never retried (primary)
 
 `resolveCloudImageAccess` wrapped the whole resolve in `try { … } catch { return null }`, and also returned `null` for any non-2xx and for a missing Firebase token. That `null` became `src: ''` + `missingLocalAsset: true`, rendering the empty-cloud placeholder.
@@ -108,6 +129,7 @@ This was masked because `getUploadthingAppId()` used `Buffer.from(token, 'base64
 |---|-----|-------|
 | 0 | Add explicit `.js` extensions to every relative import that runs on Node as ESM (20 specifiers) | `api/**`, `server/**`, `vite.config.ts`, `vite.dev-api-plugin.ts` |
 | 0 | Switch `tsconfig.node.json` to `"moduleResolution": "NodeNext"` and add `api/**/*.ts` to `include`, so an extensionless import is now a compile error (`TS2835`) instead of a runtime crash | `tsconfig.node.json` |
+| 0b | Pin `jose` to `^5.10.0` under `jwks-rsa` only, via an npm `overrides` entry. `jose@5` ships a CommonJS build and exposes the same `importJWK`/`exportSPKI` that `jwks-rsa` actually uses | `package.json` |
 | 1 | Retry with backoff (3 attempts), classify retryable vs permanent, force-refresh the ID token after a 401/403, log the reason instead of returning a bare `null` | `infrastructure/uploadthing/client.ts` |
 | 1 | Retry loading while pages lack a usable src, restarting on `online` and tab focus | `ui/hooks/use-image-load-retry.ts`, `use-home-templates.ts`, `TemplateEditor.tsx` |
 | 2 | Treat ticket/signed-URL expiry as first-class: `needsImageLoad` re-resolves lapsed URLs, the session cache honours real expiry instead of a fixed 5 h TTL, and `hydrateFromRemote` stops carrying lapsed URLs forward | `infrastructure/uploadthing/content-ticket.ts`, `image.adapter.ts`, `template-store.ts` |
@@ -144,6 +166,7 @@ node scripts/diagnose-endpoints.mjs http://localhost:8080 .env   # full API chai
 ## Verification checklist
 
 0. `npx tsc --noEmit -p tsconfig.node.json` — must be clean; this is what now guards root cause 0.
+0b. `npx vercel build && node --no-experimental-require-module -e "import('./.vercel/output/functions/api/uploadthing.func/api/uploadthing.js')"` — must load without throwing. This reproduces Vercel's loader, which neither `npm run dev` nor `tsx` does.
 1. `node scripts/diagnose-images.mjs .env` — expect zero problem rows.
 2. `node scripts/diagnose-endpoints.mjs <origin> .env` — expect `url` 200 signed, `content` 200 `image/*`.
 3. Clear site data, reload → covers appear without a manual refresh.
