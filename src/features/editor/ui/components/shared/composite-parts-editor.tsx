@@ -334,23 +334,15 @@ export const CompositePartsEditor = ({ rectangle }: CompositePartsEditorProps) =
       close();
     };
 
-    const handleScroll = (event: Event) => {
-      const target = event.target;
-      if (target instanceof Node && menuRef.current?.contains(target)) return;
-      close();
-    };
-
     const handleResize = () => close();
 
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('touchstart', handlePointerDown);
-    window.addEventListener('scroll', handleScroll, true);
     window.addEventListener('resize', handleResize);
 
     return () => {
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('touchstart', handlePointerDown);
-      window.removeEventListener('scroll', handleScroll, true);
       window.removeEventListener('resize', handleResize);
     };
   }, [isOpen]);
@@ -454,6 +446,7 @@ export const CompositePartsEditor = ({ rectangle }: CompositePartsEditorProps) =
               style={{ top: menuPosition.top, left: menuPosition.left }}
               onMouseDown={e => e.stopPropagation()}
               onPointerDown={e => e.stopPropagation()}
+              onWheel={e => e.stopPropagation()}
             >
               <section className="composite-parts-editor__section">
                 <p className="composite-parts-editor__section-label">
@@ -474,98 +467,102 @@ export const CompositePartsEditor = ({ rectangle }: CompositePartsEditorProps) =
                 </div>
               </section>
 
-              <section className="composite-parts-editor__section">
-                <p className="composite-parts-editor__section-label">
-                  {t('editor.compositeParts')}
-                </p>
-                <div className="composite-parts-editor__parts">
-                  {parts.length === 0 ? (
-                    <p className="composite-parts-editor__empty">
-                      {t('editor.compositePartsEmpty')}
-                    </p>
-                  ) : (
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <SortableContext items={partIds} strategy={verticalListSortingStrategy}>
-                        {parts.map((part, index) => (
-                          <SortablePartRow
-                            key={partIds[index]}
-                            id={partIds[index]}
-                            part={part}
-                            t={t}
-                            onRemove={() => removePart(index)}
-                            onUpdateLiteral={value => updateLiteral(index, value)}
-                            onUpdateVariant={variant => updateVariant(index, variant)}
-                          />
-                        ))}
-                      </SortableContext>
-                    </DndContext>
-                  )}
-                </div>
-              </section>
+              <div className="composite-parts-editor__body">
+                <section className="composite-parts-editor__section composite-parts-editor__section--parts">
+                  <p className="composite-parts-editor__section-label">
+                    {t('editor.compositeParts')}
+                  </p>
+                  <div className="composite-parts-editor__parts">
+                    {parts.length === 0 ? (
+                      <p className="composite-parts-editor__empty">
+                        {t('editor.compositePartsEmpty')}
+                      </p>
+                    ) : (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext items={partIds} strategy={verticalListSortingStrategy}>
+                          {parts.map((part, index) => (
+                            <SortablePartRow
+                              key={partIds[index]}
+                              id={partIds[index]}
+                              part={part}
+                              t={t}
+                              onRemove={() => removePart(index)}
+                              onUpdateLiteral={value => updateLiteral(index, value)}
+                              onUpdateVariant={variant => updateVariant(index, variant)}
+                            />
+                          ))}
+                        </SortableContext>
+                      </DndContext>
+                    )}
+                  </div>
+                </section>
 
-              <section className="composite-parts-editor__section">
-                <p className="composite-parts-editor__section-label">
-                  {t('editor.compositeAddSeparators')}
-                </p>
-                <div className="composite-parts-editor__chips">
-                  <button
-                    type="button"
-                    className="composite-parts-editor__chip"
-                    onClick={() => addLiteral(' ')}
-                  >
-                    {t('editor.compositeAddSpace')}
-                  </button>
-                  <button
-                    type="button"
-                    className="composite-parts-editor__chip"
-                    onClick={() => addLiteral('/')}
-                  >
-                    /
-                  </button>
-                  <button
-                    type="button"
-                    className="composite-parts-editor__chip"
-                    onClick={addLinebreak}
-                  >
-                    {t('editor.compositeAddLinebreak')}
-                  </button>
-                  <button
-                    type="button"
-                    className="composite-parts-editor__chip"
-                    onClick={() => addLiteral(t('editor.compositeDefaultText'))}
-                  >
-                    {t('editor.compositeAddText')}
-                  </button>
-                </div>
-              </section>
-
-              <section className="composite-parts-editor__section">
-                <p className="composite-parts-editor__section-label">
-                  {t('editor.compositeAdd')}
-                </p>
-                <div className="composite-parts-editor__add-groups">
-                  <div className="composite-parts-editor__add-group">
-                    <p className="composite-parts-editor__add-group-label">
-                      {t('editor.compositeAddCurrent')}
+                <div className="composite-parts-editor__sidebar">
+                  <section className="composite-parts-editor__section composite-parts-editor__section--compact">
+                    <p className="composite-parts-editor__section-label">
+                      {t('editor.compositeAddSeparators')}
                     </p>
                     <div className="composite-parts-editor__chips">
-                      {renderAddButtons(CURRENT_TOKEN_OPTIONS)}
+                      <button
+                        type="button"
+                        className="composite-parts-editor__chip"
+                        onClick={() => addLiteral(' ')}
+                      >
+                        {t('editor.compositeAddSpace')}
+                      </button>
+                      <button
+                        type="button"
+                        className="composite-parts-editor__chip"
+                        onClick={() => addLiteral('/')}
+                      >
+                        /
+                      </button>
+                      <button
+                        type="button"
+                        className="composite-parts-editor__chip"
+                        onClick={addLinebreak}
+                      >
+                        {t('editor.compositeAddLinebreak')}
+                      </button>
+                      <button
+                        type="button"
+                        className="composite-parts-editor__chip"
+                        onClick={() => addLiteral(t('editor.compositeDefaultText'))}
+                      >
+                        {t('editor.compositeAddText')}
+                      </button>
                     </div>
-                  </div>
-                  <div className="composite-parts-editor__add-group">
-                    <p className="composite-parts-editor__add-group-label">
-                      {t('editor.compositeAddRange')}
+                  </section>
+
+                  <section className="composite-parts-editor__section composite-parts-editor__section--compact">
+                    <p className="composite-parts-editor__section-label">
+                      {t('editor.compositeAdd')}
                     </p>
-                    <div className="composite-parts-editor__chips">
-                      {renderAddButtons(RANGE_TOKEN_OPTIONS)}
+                    <div className="composite-parts-editor__add-groups">
+                      <div className="composite-parts-editor__add-group">
+                        <p className="composite-parts-editor__add-group-label">
+                          {t('editor.compositeAddCurrent')}
+                        </p>
+                        <div className="composite-parts-editor__chips">
+                          {renderAddButtons(CURRENT_TOKEN_OPTIONS)}
+                        </div>
+                      </div>
+                      <div className="composite-parts-editor__add-group">
+                        <p className="composite-parts-editor__add-group-label">
+                          {t('editor.compositeAddRange')}
+                        </p>
+                        <div className="composite-parts-editor__chips">
+                          {renderAddButtons(RANGE_TOKEN_OPTIONS)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </section>
                 </div>
-              </section>
+              </div>
             </div>,
             document.body,
           )
