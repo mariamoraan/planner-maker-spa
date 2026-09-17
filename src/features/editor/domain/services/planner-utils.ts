@@ -230,11 +230,30 @@ export function findPreviewMonthAlignedToWeekStart(
   };
 }
 
+export function normalizePreviewPlannerRange(
+  range: { start: Date; end: Date } | null | undefined,
+): { start: Date; end: Date } | null {
+  if (!range) return null;
+  const { start, end } = range;
+  if (
+    !(start instanceof Date) ||
+    !(end instanceof Date) ||
+    Number.isNaN(start.getTime()) ||
+    Number.isNaN(end.getTime())
+  ) {
+    return null;
+  }
+  return start.getTime() <= end.getTime()
+    ? { start, end }
+    : { start: end, end: start };
+}
+
 export function getEditorPreviewContext(
   templateImage: TemplateImage,
   weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
   plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
   previewAnchor?: Date | null,
+  previewPlannerRange?: { start: Date; end: Date } | null,
 ): FieldValueContext {
   const today = new Date();
   const hasOverride = previewAnchor instanceof Date && !Number.isNaN(previewAnchor.getTime());
@@ -289,8 +308,17 @@ export function getEditorPreviewContext(
       };
     }
     case 'cover':
-    case 'extra':
-      return { plannerStart, plannerEnd, year: plannerStart.getFullYear(), date: plannerStart };
+    case 'extra': {
+      const override = normalizePreviewPlannerRange(previewPlannerRange);
+      const rangeStart = override?.start ?? plannerStart;
+      const rangeEnd = override?.end ?? plannerEnd;
+      return {
+        plannerStart: rangeStart,
+        plannerEnd: rangeEnd,
+        year: rangeStart.getFullYear(),
+        date: rangeStart,
+      };
+    }
     default:
       return { year, month, date: firstOfMonth, plannerStart, plannerEnd };
   }
@@ -317,14 +345,17 @@ export function getEditorPreviewDateInfo(
   plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
   locale: Locale = DEFAULT_LOCALE,
   previewAnchor?: Date | null,
+  previewPlannerRange?: { start: Date; end: Date } | null,
 ): EditorPreviewDateInfo {
   const isCustom =
     previewAnchor instanceof Date && !Number.isNaN(previewAnchor.getTime());
+  const rangeOverride = normalizePreviewPlannerRange(previewPlannerRange);
   const context = getEditorPreviewContext(
     templateImage,
     weekStartsOn,
     plannerRange,
     previewAnchor,
+    previewPlannerRange,
   );
   const capitalize = (value: string) =>
     value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -360,9 +391,9 @@ export function getEditorPreviewDateInfo(
         : `${format(start, 'MMM yyyy', { locale })} – ${format(end, 'MMM yyyy', { locale })}`;
       return {
         label,
-        detail: 'previewPlannerRange',
+        detail: rangeOverride ? 'previewPlannerRangeCustom' : 'previewPlannerRange',
         anchor: start,
-        isCustom: false,
+        isCustom: rangeOverride != null,
       };
     }
     case 'daily-page': {

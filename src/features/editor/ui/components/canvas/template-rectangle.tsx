@@ -97,11 +97,18 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     );
 
     const previewAnchorDate = useEditorStore(state => state.previewAnchorDate);
+    const previewPlannerRange = useEditorStore(state => state.previewPlannerRange);
 
     const previewContext = useMemo(
       () =>
-        getEditorPreviewContext(templateImage, weekStartsOn, { plannerStart, plannerEnd }, previewAnchorDate),
-      [templateImage, weekStartsOn, plannerStart, plannerEnd, previewAnchorDate],
+        getEditorPreviewContext(
+          templateImage,
+          weekStartsOn,
+          { plannerStart, plannerEnd },
+          previewAnchorDate,
+          previewPlannerRange,
+        ),
+      [templateImage, weekStartsOn, plannerStart, plannerEnd, previewAnchorDate, previewPlannerRange],
     );
 
     const dateLocale = useMemo(() => resolveLocale(plannerLocale), [plannerLocale]);

@@ -251,4 +251,68 @@ describe('getEditorPreviewContext', () => {
     expect(context.date?.getMonth()).toBe(5);
     expect(context.date?.getDate()).toBe(12);
   });
+
+  it('uses template planner range for cover and extra pages', () => {
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'cover-1',
+      type: 'cover',
+      rectangles: [],
+    };
+    const plannerStart = new Date(2026, 0, 1);
+    const plannerEnd = new Date(2027, 11, 31);
+    const context = getEditorPreviewContext(page, 'monday', {
+      plannerStart,
+      plannerEnd,
+    });
+    expect(context.plannerStart).toEqual(plannerStart);
+    expect(context.plannerEnd).toEqual(plannerEnd);
+    expect(context.year).toBe(2026);
+    expect(context.date).toEqual(plannerStart);
+  });
+
+  it('honours a custom preview planner range on cover pages', () => {
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'cover-2',
+      type: 'cover',
+      rectangles: [],
+    };
+    const context = getEditorPreviewContext(
+      page,
+      'monday',
+      {
+        plannerStart: new Date(2026, 0, 1),
+        plannerEnd: new Date(2026, 11, 31),
+      },
+      null,
+      { start: new Date(2027, 5, 1), end: new Date(2028, 2, 15) },
+    );
+    expect(context.plannerStart?.getFullYear()).toBe(2027);
+    expect(context.plannerStart?.getMonth()).toBe(5);
+    expect(context.plannerEnd?.getFullYear()).toBe(2028);
+    expect(context.plannerEnd?.getMonth()).toBe(2);
+    expect(context.year).toBe(2027);
+  });
+
+  it('swaps inverted preview planner range on extra pages', () => {
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'extra-1',
+      type: 'extra',
+      rectangles: [],
+    };
+    const context = getEditorPreviewContext(
+      page,
+      'monday',
+      {
+        plannerStart: new Date(2026, 0, 1),
+        plannerEnd: new Date(2026, 11, 31),
+      },
+      null,
+      { start: new Date(2028, 0, 1), end: new Date(2027, 0, 1) },
+    );
+    expect(context.plannerStart?.getFullYear()).toBe(2027);
+    expect(context.plannerEnd?.getFullYear()).toBe(2028);
+  });
 });

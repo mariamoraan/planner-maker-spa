@@ -85,6 +85,12 @@
     color: hsl(220, 10%, 40%);
   }
 
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
   &__input {
     width: 100%;
     box-sizing: border-box;

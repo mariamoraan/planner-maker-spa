@@ -5,6 +5,11 @@ export type CanvasTool = 'select' | 'pan';
 
 export type GridEditFocus = 'grid' | 'block';
 
+export interface PreviewPlannerRange {
+  start: Date;
+  end: Date;
+}
+
 interface EditorState {
   currentImageId: string | null;
   selectedRectangleIds: string[];
@@ -14,6 +19,8 @@ interface EditorState {
   gridEditFocus: GridEditFocus;
   /** Optional date used to drive editor field preview (session-only). */
   previewAnchorDate: Date | null;
+  /** Optional planner range override for cover/extra preview (session-only). */
+  previewPlannerRange: PreviewPlannerRange | null;
 
   setCurrentImageId: (id: string | null) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
@@ -25,6 +32,7 @@ interface EditorState {
   setCanvasTool: (canvasTool: CanvasTool) => void;
   setGridEditFocus: (gridEditFocus: GridEditFocus) => void;
   setPreviewAnchorDate: (previewAnchorDate: Date | null) => void;
+  setPreviewPlannerRange: (previewPlannerRange: PreviewPlannerRange | null) => void;
   resetEditorSession: () => void;
 }
 
@@ -36,6 +44,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   canvasTool: 'select',
   gridEditFocus: 'grid',
   previewAnchorDate: null,
+  previewPlannerRange: null,
 
   setCurrentImageId: (currentImageId) => set({ currentImageId }),
   setSelectedFieldType: (selectedFieldType) => set({ selectedFieldType }),
@@ -60,6 +69,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setCanvasTool: (canvasTool) => set({ canvasTool }),
   setGridEditFocus: (gridEditFocus) => set({ gridEditFocus }),
   setPreviewAnchorDate: (previewAnchorDate) => set({ previewAnchorDate }),
+  setPreviewPlannerRange: (previewPlannerRange) => set({ previewPlannerRange }),
 
   resetEditorSession: () =>
     set({
@@ -70,5 +80,6 @@ export const useEditorStore = create<EditorState>((set) => ({
       canvasTool: 'select',
       gridEditFocus: 'grid',
       previewAnchorDate: null,
+      previewPlannerRange: null,
     }),
 }));

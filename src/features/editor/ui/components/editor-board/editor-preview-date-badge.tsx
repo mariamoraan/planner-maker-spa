@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
-import { getEditorPreviewDateInfo } from '@/features/editor/domain/services/planner-utils';
+import { getEditorPreviewDateInfo, normalizePreviewPlannerRange } from '@/features/editor/domain/services/planner-utils';
 import { resolveLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
@@ -21,9 +21,10 @@ const DETAIL_KEYS: Record<string, string> = {
   previewDayAligned: 'editor.previewDateDayHint',
   previewDayCustom: 'editor.previewDateDayCustomHint',
   previewPlannerRange: 'editor.previewDatePlannerHint',
+  previewPlannerRangeCustom: 'editor.previewDatePlannerCustomHint',
 };
 
-type PickerMode = 'month' | 'date' | 'none';
+type PickerMode = 'month' | 'date' | 'range' | 'none';
 
 function pickerModeForPage(type: TemplateImage['type']): PickerMode {
   switch (type) {
@@ -33,6 +34,9 @@ function pickerModeForPage(type: TemplateImage['type']): PickerMode {
     case 'weekly-calendar':
     case 'daily-page':
       return 'date';
+    case 'cover':
+    case 'extra':
+      return 'range';
     default:
       return 'none';
   }
@@ -78,6 +82,8 @@ export function EditorPreviewDateBadge() {
   const template = useCurrentTemplate();
   const previewAnchorDate = useEditorStore(state => state.previewAnchorDate);
   const setPreviewAnchorDate = useEditorStore(state => state.setPreviewAnchorDate);
+  const previewPlannerRange = useEditorStore(state => state.previewPlannerRange);
+  const setPreviewPlannerRange = useEditorStore(state => state.setPreviewPlannerRange);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -87,12 +93,15 @@ export function EditorPreviewDateBadge() {
 
   const locale = resolveLocale(template?.locale ?? 'es');
   const weekStartsOn = template?.weekStartsOn ?? DEFAULT_WEEK_STARTS_ON;
+  const templateStart = template?.startDate ?? new Date(new Date().getFullYear(), 0, 1);
+  const templateEnd = template?.endDate ?? new Date(new Date().getFullYear(), 11, 31);
   const info = getEditorPreviewDateInfo(
     currentImage,
     weekStartsOn,
-    { plannerStart: template?.startDate, plannerEnd: template?.endDate },
+    { plannerStart: templateStart, plannerEnd: templateEnd },
     locale,
     previewAnchorDate,
+    previewPlannerRange,
   );
 
   const mode = pickerModeForPage(currentImage.type);
@@ -104,6 +113,17 @@ export function EditorPreviewDateBadge() {
       ? t(hintKey)
       : info.label;
 
+  // Prefer session override; otherwise the real planner range for cover/extra inputs.
+  const effectiveOverride = normalizePreviewPlannerRange(previewPlannerRange);
+  const displayRangeStart = effectiveOverride?.start
+    ?? (currentImage.type === 'cover' || currentImage.type === 'extra'
+      ? templateStart
+      : info.anchor);
+  const displayRangeEnd = effectiveOverride?.end
+    ?? (currentImage.type === 'cover' || currentImage.type === 'extra'
+      ? templateEnd
+      : info.anchor);
+
   const handleMonthChange = (value: string) => {
     const parsed = parseMonthInput(value);
     if (parsed) setPreviewAnchorDate(parsed);
@@ -114,8 +134,26 @@ export function EditorPreviewDateBadge() {
     if (parsed) setPreviewAnchorDate(parsed);
   };
 
+  const handleRangeStartChange = (value: string) => {
+    const parsed = parseDateInput(value);
+    if (!parsed) return;
+    const end = effectiveOverride?.end ?? displayRangeEnd;
+    setPreviewPlannerRange(normalizePreviewPlannerRange({ start: parsed, end }));
+  };
+
+  const handleRangeEndChange = (value: string) => {
+    const parsed = parseDateInput(value);
+    if (!parsed) return;
+    const start = effectiveOverride?.start ?? displayRangeStart;
+    setPreviewPlannerRange(normalizePreviewPlannerRange({ start, end: parsed }));
+  };
+
   const handleReset = () => {
-    setPreviewAnchorDate(null);
+    if (mode === 'range') {
+      setPreviewPlannerRange(null);
+    } else {
+      setPreviewAnchorDate(null);
+    }
     setOpen(false);
   };
 
@@ -155,33 +193,64 @@ export function EditorPreviewDateBadge() {
 
       {open && canPick ? (
         <div className="editor-preview-date-badge__popover" role="dialog">
-          <p className="editor-preview-date-badge__popover-title">
-            {mode === 'month'
-              ? t('editor.previewDatePickMonth')
-              : currentImage.type === 'weekly-calendar'
-                ? t('editor.previewDatePickWeek')
-                : t('editor.previewDatePickDay')}
-          </p>
-          {mode === 'month' ? (
-            <input
-              type="month"
-              className="editor-preview-date-badge__input"
-              value={toMonthInputValue(info.anchor)}
-              onChange={e => handleMonthChange(e.target.value)}
-              aria-label={t('editor.previewDatePickMonth')}
-            />
+          {mode === 'range' ? (
+            <>
+              <label className="editor-preview-date-badge__field">
+                <span className="editor-preview-date-badge__popover-title">
+                  {t('editor.previewDatePickRangeStart')}
+                </span>
+                <input
+                  type="date"
+                  className="editor-preview-date-badge__input"
+                  value={toDateInputValue(displayRangeStart)}
+                  onChange={e => handleRangeStartChange(e.target.value)}
+                  aria-label={t('editor.previewDatePickRangeStart')}
+                />
+              </label>
+              <label className="editor-preview-date-badge__field">
+                <span className="editor-preview-date-badge__popover-title">
+                  {t('editor.previewDatePickRangeEnd')}
+                </span>
+                <input
+                  type="date"
+                  className="editor-preview-date-badge__input"
+                  value={toDateInputValue(displayRangeEnd)}
+                  onChange={e => handleRangeEndChange(e.target.value)}
+                  aria-label={t('editor.previewDatePickRangeEnd')}
+                />
+              </label>
+            </>
           ) : (
-            <input
-              type="date"
-              className="editor-preview-date-badge__input"
-              value={toDateInputValue(info.anchor)}
-              onChange={e => handleDateChange(e.target.value)}
-              aria-label={
-                currentImage.type === 'weekly-calendar'
-                  ? t('editor.previewDatePickWeek')
-                  : t('editor.previewDatePickDay')
-              }
-            />
+            <>
+              <p className="editor-preview-date-badge__popover-title">
+                {mode === 'month'
+                  ? t('editor.previewDatePickMonth')
+                  : currentImage.type === 'weekly-calendar'
+                    ? t('editor.previewDatePickWeek')
+                    : t('editor.previewDatePickDay')}
+              </p>
+              {mode === 'month' ? (
+                <input
+                  type="month"
+                  className="editor-preview-date-badge__input"
+                  value={toMonthInputValue(info.anchor)}
+                  onChange={e => handleMonthChange(e.target.value)}
+                  aria-label={t('editor.previewDatePickMonth')}
+                />
+              ) : (
+                <input
+                  type="date"
+                  className="editor-preview-date-badge__input"
+                  value={toDateInputValue(info.anchor)}
+                  onChange={e => handleDateChange(e.target.value)}
+                  aria-label={
+                    currentImage.type === 'weekly-calendar'
+                      ? t('editor.previewDatePickWeek')
+                      : t('editor.previewDatePickDay')
+                  }
+                />
+              )}
+            </>
           )}
           {info.isCustom ? (
             <button
@@ -189,7 +258,9 @@ export function EditorPreviewDateBadge() {
               className="editor-preview-date-badge__reset"
               onClick={handleReset}
             >
-              {t('editor.previewDateReset')}
+              {mode === 'range'
+                ? t('editor.previewDateResetRange')
+                : t('editor.previewDateReset')}
             </button>
           ) : null}
         </div>
