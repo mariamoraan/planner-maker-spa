@@ -16,10 +16,7 @@ try {
 
 const UPSTREAM_TIMEOUT_MS = 8_000;
 
-async function fetchUpstreamImage(downloadUrl: string): Promise<{
-  buffer: Buffer;
-  contentType: string;
-}> {
+async function openUpstreamImage(downloadUrl: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
   try {
@@ -34,12 +31,10 @@ async function fetchUpstreamImage(downloadUrl: string): Promise<{
     if (!upstream.ok) {
       throw new Error(`Upstream image fetch failed (${upstream.status})`);
     }
-    const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream';
-    const buffer = Buffer.from(await upstream.arrayBuffer());
-    if (buffer.byteLength === 0) {
+    if (!upstream.body) {
       throw new Error('Upstream image fetch returned empty body');
     }
-    return { buffer, contentType };
+    return upstream;
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Upstream image fetch timed out');
@@ -55,15 +50,21 @@ async function fetchUpstreamImage(downloadUrl: string): Promise<{
   }
 }
 
-/**
- * Resolve ticket → image bytes. Always streams through this server (no 302 to CDN),
- * because browser redirects to ufs.sh were hanging / leaving thumbs blank.
- */
-export async function loadImageBytesForTicket(ticket: string): Promise<{
-  buffer: Buffer;
+export type ImageContentStream = {
+  body: NonNullable<Response['body']>;
   contentType: string;
+  contentLength: string | null;
   fileKey: string;
-}> {
+};
+
+/**
+ * Resolve ticket → an open upstream image response. Always proxied through this
+ * server (no 302 to CDN), because browser redirects to ufs.sh were hanging.
+ *
+ * The body is returned unread so callers can stream it: buffering would cap
+ * images at Vercel's 4.5 MB non-streamed response limit.
+ */
+export async function openImageStreamForTicket(ticket: string): Promise<ImageContentStream> {
   const { fileKey } = verifyImageTicket(ticket);
 
   const candidates: string[] = [];
@@ -78,8 +79,13 @@ export async function loadImageBytesForTicket(ticket: string): Promise<{
   const errors: string[] = [];
   for (const candidate of candidates) {
     try {
-      const loaded = await fetchUpstreamImage(candidate);
-      return { ...loaded, fileKey };
+      const upstream = await openUpstreamImage(candidate);
+      return {
+        body: upstream.body!,
+        contentType: upstream.headers.get('content-type') ?? 'application/octet-stream',
+        contentLength: upstream.headers.get('content-length'),
+        fileKey,
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Upstream fetch failed';
       errors.push(message);

@@ -18,6 +18,7 @@ import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImag
 import { isDataUrl } from '@/core/functions/image-data-url';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { getCloudSrcAlt } from '@/features/template/infrastructure/uploadthing/image.adapter';
+import { isDisplaySrcFresh } from '@/features/template/infrastructure/uploadthing/content-ticket';
 import type { TemplatePageRecord } from '@/features/template/domain/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/canvas-snap';
 import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/domain/services/grid-group';
@@ -90,7 +91,8 @@ async function persistCloudImageRef(
   pageId: string,
   imageRef: ImageRef
 ): Promise<void> {
-  if (!isCloudImageStorageEnabled() || !imageRef.url) return;
+  // fileKey is what makes the image recoverable later; url is only a convenience.
+  if (!isCloudImageStorageEnabled() || (!imageRef.fileKey && !imageRef.url)) return;
   await getInfra().templates.updatePage(uid, templateId, pageId, { imageRef });
 }
 
@@ -120,9 +122,28 @@ async function loadPageSrc(uid: string | null, image: TemplateImage): Promise<Te
   };
 }
 
+export function pageNeedsImageLoad(image: TemplateImage): boolean {
+  return needsImageLoad(image);
+}
+
 function needsImageLoad(image: TemplateImage): boolean {
-  // Need a src. Same-origin content proxy URLs and data URLs are valid for <img>.
-  return !image.src;
+  // Need a src. Same-origin content proxy URLs and data URLs are valid for <img>,
+  // but a proxy ticket or signed CDN URL that has lapsed must be resolved again.
+  return !image.src || !isDisplaySrcFresh(image.src);
+}
+
+const inFlightPageLoads = new Map<string, Promise<TemplateImage>>();
+
+/** Collapses overlapping loads of the same page into one request. */
+function loadPageSrcOnce(uid: string | null, image: TemplateImage): Promise<TemplateImage> {
+  const existing = inFlightPageLoads.get(image.id);
+  if (existing) return existing;
+
+  const pending = loadPageSrc(uid, image).finally(() => {
+    inFlightPageLoads.delete(image.id);
+  });
+  inFlightPageLoads.set(image.id, pending);
+  return pending;
 }
 
 function withRepairedGridMetadata(image: TemplateImage): TemplateImage {
@@ -238,7 +259,9 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       const srcByPageId = new Map<string, string>();
       state.templates.forEach(t =>
         t.images.forEach(img => {
-          if (img.src) srcByPageId.set(img.id, img.src);
+          // Carrying a lapsed src across a resync would render a broken image
+          // and mask the fact that it needs resolving again.
+          if (img.src && isDisplaySrcFresh(img.src)) srcByPageId.set(img.id, img.src);
         })
       );
 
@@ -378,7 +401,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     if (toLoad.length === 0) return;
 
     const results = await mapWithConcurrency(toLoad, IMAGE_LOAD_CONCURRENCY, img =>
-      loadPageSrc(uid, img)
+      loadPageSrcOnce(uid, img)
     );
     const loadedById = new Map(
       results
@@ -409,7 +432,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     if (toLoad.length === 0) return;
 
     const results = await mapWithConcurrency(toLoad, IMAGE_LOAD_CONCURRENCY, img =>
-      loadPageSrc(uid, img)
+      loadPageSrcOnce(uid, img)
     );
     const loadedById = new Map(
       results

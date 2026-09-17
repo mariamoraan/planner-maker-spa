@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
-import { useTemplateStore } from '@/features/template/ui/stores/template-store';
+import { pageNeedsImageLoad, useTemplateStore } from '@/features/template/ui/stores/template-store';
+import { useImageLoadRetry } from '@/features/template/ui/hooks/use-image-load-retry';
 
 export const useHomeTemplates = () => {
   const templates = useTemplateStore(state => state.templates);
@@ -13,6 +14,19 @@ export const useHomeTemplates = () => {
         .join('|'),
     [templates],
   );
+
+  const pendingCount = useMemo(
+    () =>
+      isSyncReady
+        ? templates.reduce(
+            (total, template) => total + template.images.filter(pageNeedsImageLoad).length,
+            0,
+          )
+        : 0,
+    [templates, isSyncReady],
+  );
+
+  useImageLoadRetry(pendingCount, loadAllTemplateImages);
 
   useEffect(() => {
     if (!isSyncReady || !imageFingerprint) return;

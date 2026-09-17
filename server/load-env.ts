@@ -3,13 +3,14 @@ import path from 'node:path';
 
 function stripQuotes(value: string): string {
   const trimmed = value.trim();
-  if (
-    (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
-    (trimmed.startsWith('"') && trimmed.endsWith('"'))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
+  const quote = trimmed[0];
+  if (quote !== "'" && quote !== '"') return trimmed;
+
+  // Unquote up to the last matching quote rather than requiring the value to end
+  // with one, so a stray character after the closing quote does not leave the
+  // quotes baked into the secret.
+  const closing = trimmed.lastIndexOf(quote);
+  return closing > 0 ? trimmed.slice(1, closing) : trimmed.slice(1);
 }
 
 function readEnvFileValue(key: string, cwd = process.cwd()): string | undefined {

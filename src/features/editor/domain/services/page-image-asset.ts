@@ -36,7 +36,8 @@ export async function syncPageImageRefIfCloud(
   pageId: string,
   imageRef: ImageRef,
 ): Promise<void> {
-  if (!uid || !imageRef.url) return;
+  // fileKey is what makes the image recoverable later; url is only a convenience.
+  if (!uid || (!imageRef.fileKey && !imageRef.url)) return;
   await getInfra().templates.updatePage(uid, templateId, pageId, { imageRef });
 }
 

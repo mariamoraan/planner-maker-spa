@@ -17,25 +17,54 @@ export function isAllowedUploadthingHost(hostname: string): boolean {
   return ALLOWED_HOST_SUFFIXES.some(suffix => host.endsWith(suffix));
 }
 
-export function getUploadthingAppId(): string {
+/**
+ * Decode and validate the UploadThing token.
+ *
+ * The UploadThing SDK parses this value with a strict base64 decoder, while
+ * `Buffer.from(token, 'base64')` silently ignores malformed input. Validating
+ * strictly here keeps a bad token from reading as usable — otherwise `appId`
+ * resolves fine, `/api/images/url` returns 200, and only signing fails, which
+ * degrades reads to unsigned URLs instead of reporting a misconfiguration.
+ */
+function decodeUploadthingToken(): { apiKey: string; appId: string; regions: string[] } {
   const token = process.env.UPLOADTHING_TOKEN;
   if (!token) {
     throw new Error('UPLOADTHING_TOKEN is not configured');
   }
-  try {
-    const parsed = JSON.parse(Buffer.from(token, 'base64').toString('utf8')) as {
-      appId?: string;
-    };
-    if (typeof parsed.appId !== 'string' || !parsed.appId) {
-      throw new Error('UPLOADTHING_TOKEN missing appId');
-    }
-    return parsed.appId;
-  } catch (error) {
-    if (error instanceof Error && error.message.startsWith('UPLOADTHING_TOKEN')) {
-      throw error;
-    }
-    throw new Error('UPLOADTHING_TOKEN is invalid');
+
+  if (token.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(token)) {
+    throw new Error(
+      'UPLOADTHING_TOKEN is invalid: not strict base64. Check the env value for stray quotes, whitespace or truncation.'
+    );
   }
+
+  let parsed: { apiKey?: unknown; appId?: unknown; regions?: unknown };
+  try {
+    parsed = JSON.parse(Buffer.from(token, 'base64').toString('utf8'));
+  } catch {
+    throw new Error('UPLOADTHING_TOKEN is invalid: does not decode to JSON');
+  }
+
+  if (typeof parsed.appId !== 'string' || !parsed.appId) {
+    throw new Error('UPLOADTHING_TOKEN missing appId');
+  }
+  if (typeof parsed.apiKey !== 'string' || !parsed.apiKey) {
+    throw new Error('UPLOADTHING_TOKEN missing apiKey');
+  }
+  if (!Array.isArray(parsed.regions) || parsed.regions.length === 0) {
+    throw new Error('UPLOADTHING_TOKEN missing regions');
+  }
+
+  return { apiKey: parsed.apiKey, appId: parsed.appId, regions: parsed.regions as string[] };
+}
+
+export function getUploadthingAppId(): string {
+  return decodeUploadthingToken().appId;
+}
+
+/** Throw early (at boot) when the token cannot be used to sign URLs. */
+export function assertUploadthingTokenUsable(): void {
+  decodeUploadthingToken();
 }
 
 export function buildOfficialFileUrl(fileKey: string, appId = getUploadthingAppId()): string {
@@ -96,13 +125,9 @@ export async function generateSignedUploadthingUrl(
 
 export function statusForImageUrlError(message: string): number {
   if (message === 'Forbidden' || message.includes('Unauthorized')) return 403;
-  if (
-    message === 'fileKey or url is required' ||
-    message === 'Invalid image URL' ||
-    message === 'UPLOADTHING_TOKEN is not configured' ||
-    message === 'UPLOADTHING_TOKEN is invalid' ||
-    message === 'UPLOADTHING_TOKEN missing appId'
-  ) {
+  // Token problems are server misconfiguration, not bad client input.
+  if (message.startsWith('UPLOADTHING_TOKEN')) return 500;
+  if (message === 'fileKey or url is required' || message === 'Invalid image URL') {
     return 400;
   }
   if (message === 'Failed to generate signed URL') return 502;

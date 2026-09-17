@@ -9,6 +9,7 @@ import {
   uploadFiles,
   type CloudImageAccess,
 } from '@/features/template/infrastructure/uploadthing/client';
+import { isDisplaySrcFresh } from '@/features/template/infrastructure/uploadthing/content-ticket';
 
 function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(',');
@@ -27,8 +28,7 @@ function extensionForMime(mime: string): string {
   return 'png';
 }
 
-const sessionSrcCache = new Map<string, { src: string; srcAlt?: string; expiresAt: number }>();
-const SESSION_SRC_TTL_MS = 5 * 60 * 60 * 1000;
+const sessionSrcCache = new Map<string, { src: string; srcAlt?: string }>();
 
 /** Last resolved access per cache key — used to populate TemplateImage.srcAlt. */
 const lastAccessByKey = new Map<string, CloudImageAccess>();
@@ -41,11 +41,13 @@ export function getCloudSrcAlt(ref: ImageRef | undefined): string | undefined {
   if (!ref) return undefined;
   const key = sessionCacheKey(ref);
   const cached = sessionSrcCache.get(key);
-  if (cached?.srcAlt) return cached.srcAlt;
+  if (cached?.srcAlt && isDisplaySrcFresh(cached.srcAlt)) return cached.srcAlt;
   const access = lastAccessByKey.get(key);
   if (!access) return undefined;
   // Primary display is contentUrl; CDN signed URL is the fallback alt.
-  if (access.url && access.url !== access.contentUrl) return access.url;
+  if (access.url && access.url !== access.contentUrl && isDisplaySrcFresh(access.url)) {
+    return access.url;
+  }
   return undefined;
 }
 
@@ -106,8 +108,9 @@ export class UploadthingImageAdapter implements ImageAssetPort {
 
     const cacheKey = sessionCacheKey(ref);
     const cached = sessionSrcCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      // Prefer durable data URLs; reuse same-origin proxy / HTTPS session entries.
+    // Reuse only while the entry is still renderable: content-proxy tickets and
+    // signed CDN URLs both lapse, and a lapsed src renders as a broken image.
+    if (cached && isDisplaySrcFresh(cached.src)) {
       if (
         isDataUrl(cached.src) ||
         /^https?:\/\//i.test(cached.src) ||
@@ -116,6 +119,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
         return cached.src;
       }
     }
+    if (cached) sessionSrcCache.delete(cacheKey);
 
     const access = await resolveCloudImageAccess({
       fileKey: fileKey ?? undefined,
@@ -132,11 +136,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
 
     const srcAlt = access.url && access.url !== src ? access.url : undefined;
 
-    sessionSrcCache.set(cacheKey, {
-      src,
-      srcAlt,
-      expiresAt: Date.now() + SESSION_SRC_TTL_MS,
-    });
+    sessionSrcCache.set(cacheKey, { src, srcAlt });
     return src;
   }
 

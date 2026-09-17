@@ -1,4 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { createRouteHandler } from 'uploadthing/server';
 import { UTApi } from 'uploadthing/server';
 import { assertKeyBelongsToUser, verifyFirebaseToken, preloadFirebaseAdminFromEnv } from './firebase-admin';
@@ -7,7 +9,7 @@ import {
   type ImageUrlResolveBody,
 } from './uploadthing-url';
 import { resolveUploadthingImageAccess } from './image-access';
-import { loadImageBytesForTicket, statusForImageContentError } from './image-content';
+import { openImageStreamForTicket, statusForImageContentError } from './image-content';
 import { uploadRouter } from './uploadthing/core';
 
 let uploadthingHandler: ReturnType<typeof createRouteHandler> | null = null;
@@ -196,20 +198,27 @@ export async function handleImageContentApi(
       return;
     }
 
-    const { buffer, contentType } = await loadImageBytesForTicket(ticket);
+    const { body, contentType, contentLength } = await openImageStreamForTicket(ticket);
 
     res.statusCode = 200;
     res.setHeader('Content-Type', contentType);
     res.setHeader('Cache-Control', 'private, max-age=300');
-    res.setHeader('Content-Length', String(buffer.byteLength));
+    if (contentLength) res.setHeader('Content-Length', contentLength);
+
     if (req.method === 'HEAD') {
+      await body.cancel().catch(() => undefined);
       res.end();
       return;
     }
-    res.end(buffer);
+
+    await pipeline(Readable.fromWeb(body), res);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Content resolve failed';
     console.error('[dev-api/images/content]', message);
+    if (res.headersSent) {
+      res.end();
+      return;
+    }
     res.statusCode = statusForImageContentError(message);
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: message }));

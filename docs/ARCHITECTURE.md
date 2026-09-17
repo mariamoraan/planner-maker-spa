@@ -529,19 +529,125 @@ Production uses `VITE_IMAGE_STORAGE=cloud`. UploadThing is the primary store for
 | Route | `plannerImage` |
 | Max size | 10 MB |
 | Auth | Firebase ID token (input `idToken` or `Authorization: Bearer`) |
-| File key | `{uid}/{pageId}` (ownership enforced server-side) |
+| File key | Opaque UploadThing `file.key` (ownership via `customId` `{uid}/{pageId}/…`) |
 
 **Image storage modes:**
 
 | Mode | `VITE_IMAGE_STORAGE` | Storage | Use case |
 |------|---------------------|---------|----------|
-| Cloud | `cloud` | UploadThing + IndexedDB cache | Production (set explicitly; see `.env.example`) |
-| Local | unset / other | IndexedDB only | Offline / local-only image storage |
+| Cloud | `cloud` | UploadThing + IndexedDB cache | Production / cloud-backed local (set explicitly; see `.env.example`) |
+| Local | unset / other | IndexedDB only | Offline / when `*.ufs.sh` is unreachable from the machine |
 
 **Server files:**
 - `server/uploadthing/core.ts` — upload router with auth middleware
 - `api/uploadthing.ts` — Vercel serverless entry
+- `api/images/url.ts` — resolve signed CDN URL + content ticket
+- `api/images/content.ts` — same-origin byte proxy (server fetches UploadThing)
 - `api/images/delete.ts` — image deletion endpoint
+- `server/image-access.ts` / `server/image-content.ts` / `server/uploadthing-url.ts` — signing, tickets, upstream fetch
+
+**Related:** [IMAGE_CDN_INCIDENT.md](./IMAGE_CDN_INCIDENT.md) — diagnosis of intermittent blank covers when the CDN path fails.
+
+### Image pipeline (who stores what)
+
+Firebase does **not** store image pixels. It stores template/page metadata including `imageRef` (`provider`, `key`, optional `fileKey` / `url`). Pixels live in IndexedDB and/or UploadThing.
+
+| System | Stores | Role |
+|--------|--------|------|
+| Firebase Auth + Firestore | User, templates, pages, `imageRef` | Catalog + cross-device sync |
+| IndexedDB (browser) | Data URL / blob per `imageRef.key` | Fast local cache |
+| UploadThing | File bytes on CDN `*.ufs.sh` | Cloud source of truth |
+| App API (`/api/images/*`) | HMAC tickets; streams bytes | Auth bridge + CDN proxy |
+
+Wiring in `src/core/bootstrap/infra.ts`:
+
+- `cloud` → `CachingImageAdapter(UploadthingImageAdapter, IndexedDBImageAdapter)`
+- otherwise → IndexedDB only
+
+```mermaid
+flowchart TB
+  subgraph ui [UI Forma]
+    Home[Home / Editor]
+    ImgTag["img / Konva"]
+  end
+
+  subgraph fb [Firebase]
+    Auth[Auth ID token]
+    FS["Firestore pages + imageRef"]
+  end
+
+  subgraph browser [Browser]
+    IDB[(IndexedDB cache)]
+  end
+
+  subgraph api [Same-origin API]
+    UrlApi["POST /api/images/url"]
+    ContentApi["GET /api/images/content"]
+  end
+
+  subgraph ut [UploadThing]
+    UploadAPI[api.uploadthing.com]
+    CDN["CDN Cloudflare *.ufs.sh"]
+  end
+
+  Home -->|"sync pages"| FS
+  FS -->|"imageRef"| Home
+  Home -->|"load"| IDB
+  IDB -->|"data URL hit"| ImgTag
+  IDB -->|"miss"| UrlApi
+  Auth -->|"Bearer"| UrlApi
+  UrlApi -->|"ticket + signed URL"| Home
+  Home -->|"src preferred"| ContentApi
+  ContentApi -->|"Node fetch"| CDN
+  ContentApi -->|"bytes"| ImgTag
+  Home -.->|"srcAlt fallback"| CDN
+  Home -->|"upload"| UploadAPI
+  UploadAPI --> CDN
+```
+
+### Image load path (`cloud`)
+
+Triggered by `loadAllTemplateImages` / `loadTemplateImages` → `loadPageSrc` → `images.load(ref)`.
+
+1. Build `imageRef` candidates (Firestore ref, then `uid/pageId`, then legacy keys).
+2. **IndexedDB hit** (data URL) → use as `src` (no network to UploadThing).
+3. On miss → `POST /api/images/url` with Firebase ID token → `{ url: signed CDN, contentUrl: /api/images/content?t=… }`.
+4. Display prefers **same-origin `contentUrl`**; signed CDN is `srcAlt` if the proxy fails.
+5. On successful proxy fetch, hydrate IndexedDB with a data URL for the next load.
+
+```mermaid
+flowchart TD
+  Start[Page needs src] --> Cache{IndexedDB data URL?}
+  Cache -->|yes| ShowOK[Show image]
+  Cache -->|no| Resolve["POST /api/images/url"]
+  Resolve -->|no token / no fileKey / API error| Empty[missingLocalAsset]
+  Resolve -->|ok| Proxy["src = /api/images/content"]
+  Proxy --> Up{Server reaches ufs.sh?}
+  Up -->|yes| Bytes[Stream bytes + hydrate IDB]
+  Bytes --> ShowOK
+  Up -->|timeout 502| Alt[Try srcAlt CDN in browser]
+  Alt -->|ok| ShowOK
+  Alt -->|fail| Empty
+```
+
+### Image upload path (`cloud`)
+
+1. Client builds a data URL and calls `images.save` → UploadThing `plannerImage` (Firebase token).
+2. Server stores the file; returns `fileKey` + official `ufsUrl`.
+3. Firestore page `imageRef` is updated (`fileKey` / `url`).
+4. IndexedDB keeps the original data URL → UI shows the image immediately without reading the CDN.
+
+### Why covers can look intermittent
+
+| Situation | Path used | Typical result |
+|-----------|-----------|----------------|
+| Just uploaded on this browser | IndexedDB data URL | Always OK |
+| Hard refresh / same device, cache intact | IndexedDB | OK |
+| Cleared site data / other device | Proxy or CDN | Depends on reachability of `*.ufs.sh` |
+| Wi‑Fi: DNS resolves CDN but TCP `:443` times out | Local proxy + browser CDN both fail | Blank / spinner then empty |
+| Resolve never runs (`fileKey` missing, `/api/images/url` fails) | No `<img>` request | Empty cloud icon, no CDN traffic in Network |
+
+Upload API (`api.uploadthing.com`) and CDN (`*.ufs.sh`) are **different hosts**. Uploads can succeed while reads fail.
 
 ### Dev API (local development)
 

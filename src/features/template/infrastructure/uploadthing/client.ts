@@ -60,57 +60,105 @@ function toAbsoluteContentUrl(contentPath: string): string {
   return contentPath;
 }
 
-/** Resolve signed CDN + same-origin content URLs for a cloud image. */
+type ResolvePayload = {
+  url?: string;
+  contentUrl?: string;
+  fileKey?: string;
+};
+
+function toAccess(payload: ResolvePayload | null): CloudImageAccess | null {
+  if (!payload) return null;
+
+  const signed =
+    typeof payload.url === 'string' &&
+    /^https?:\/\//i.test(payload.url) &&
+    !/utfs\.io/i.test(payload.url)
+      ? payload.url
+      : null;
+  const contentPath =
+    typeof payload.contentUrl === 'string' && payload.contentUrl.startsWith('/')
+      ? payload.contentUrl
+      : null;
+
+  if (!signed && !contentPath) return null;
+
+  return {
+    url: signed ?? (contentPath ? toAbsoluteContentUrl(contentPath) : ''),
+    contentUrl: contentPath ? toAbsoluteContentUrl(contentPath) : signed ?? '',
+    fileKey: payload.fileKey,
+  };
+}
+
+const RESOLVE_ATTEMPTS = 3;
+const RESOLVE_BACKOFF_MS = [400, 1200];
+
+function isRetryableStatus(status: number): boolean {
+  // 401/403 can mean a stale ID token, which the next attempt force-refreshes.
+  return status === 401 || status === 403 || status === 429 || status >= 500;
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Resolve signed CDN + same-origin content URLs for a cloud image.
+ *
+ * Retries transient failures: swallowing them leaves the page marked as a
+ * missing asset, and nothing re-requests it until a full reload.
+ */
 export async function resolveCloudImageAccess(
   input: CloudImageResolveInput
 ): Promise<CloudImageAccess | null> {
   if (!input.url && !input.fileKey && !input.key) return null;
 
-  try {
-    const token = await getFirebaseIdToken();
-    if (!token) return null;
+  let lastError = 'unknown error';
 
-    const response = await fetch(resolveImageUrlApi(), {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: input.url,
-        fileKey: input.fileKey,
-        key: input.key,
-      }),
-    });
+  for (let attempt = 0; attempt < RESOLVE_ATTEMPTS; attempt += 1) {
+    const token = await getFirebaseIdToken(attempt > 0);
+    if (!token) {
+      lastError = 'no Firebase ID token (not signed in)';
+      break;
+    }
 
-    if (!response.ok) return null;
-    const payload = (await response.json()) as {
-      url?: string;
-      contentUrl?: string;
-      fileKey?: string;
-    };
+    let response: Response;
+    try {
+      response = await fetch(resolveImageUrlApi(), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: input.url,
+          fileKey: input.fileKey,
+          key: input.key,
+        }),
+      });
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : 'network error';
+      if (attempt < RESOLVE_ATTEMPTS - 1) await wait(RESOLVE_BACKOFF_MS[attempt] ?? 1200);
+      continue;
+    }
 
-    const signed =
-      typeof payload.url === 'string' &&
-      /^https?:\/\//i.test(payload.url) &&
-      !/utfs\.io/i.test(payload.url)
-        ? payload.url
-        : null;
-    const contentPath =
-      typeof payload.contentUrl === 'string' && payload.contentUrl.startsWith('/')
-        ? payload.contentUrl
-        : null;
+    if (response.ok) {
+      const payload = (await response.json().catch(() => null)) as ResolvePayload | null;
+      const access = toAccess(payload);
+      if (access) return access;
+      lastError = 'response missing a usable URL';
+      break;
+    }
 
-    if (!signed && !contentPath) return null;
-
-    return {
-      url: signed ?? (contentPath ? toAbsoluteContentUrl(contentPath) : ''),
-      contentUrl: contentPath ? toAbsoluteContentUrl(contentPath) : signed ?? '',
-      fileKey: payload.fileKey,
-    };
-  } catch {
-    return null;
+    lastError = `HTTP ${response.status}`;
+    if (!isRetryableStatus(response.status)) break;
+    if (attempt < RESOLVE_ATTEMPTS - 1) await wait(RESOLVE_BACKOFF_MS[attempt] ?? 1200);
   }
+
+  console.warn('[image-access] failed to resolve cloud image:', lastError, {
+    fileKey: input.fileKey,
+    key: input.key,
+  });
+  return null;
 }
 
 /**

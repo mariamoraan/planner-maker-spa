@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { MissingPageImage } from '@/features/editor/ui/components/canvas/missing-page-image';
 import { GeneratorDialog } from '@/features/export/ui/components/planner-generator-dialog/planner-generator-dialog';
 import { ExportProgressCard } from '@/features/export/ui/components/export-progress-card/export-progress-card';
-import { useTemplateStore } from '@/features/template/ui/stores/template-store';
+import { pageNeedsImageLoad, useTemplateStore } from '@/features/template/ui/stores/template-store';
+import { useImageLoadRetry } from '@/features/template/ui/hooks/use-image-load-retry';
 import { motion } from 'framer-motion';
 import { EditorBoard } from '@/features/editor/ui/components/editor-board/editor-board';
 import { Navigate } from 'react-router-dom';
@@ -56,6 +57,17 @@ const TemplateEditor: React.FC = () => {
       cancelled = true;
     };
   }, [templateId, loadTemplateImages, normalizeImageOrder]);
+
+  const pendingImageCount = useMemo(
+    () => currentTemplate?.images.filter(pageNeedsImageLoad).length ?? 0,
+    [currentTemplate],
+  );
+
+  const reloadImages = useCallback(async () => {
+    if (templateId) await loadTemplateImages(templateId);
+  }, [templateId, loadTemplateImages]);
+
+  useImageLoadRetry(pendingImageCount, reloadImages);
 
   useEffect(() => {
     if (!templateId || !currentTemplate) return;

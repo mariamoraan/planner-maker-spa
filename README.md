@@ -243,7 +243,9 @@ See [`.env.example`](.env.example) for the full list and [docs/ARCHITECTURE.md#e
 
 ### Cloud image storage
 
-Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin credentials. The dev server serves upload/delete API routes on the same port (8080). Set `VITE_IMAGE_STORAGE=local` only for offline development without UploadThing. See [docs/ARCHITECTURE.md#integrations](docs/ARCHITECTURE.md#integrations) for the full setup.
+Production uses `VITE_IMAGE_STORAGE=cloud` with UploadThing + Firebase Admin credentials. The dev server serves upload/delete/content API routes on the same port (8080). Set `VITE_IMAGE_STORAGE=local` for offline development or when `*.ufs.sh` is unreachable from your network.
+
+See [docs/ARCHITECTURE.md#image-pipeline-who-stores-what](docs/ARCHITECTURE.md#image-pipeline-who-stores-what) for the load/upload flow, and [docs/IMAGE_CDN_INCIDENT.md](docs/IMAGE_CDN_INCIDENT.md) for the intermittent blank-cover diagnosis.
 
 ---
 
