@@ -60,8 +60,8 @@ export type FontId =
   | 'gloria'
   | 'great-vibes';
 
-/** Default for new planners (Amark brand serif). */
-export const DEFAULT_PLANNER_FONT_ID: FontId = 'playfair';
+/** Default for new planners and new blocks. */
+export const DEFAULT_PLANNER_FONT_ID: FontId = 'montserrat';
 
 /** Pre-brand default stamped on older blocks without `defaultFontId`. */
 export const LEGACY_DEFAULT_FONT_ID: FontId = 'gloria';
