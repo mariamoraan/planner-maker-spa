@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import type { FieldStyle, FormatVariant, GridGroup, Rectangle } from '@/features/template';
+import { useTemplateStore } from '@/features/template';
 import {
   FIELD_FORMAT_REGISTRY,
   getFormatVariant,
   isValidHexColor,
+  normalizeHexColor,
   resolveFieldStyle,
   resolvePlannerDefaultFontId,
+  upsertCustomColor,
 } from '@/features/editor/domain/services/field-style-config';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
@@ -16,7 +19,9 @@ export const useGridStyleEditing = (
 ) => {
   const { updateGroupStyle, updateGroupFormatVariant } = useGridGroupOps();
   const template = useCurrentTemplate();
+  const updateTemplate = useTemplateStore(s => s.updateTemplate);
   const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
+  const customColors = template?.customColors ?? [];
   const [hexInput, setHexInput] = useState('');
 
   const representativeRect = group
@@ -39,6 +44,13 @@ export const useGridStyleEditing = (
     updateGroupStyle(group.id, updates);
   };
 
+  const rememberCustomColor = (color: string) => {
+    if (!template) return;
+    const next = upsertCustomColor(customColors, color);
+    if (next === customColors || next.join(',') === customColors.join(',')) return;
+    updateTemplate(template.id, { customColors: next });
+  };
+
   const handleFormatChange = (variant: FormatVariant) => {
     updateGroupFormatVariant(group.id, variant);
   };
@@ -51,7 +63,9 @@ export const useGridStyleEditing = (
   const handleHexBlur = () => {
     const value = hexInput.trim();
     if (isValidHexColor(value)) {
-      updateStyle({ color: value });
+      const normalized = normalizeHexColor(value) ?? value;
+      updateStyle({ color: normalized });
+      rememberCustomColor(normalized);
     } else {
       setHexInput(style.color);
     }
@@ -69,6 +83,7 @@ export const useGridStyleEditing = (
     style,
     formatVariant,
     formatOptions,
+    customColors,
     updateStyle,
     handleFormatChange,
     handleColorPreset,

@@ -34,6 +34,14 @@
 
     &--fonts {
       flex-direction: column;
+      flex-wrap: nowrap;
+      width: 100%;
+      max-width: 100%;
+      max-height: min(280px, 40vh);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 2px;
+      scrollbar-width: thin;
     }
 
     &--text-case {
@@ -70,18 +78,21 @@
   &__color-row {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
 
     &--toolbar-popover {
       flex-direction: column;
       align-items: stretch;
+      flex-wrap: nowrap;
       gap: 12px;
     }
 
     &__presets {
       display: flex;
       flex-wrap: wrap;
-      gap: 12px;
+      gap: 8px;
+      max-width: 100%;
     }
   }
 
@@ -89,18 +100,17 @@
     width: 24px;
     height: 24px;
     border-radius: 50%;
-    border: 2px solid transparent;
+    border: 1px solid transparent;
     cursor: pointer;
     flex-shrink: 0;
-    transition: 200ms ease;
+    transition: border-color 150ms ease, box-shadow 150ms ease;
 
     &--white {
-      border-color: #ececec;
+      border-color: #e0e0e0;
     }
 
     &--active {
-      border-color: #1f2a3d;
-      box-shadow: 0 0 0 2px #fff, 0 0 0 4px #1f2a3d;
+      box-shadow: 0 0 0 1.5px rgba(31, 42, 61, 0.4);
     }
   }
 
@@ -215,6 +225,7 @@
     z-index: 10;
     padding: 16px;
     min-width: 160px;
+    max-width: min(260px, 80vw);
     display: none;
     background: white;
     border-radius: 16px;
@@ -226,6 +237,7 @@
 
     &--color {
       min-width: 200px;
+      max-width: min(280px, 80vw);
 
       .area-style-controls__hex-input {
         flex: none;

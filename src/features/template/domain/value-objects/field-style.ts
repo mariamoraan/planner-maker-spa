@@ -36,12 +36,25 @@ export type CompositePart =
   | { kind: 'literal'; value: string };
 
 export type FontId =
+  | 'montserrat'
+  | 'poppins'
+  | 'lato'
+  | 'open-sans'
+  | 'raleway'
+  | 'roboto'
   | 'playfair'
+  | 'cormorant-garamond'
+  | 'lora'
+  | 'quicksand'
+  | 'bebas-neue'
+  | 'dancing-script'
+  | 'pacifico'
+  | 'sacramento'
+  | 'amatic-sc'
   | 'source-serif'
   | 'dm-sans'
   | 'gloria'
-  | 'great-vibes'
-  | 'lato';
+  | 'great-vibes';
 
 /** Default for new planners (Amark brand serif). */
 export const DEFAULT_PLANNER_FONT_ID: FontId = 'playfair';

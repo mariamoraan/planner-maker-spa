@@ -1,7 +1,7 @@
 import type { FieldType } from '../value-objects/field-style';
 import type { TemplateType } from '../value-objects/planner-locale';
 
-/** Modern editorial ink palette — muted hues, low-fill chrome. */
+/** Editorial ink palette — clearer hue + contrast, still unified (not neon UI). */
 export const FIELD_TYPE_CONFIG: Record<
   FieldType,
   {
@@ -13,44 +13,44 @@ export const FIELD_TYPE_CONFIG: Record<
 > = {
   year: {
     label: 'Year',
-    color: 'hsl(215, 22%, 42%)',
-    bgColor: 'hsla(215, 22%, 42%, 0.1)',
+    color: 'hsl(215, 48%, 44%)',
+    bgColor: 'hsla(215, 48%, 44%, 0.14)',
     description: 'Displays the year (e.g., 2024)',
   },
   month: {
     label: 'Month',
-    color: 'hsl(175, 18%, 36%)',
-    bgColor: 'hsla(175, 18%, 36%, 0.1)',
+    color: 'hsl(172, 42%, 36%)',
+    bgColor: 'hsla(172, 42%, 36%, 0.14)',
     description: 'Displays the month name (e.g., January)',
   },
   day: {
     label: 'Day',
-    color: 'hsl(18, 28%, 44%)',
-    bgColor: 'hsla(18, 28%, 44%, 0.1)',
+    color: 'hsl(18, 55%, 46%)',
+    bgColor: 'hsla(18, 55%, 46%, 0.14)',
     description: 'Displays day numbers or date ranges',
   },
   startDay: {
     label: 'Start Day',
-    color: 'hsl(38, 24%, 42%)',
-    bgColor: 'hsla(38, 24%, 42%, 0.1)',
+    color: 'hsl(40, 52%, 42%)',
+    bgColor: 'hsla(40, 52%, 42%, 0.14)',
     description: 'Displays the start of the page date range',
   },
   endDay: {
     label: 'End Day',
-    color: 'hsl(8, 30%, 44%)',
-    bgColor: 'hsla(8, 30%, 44%, 0.1)',
+    color: 'hsl(8, 58%, 46%)',
+    bgColor: 'hsla(8, 58%, 46%, 0.14)',
     description: 'Displays the end of the page date range',
   },
   weekNumber: {
     label: 'Week',
-    color: 'hsl(205, 20%, 40%)',
-    bgColor: 'hsla(205, 20%, 40%, 0.1)',
+    color: 'hsl(200, 48%, 42%)',
+    bgColor: 'hsla(200, 48%, 42%, 0.14)',
     description: 'Displays the ISO week number',
   },
   composite: {
     label: 'Composite',
-    color: 'hsl(265, 16%, 44%)',
-    bgColor: 'hsla(265, 16%, 44%, 0.1)',
+    color: 'hsl(272, 40%, 48%)',
+    bgColor: 'hsla(272, 40%, 48%, 0.14)',
     description: 'Combines date parts into one block',
   },
 };

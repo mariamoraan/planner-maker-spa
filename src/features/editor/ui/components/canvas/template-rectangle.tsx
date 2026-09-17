@@ -219,8 +219,8 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
           <Rect
             width={width}
             height={height}
-            fill="hsla(175, 18%, 36%, 0.08)"
-            stroke="hsl(175, 18%, 36%)"
+            fill="hsla(172, 42%, 36%, 0.1)"
+            stroke="hsl(172, 42%, 36%)"
             strokeWidth={1.5}
             cornerRadius={0}
             listening={false}

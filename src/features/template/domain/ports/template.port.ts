@@ -23,6 +23,7 @@ export type TemplateRecord = {
   weekStartsOn?: WeekStartsOn;
   paperSize?: PaperSize;
   defaultFontId?: FontId;
+  customColors?: string[];
 };
 
 export type Unsubscribe = () => void;

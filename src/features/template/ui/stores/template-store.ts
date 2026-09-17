@@ -362,6 +362,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
         weekStartsOn: updates.weekStartsOn,
         defaultFontId: updates.defaultFontId,
         paperSize: updates.paperSize,
+        customColors: updates.customColors,
       });
     }
   },

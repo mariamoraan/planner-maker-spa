@@ -170,6 +170,7 @@
         flex: 1;
         min-height: 0;
         overflow-y: auto;
+        overflow-x: hidden;
         gap: 4px;
         scrollbar-width: thin;
         scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
@@ -258,7 +259,8 @@
                 flex-direction: column;
                 gap: 12px;
                 padding-top: 10px;
-                padding-inline: 2px;
+                /* Room for select focus ring (box-shadow spreads ~4px). */
+                padding-inline: 6px;
             }
 
             &__content__title {
@@ -298,9 +300,17 @@
 
     &__locale-select {
         width: 100%;
+        max-width: 100%;
         height: 2.25rem;
         border-radius: 8px;
         font-size: 13px;
+        box-sizing: border-box;
+
+        &:focus,
+        &:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 2px hsl(var(--ring) / 0.45);
+        }
     }
 }
 

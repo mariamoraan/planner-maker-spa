@@ -62,12 +62,25 @@ export const TEXT_ALIGN_REGISTRY: readonly TextAlignOption[] = [
 ] as const;
 
 export const FONT_REGISTRY: readonly FontOption[] = [
-  { id: 'playfair', label: 'Playfair', family: 'Playfair Display' },
+  { id: 'montserrat', label: 'Montserrat', family: 'Montserrat' },
+  { id: 'poppins', label: 'Poppins', family: 'Poppins' },
+  { id: 'lato', label: 'Lato', family: 'Lato' },
+  { id: 'open-sans', label: 'Open Sans', family: 'Open Sans' },
+  { id: 'raleway', label: 'Raleway', family: 'Raleway' },
+  { id: 'roboto', label: 'Roboto', family: 'Roboto' },
+  { id: 'playfair', label: 'Playfair Display', family: 'Playfair Display' },
+  { id: 'cormorant-garamond', label: 'Cormorant Garamond', family: 'Cormorant Garamond' },
+  { id: 'lora', label: 'Lora', family: 'Lora' },
+  { id: 'quicksand', label: 'Quicksand', family: 'Quicksand' },
+  { id: 'bebas-neue', label: 'Bebas Neue', family: 'Bebas Neue' },
+  { id: 'dancing-script', label: 'Dancing Script', family: 'Dancing Script' },
+  { id: 'pacifico', label: 'Pacifico', family: 'Pacifico' },
+  { id: 'sacramento', label: 'Sacramento', family: 'Sacramento' },
+  { id: 'amatic-sc', label: 'Amatic SC', family: 'Amatic SC' },
   { id: 'source-serif', label: 'Source Serif', family: 'Source Serif 4' },
   { id: 'dm-sans', label: 'DM Sans', family: 'DM Sans' },
   { id: 'gloria', label: 'Gloria', family: 'Gloria Hallelujah' },
   { id: 'great-vibes', label: 'Great Vibes', family: 'Great Vibes' },
-  { id: 'lato', label: 'Lato', family: 'Lato' },
 ] as const;
 
 export const COLOR_PRESET_REGISTRY: readonly ColorPreset[] = [
@@ -184,6 +197,39 @@ export function resolveFontFamily(fontId: FontId): string {
 
 export function isValidHexColor(value: string): boolean {
   return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value);
+}
+
+export const MAX_CUSTOM_COLORS = 20;
+
+/** Expand `#rgb` → `#rrggbb` and lowercase. Returns null if invalid. */
+export function normalizeHexColor(value: string): string | null {
+  const trimmed = value.trim();
+  if (!isValidHexColor(trimmed)) return null;
+  const hex = trimmed.slice(1).toLowerCase();
+  if (hex.length === 3) {
+    return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`;
+  }
+  return `#${hex}`;
+}
+
+export function isColorPresetValue(value: string): boolean {
+  const normalized = normalizeHexColor(value);
+  if (!normalized) return false;
+  return COLOR_PRESET_REGISTRY.some(
+    preset => normalizeHexColor(preset.value) === normalized,
+  );
+}
+
+/** Prepend color (skip presets), dedupe, keep most recent first, cap at max. */
+export function upsertCustomColor(
+  existing: string[],
+  color: string,
+  max: number = MAX_CUSTOM_COLORS,
+): string[] {
+  const normalized = normalizeHexColor(color);
+  if (!normalized || isColorPresetValue(normalized)) return existing;
+  const without = existing.filter(c => normalizeHexColor(c) !== normalized);
+  return [normalized, ...without].slice(0, max);
 }
 
 export function isYearFormatVariant(value: FormatVariant): value is YearFormatVariant {

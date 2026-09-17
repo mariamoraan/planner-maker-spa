@@ -29,7 +29,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   currentImageId: null,
   selectedRectangleIds: [],
   selectedFieldType: undefined,
-  showRectangleGuides: true,
+  showRectangleGuides: false,
   canvasTool: 'select',
   gridEditFocus: 'grid',
 
@@ -61,7 +61,7 @@ export const useEditorStore = create<EditorState>((set) => ({
       currentImageId: null,
       selectedRectangleIds: [],
       selectedFieldType: undefined,
-      showRectangleGuides: true,
+      showRectangleGuides: false,
       canvasTool: 'select',
       gridEditFocus: 'grid',
     }),

@@ -10,6 +10,7 @@ import {
   FONT_REGISTRY,
   TEXT_ALIGN_REGISTRY,
   TEXT_CASE_REGISTRY,
+  normalizeHexColor,
 } from '@/features/editor/domain/services/field-style-config';
 import type { FontId, FormatVariant, Rectangle, TextAlign, TextCase } from '@/features/template';
 import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, CaseSensitiveIcon, FontIcon } from '@/core/icons';
@@ -25,6 +26,10 @@ function TextAlignIcon({ align, size = 16 }: { align: TextAlign; size?: number }
     case 'right':
       return <AlignRightIcon size={size} />;
   }
+}
+
+function isNearWhite(color: string): boolean {
+  return normalizeHexColor(color) === '#ffffff';
 }
 
 interface AreaStyleControlsProps {
@@ -59,6 +64,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     style,
     formatVariant,
     formatOptions,
+    customColors,
     updateStyle,
     handleFormatChange,
     handleColorPreset,
@@ -68,10 +74,44 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     displayHex,
   } = editing;
 
+  const activeColor = normalizeHexColor(style.color) ?? style.color.toLowerCase();
+
   const togglePopover = (id: PopoverId) => (e: React.MouseEvent) => {
     e.stopPropagation();
     setOpenPopover(prev => (prev === id ? null : id));
   };
+
+  const colorSwatches = (
+    <div className="area-style-controls__color-row__presets">
+      {COLOR_PRESET_REGISTRY.map(preset => (
+        <button
+          key={preset.id}
+          type="button"
+          className={clsx('area-style-controls__color-swatch', {
+            'area-style-controls__color-swatch--active':
+              activeColor === normalizeHexColor(preset.value),
+            'area-style-controls__color-swatch--white': preset.id === 'white',
+          })}
+          style={{ backgroundColor: preset.value }}
+          title={preset.label}
+          onClick={() => handleColorPreset(preset.value)}
+        />
+      ))}
+      {customColors.map(color => (
+        <button
+          key={color}
+          type="button"
+          className={clsx('area-style-controls__color-swatch', {
+            'area-style-controls__color-swatch--active': activeColor === color,
+            'area-style-controls__color-swatch--white': isNearWhite(color),
+          })}
+          style={{ backgroundColor: color }}
+          title={color}
+          onClick={() => handleColorPreset(color)}
+        />
+      ))}
+    </div>
+  );
 
   const formatGroup = (
     <div className="area-style-controls__group">
@@ -98,20 +138,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     <div className="area-style-controls__group">
       <p className="area-style-controls__label">Color</p>
       <div className="area-style-controls__color-row">
-        {COLOR_PRESET_REGISTRY.map(preset => (
-          <button
-            key={preset.id}
-            type="button"
-            className={clsx('area-style-controls__color-swatch', {
-              'area-style-controls__color-swatch--active':
-                style.color.toLowerCase() === preset.value.toLowerCase(),
-              'area-style-controls__color-swatch--white': preset.id === 'white',
-            })}
-            style={{ backgroundColor: preset.value }}
-            title={preset.label}
-            onClick={() => handleColorPreset(preset.value)}
-          />
-        ))}
+        {colorSwatches}
         <Input
           className="area-style-controls__hex-input"
           value={displayHex}
@@ -287,22 +314,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
           onMouseDown={e => e.stopPropagation()}
         >
           <div className="area-style-controls__color-row area-style-controls__color-row--toolbar-popover">
-            <div className="area-style-controls__color-row__presets">
-            {COLOR_PRESET_REGISTRY.map(preset => (
-              <button
-                key={preset.id}
-                type="button"
-                className={clsx('area-style-controls__color-swatch', {
-                  'area-style-controls__color-swatch--active':
-                    style.color.toLowerCase() === preset.value.toLowerCase(),
-                  'area-style-controls__color-swatch--white': preset.id === 'white',
-                })}
-                style={{ backgroundColor: preset.value }}
-                title={preset.label}
-                onClick={() => handleColorPreset(preset.value)}
-              />
-            ))}
-            </div>
+            {colorSwatches}
             <Input
               className="area-style-controls__hex-input"
               value={displayHex}

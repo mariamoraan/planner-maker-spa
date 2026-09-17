@@ -32,13 +32,13 @@
   --sidebar-ring: 168 76% 42%;
   --canvas-bg: 40 20% 96%;
   --canvas-grid: 220 13% 85%;
-  --field-year: 215 22% 42%;
-  --field-month: 175 18% 36%;
-  --field-day: 18 28% 44%;
-  --field-start-day: 38 24% 42%;
-  --field-end-day: 8 30% 44%;
-  --field-week-number: 205 20% 40%;
-  --field-composite: 265 16% 44%;
+  --field-year: 215 48% 44%;
+  --field-month: 172 42% 36%;
+  --field-day: 18 55% 46%;
+  --field-start-day: 40 52% 42%;
+  --field-end-day: 8 58% 46%;
+  --field-week-number: 200 48% 42%;
+  --field-composite: 272 40% 48%;
   --field-border: 220 10% 30%;
   --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.05);
   --shadow-md: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
@@ -242,37 +242,37 @@ img, video {
 }
 
 .field-year {
-  background: hsl(var(--field-year) / 0.1);
+  background: hsl(var(--field-year) / 0.14);
   border-color: hsl(var(--field-year));
 }
 
 .field-month {
-  background: hsl(var(--field-month) / 0.1);
+  background: hsl(var(--field-month) / 0.14);
   border-color: hsl(var(--field-month));
 }
 
 .field-day {
-  background: hsl(var(--field-day) / 0.1);
+  background: hsl(var(--field-day) / 0.14);
   border-color: hsl(var(--field-day));
 }
 
 .field-start-day {
-  background: hsl(var(--field-start-day) / 0.1);
+  background: hsl(var(--field-start-day) / 0.14);
   border-color: hsl(var(--field-start-day));
 }
 
 .field-end-day {
-  background: hsl(var(--field-end-day) / 0.1);
+  background: hsl(var(--field-end-day) / 0.14);
   border-color: hsl(var(--field-end-day));
 }
 
 .field-week-number {
-  background: hsl(var(--field-week-number) / 0.1);
+  background: hsl(var(--field-week-number) / 0.14);
   border-color: hsl(var(--field-week-number));
 }
 
 .field-composite {
-  background: hsl(var(--field-composite) / 0.1);
+  background: hsl(var(--field-composite) / 0.14);
   border-color: hsl(var(--field-composite));
 }
 

@@ -5,15 +5,20 @@ import {
   FIELD_FORMAT_REGISTRY,
   getFormatVariant,
   isValidHexColor,
+  normalizeHexColor,
   resolveFieldStyle,
   resolvePlannerDefaultFontId,
+  upsertCustomColor,
 } from '@/features/editor/domain/services/field-style-config';
 import type { FieldStyle, FormatVariant, Rectangle } from '@/features/template';
+import { useTemplateStore } from '@/features/template';
 
 export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => {
   const { updateArea } = useManageAreas();
   const template = useCurrentTemplate();
+  const updateTemplate = useTemplateStore(s => s.updateTemplate);
   const plannerFontId = resolvePlannerDefaultFontId(template?.defaultFontId);
+  const customColors = template?.customColors ?? [];
   const [hexInput, setHexInput] = useState('');
 
   useEffect(() => {
@@ -34,6 +39,13 @@ export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => 
     });
   };
 
+  const rememberCustomColor = (color: string) => {
+    if (!template) return;
+    const next = upsertCustomColor(customColors, color);
+    if (next === customColors || next.join(',') === customColors.join(',')) return;
+    updateTemplate(template.id, { customColors: next });
+  };
+
   const handleFormatChange = (variant: FormatVariant) => {
     updateArea(rectangle.id, { formatVariant: variant });
   };
@@ -46,7 +58,9 @@ export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => 
   const handleHexBlur = () => {
     const value = hexInput.trim();
     if (isValidHexColor(value)) {
-      updateStyle({ color: value });
+      const normalized = normalizeHexColor(value) ?? value;
+      updateStyle({ color: normalized });
+      rememberCustomColor(normalized);
     } else {
       setHexInput(style.color);
     }
@@ -64,6 +78,7 @@ export const useAreaStyleEditing = (rectangle: Rectangle | null | undefined) => 
     style,
     formatVariant,
     formatOptions,
+    customColors,
     updateStyle,
     handleFormatChange,
     handleColorPreset,

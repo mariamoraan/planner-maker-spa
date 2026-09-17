@@ -145,6 +145,9 @@ function mapTemplate(
     weekStartsOn: data.weekStartsOn as Template['weekStartsOn'],
     defaultFontId: data.defaultFontId as Template['defaultFontId'],
     paperSize: normalizePaperSize(data.paperSize),
+    customColors: Array.isArray(data.customColors)
+      ? data.customColors.filter((c): c is string => typeof c === 'string')
+      : undefined,
   };
 }
 
@@ -247,6 +250,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       weekStartsOn: template.weekStartsOn ?? null,
       defaultFontId: template.defaultFontId ?? null,
       paperSize: template.paperSize ?? null,
+      customColors: template.customColors ?? [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -267,6 +271,7 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     if (updates.weekStartsOn !== undefined) payload.weekStartsOn = updates.weekStartsOn ?? null;
     if (updates.defaultFontId !== undefined) payload.defaultFontId = updates.defaultFontId ?? null;
     if (updates.paperSize !== undefined) payload.paperSize = updates.paperSize ?? null;
+    if (updates.customColors !== undefined) payload.customColors = updates.customColors ?? [];
     await updateDoc(templateRef(uid, templateId), payload);
   }
 

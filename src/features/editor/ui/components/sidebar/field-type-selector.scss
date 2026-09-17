@@ -55,8 +55,8 @@
     }
 
     &--active {
-      border-color: hsl(175, 18%, 36%);
-      background: hsla(175, 18%, 36%, 0.1);
+      border-color: hsl(172, 42%, 36%);
+      background: hsla(172, 42%, 36%, 0.14);
     }
 
     &__icon-wrapper {
@@ -76,8 +76,8 @@
     padding: 0;
     border: 1px solid transparent;
     border-radius: 12px;
-    background: hsla(175, 18%, 36%, 0.1);
-    color: hsl(175, 18%, 36%);
+    background: hsla(172, 42%, 36%, 0.14);
+    color: hsl(172, 42%, 36%);
     transition: 200ms ease;
     outline: none;
     cursor: pointer;
@@ -87,7 +87,7 @@
     }
 
     &--active {
-      border-color: hsl(175, 18%, 36%);
+      border-color: hsl(172, 42%, 36%);
     }
 
     &__icon-wrapper {

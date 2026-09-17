@@ -17,4 +17,6 @@ export interface Template {
   weekStartsOn?: WeekStartsOn;
   /** General typography for dynamic blocks; per-block style.fontId overrides. */
   defaultFontId?: FontId;
+  /** Recently used custom hex colors for this planner (most recent first, max 20). */
+  customColors?: string[];
 }
