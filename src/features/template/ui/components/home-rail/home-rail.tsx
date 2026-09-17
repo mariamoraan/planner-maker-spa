@@ -2,6 +2,7 @@ import './home-rail.scss';
 
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Calendar,
   Image as ImageIcon,
@@ -30,6 +31,7 @@ interface HomeRailProps {
 }
 
 export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps) => {
+  const { t } = useTranslation();
   const hasProjects = templates.length > 0;
 
   const recentTemplates = useMemo(
@@ -46,7 +48,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
         <header className="home-rail__header">
           <Link to={PATHS.landing} className="home-rail__logo">
             <LayoutTemplate className="home-rail__logo-icon" aria-hidden="true" />
-            Forma
+            {t('common.appName')}
           </Link>
           <p className="home-rail__tagline">Planners dinámicos</p>
         </header>
@@ -102,7 +104,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
 
         <div className="home-rail__footer">
           <Link to={PATHS.landing} className="home-rail__explore-link">
-            Explorar Forma
+            {t('home.exploreBrand')}
           </Link>
           <AddTemplateButton label="Nuevo proyecto" />
         </div>

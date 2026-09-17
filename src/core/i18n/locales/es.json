@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Forma",
+    "appName": "Amark",
     "loading": "Cargando…",
     "cancel": "Cancelar",
     "continue": "Continuar",
@@ -33,10 +33,14 @@
       "title": "Tu diseño. 365 páginas fechadas. 15 minutos.",
       "subtitle": "Para creadoras de planners que pierden horas duplicando spreads en Canva o Photoshop — sube tu layout una vez y obtén un PDF listo para imprimir automáticamente.",
       "cta": "Unirme a la lista de espera",
-      "pills": ["Tu propio diseño", "PDF print-ready", "Calendarios EN / ES"]
+      "pills": [
+        "Tu propio diseño",
+        "PDF print-ready",
+        "Calendarios EN / ES"
+      ]
     },
     "showcase": {
-      "url": "forma.app/editor",
+      "url": "amark.app/editor",
       "templateName": "Planner Semanal 2026",
       "blockMonth": "Mes",
       "blockDay": "Día",
@@ -44,10 +48,10 @@
       "sampleDay": "Lun 6",
       "startDate": "1 ene 2026",
       "endDate": "31 dic 2026",
-      "a11yLabel": "Vista previa animada del flujo de trabajo del editor Forma"
+      "a11yLabel": "Vista previa animada del flujo de trabajo del editor Amark"
     },
     "compare": {
-      "title": "Manual vs Forma",
+      "title": "Manual vs Amark",
       "subtitle": "Deja de perder fines de semana en copiar y pegar. Mira exactamente dónde ahorras tiempo.",
       "manual": {
         "title": "Manual (Canva / Photoshop)",
@@ -59,8 +63,8 @@
         ],
         "time": "8–15 horas para un planner anual"
       },
-      "forma": {
-        "title": "Con Forma",
+      "amark": {
+        "title": "Con Amark",
         "items": [
           "Sube tu layout una sola vez",
           "Marca zonas dinámicas en el canvas",
@@ -72,7 +76,7 @@
     },
     "audience": {
       "title": "Hecho para creadoras de planners",
-      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Forma se encarga de las fechas.",
+      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Amark se encarga de las fechas.",
       "cards": [
         {
           "title": "Vendedoras Etsy y digitales",
@@ -87,12 +91,12 @@
         {
           "title": "Proyectos personales e impresión",
           "pain": "Reordenar páginas cuando cambia el calendario es tedioso y propenso a errores.",
-          "solution": "Elige un rango de fechas y deja que Forma ordene semanas, meses y días correctamente."
+          "solution": "Elige un rango de fechas y deja que Amark ordene semanas, meses y días correctamente."
         }
       ]
     },
     "benefits": {
-      "title": "Lo que ganas con Forma",
+      "title": "Lo que ganas con Amark",
       "subtitle": "Todo lo que necesitas para pasar del artwork a un planner terminado.",
       "items": [
         {
@@ -116,8 +120,8 @@
     "demo": {
       "title": "Míralo en acción",
       "subtitle": "Sube tu diseño, marca zonas dinámicas, elige un rango de fechas y descarga un planner completo.",
-      "videoLabel": "Demo del flujo del editor Forma",
-      "posterAlt": "Editor Forma con zonas dinámicas de fechas en un layout semanal"
+      "videoLabel": "Demo del flujo del editor Amark",
+      "posterAlt": "Editor Amark con zonas dinámicas de fechas en un layout semanal"
     },
     "how": {
       "title": "Cómo funciona",
@@ -168,14 +172,14 @@
       "divider": "o"
     },
     "footer": {
-      "brand": "Forma — Planner Builder",
+      "brand": "Amark — Planner Builder",
       "description": "Crea planners totalmente personalizados con tus diseños y lógica de fechas dinámica.",
       "status": "Acceso anticipado",
       "statusDetail": "Apúntate a la lista de espera para entrar"
     }
   },
   "login": {
-    "title": "Inicia sesión en Forma",
+    "title": "Inicia sesión en Amark",
     "subtitle": "Usa tu cuenta de Google para acceder al editor de planners.",
     "notConfigured": "Firebase no está configurado. Añade tus credenciales en .env.local para activar el inicio de sesión.",
     "backToLanding": "Volver a la landing"
@@ -183,7 +187,7 @@
   "accessPending": {
     "title": "Acceso aún no activado",
     "loginSuccess": "Has iniciado sesión con Google correctamente. Tu cuenta está conectada, pero todavía no tienes acceso al editor.",
-    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Forma cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno.",
+    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Amark cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno.",
     "signedInAs": "Sesión iniciada como",
     "backToLanding": "Volver a la landing"
   },
@@ -195,7 +199,8 @@
     "startProject": "Empezar un proyecto",
     "createFirst": "Crea tu primer planner",
     "recent": "Recientes",
-    "deleteConfirm": "¿Eliminar este proyecto?"
+    "deleteConfirm": "¿Eliminar este proyecto?",
+    "exploreBrand": "Explorar Amark"
   },
   "template": {
     "createTitle": "Nuevo proyecto",

@@ -1,6 +1,6 @@
 # Flujos principales de la aplicación
 
-Mapa de **quién interviene** y **cómo se encadenan** los flujos de producto en Forma.
+Mapa de **quién interviene** y **cómo se encadenan** los flujos de producto en Amark.
 
 Para capas, modelo de dominio, Firebase e integraciones, ver [ARCHITECTURE.md](./ARCHITECTURE.md).
 

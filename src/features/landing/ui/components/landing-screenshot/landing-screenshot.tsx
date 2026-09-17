@@ -17,7 +17,7 @@ export function LandingScreenshot({
   src,
   srcSet,
   alt,
-  url = 'forma.app/editor',
+  url = 'amark.app/editor',
   className,
   framed = true,
   width = LANDING_IMAGE_SIZE.width,

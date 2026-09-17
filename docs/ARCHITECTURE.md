@@ -1,6 +1,6 @@
 # Architecture
 
-Technical documentation for **Forma — Planner Builder**.
+Technical documentation for **Amark — Planner Builder**.
 
 **Back to project overview:** [README.md](../README.md)  
 **Product flows (actors & interactions):** [FLOWS.md](./FLOWS.md)
@@ -9,7 +9,7 @@ Technical documentation for **Forma — Planner Builder**.
 
 ## Overview & Principles
 
-Forma is a React SPA organized as **five feature modules** under `src/features/`, each following a consistent layered structure inspired by **Clean/Hexagonal architecture**:
+Amark is a React SPA organized as **five feature modules** under `src/features/`, each following a consistent layered structure inspired by **Clean/Hexagonal architecture**:
 
 ```
 features/<name>/
@@ -566,7 +566,7 @@ Wiring in `src/core/bootstrap/infra.ts`:
 
 ```mermaid
 flowchart TB
-  subgraph ui [UI Forma]
+  subgraph ui [UI Amark]
     Home[Home / Editor]
     ImgTag["img / Konva"]
   end

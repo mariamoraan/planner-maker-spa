@@ -79,8 +79,8 @@ export function HowItWorksTimeline() {
                     alt={alt}
                     url={
                       step.key === 'upload'
-                        ? 'forma.app/home'
-                        : 'forma.app/editor'
+                        ? 'amark.app/home'
+                        : 'amark.app/editor'
                     }
                   />
                 </div>
