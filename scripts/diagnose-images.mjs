@@ -39,9 +39,14 @@ console.log(`UploadThing files in app: ${utFiles.size}\n`);
 
 const stats = { total: 0, noRef: 0, localRef: 0, noFileKey: 0, fileKeyMissingInUT: 0, ok: 0 };
 const problems = [];
+const tree = { users: 0, usersWithAccess: 0, templates: 0 };
 
 for (const u of (await db.collection('users').get()).docs) {
-  for (const t of (await u.ref.collection('templates').get()).docs) {
+  tree.users += 1;
+  if (u.get('isAccessGranted')) tree.usersWithAccess += 1;
+  const templates = await u.ref.collection('templates').get();
+  tree.templates += templates.size;
+  for (const t of templates.docs) {
     for (const p of (await t.ref.collection('pages').get()).docs) {
       stats.total += 1;
       const ref = p.get('imageRef');
@@ -64,7 +69,10 @@ for (const u of (await db.collection('users').get()).docs) {
   }
 }
 
-console.log('--- per-page results ---');
+console.log('--- firestore tree ---');
+console.log(` users=${tree.users} (accessGranted=${tree.usersWithAccess}) templates=${tree.templates} pages=${stats.total}`);
+
+console.log('\n--- per-page results ---');
 for (const line of problems) console.log('  ' + line);
 console.log('\n--- totals ---');
 console.log(stats);

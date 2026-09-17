@@ -11,7 +11,13 @@
 
 Planner covers and page artwork sometimes rendered correctly and sometimes showed an empty placeholder, in both local and production. Uploads always succeeded.
 
-The cause was **not** CDN reachability. It was client-side state management: the app resolved an image URL once, silently swallowed any failure, and never tried again. Because a successful resolve is cached as a data URL in IndexedDB, the failure only showed up when that cache was cold — which is why it looked intermittent and why "clear site data" reproduced it so reliably.
+There were two independent causes, one per environment.
+
+**Locally**, the cause was client-side state management: the app resolved an image URL once, silently swallowed any failure, and never tried again. Because a successful resolve is cached as a data URL in IndexedDB, the failure only showed up when that cache was cold — which is why it looked intermittent and why "clear site data" reproduced it so reliably.
+
+**In production**, nothing ever worked: all four API routes crashed on module load with `ERR_MODULE_NOT_FOUND` because relative imports lacked the `.js` extension that Node's ESM resolver requires. This is why the prod UploadThing project held zero files. It was masked throughout the investigation because Vite and `tsx` resolve extensionless imports, so local dev and the local simulation both passed.
+
+Neither cause was CDN reachability.
 
 ---
 
@@ -36,6 +42,27 @@ Every hop was healthy. **When a report blames the network, re-measure before bui
 ---
 
 ## Root causes
+
+### 0. Every prod API route crashed on module load (production root cause)
+
+All four serverless functions died before running a single line of handler code:
+
+```
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/var/task/server/firebase-admin'
+    imported from /var/task/api/uploadthing.js
+Node.js process exited with exit status: 1.
+```
+
+`package.json` sets `"type": "module"`, so Vercel transpiles `api/**/*.ts` to `.js` and Node loads it as ESM. Node's ESM resolver does **not** guess file extensions, and every relative import in `api/` and `server/` was written extensionless (`from '../server/firebase-admin'`). Node looked for a file literally named `firebase-admin`, found nothing, and exited 1 — surfacing as `FUNCTION_INVOCATION_FAILED`.
+
+Two things hid this:
+
+- **Typecheck.** `tsconfig.node.json` used `"moduleResolution": "bundler"`, which permits extensionless specifiers, and `api/**` was not in *any* tsconfig `include`, so it was never typechecked at all.
+- **Local dev.** Vite and `tsx` both resolve extensionless imports, so dev worked and the `simulate-vercel-fn.mjs` probe passed. Only real Node ESM rejects them.
+
+This explains the observations the client-side causes below could not: uploads never reaching the prod UploadThing project (0 files), and `FUNCTION_INVOCATION_FAILED` persisting after `FIREBASE_SERVICE_ACCOUNT` was added and redeployed. The env var was never the problem — the function never got far enough to read it.
+
+Reproduced and confirmed locally by compiling `api/**` with `tsc` and importing the output with plain `node`: extensionless imports throw the identical error, `.js` specifiers load cleanly.
 
 ### 1. Failures were swallowed and never retried (primary)
 
@@ -79,6 +106,8 @@ This was masked because `getUploadthingAppId()` used `Buffer.from(token, 'base64
 
 | # | Fix | Files |
 |---|-----|-------|
+| 0 | Add explicit `.js` extensions to every relative import that runs on Node as ESM (20 specifiers) | `api/**`, `server/**`, `vite.config.ts`, `vite.dev-api-plugin.ts` |
+| 0 | Switch `tsconfig.node.json` to `"moduleResolution": "NodeNext"` and add `api/**/*.ts` to `include`, so an extensionless import is now a compile error (`TS2835`) instead of a runtime crash | `tsconfig.node.json` |
 | 1 | Retry with backoff (3 attempts), classify retryable vs permanent, force-refresh the ID token after a 401/403, log the reason instead of returning a bare `null` | `infrastructure/uploadthing/client.ts` |
 | 1 | Retry loading while pages lack a usable src, restarting on `online` and tab focus | `ui/hooks/use-image-load-retry.ts`, `use-home-templates.ts`, `TemplateEditor.tsx` |
 | 2 | Treat ticket/signed-URL expiry as first-class: `needsImageLoad` re-resolves lapsed URLs, the session cache honours real expiry instead of a fixed 5 h TTL, and `hydrateFromRemote` stops carrying lapsed URLs forward | `infrastructure/uploadthing/content-ticket.ts`, `image.adapter.ts`, `template-store.ts` |
@@ -114,6 +143,7 @@ node scripts/diagnose-endpoints.mjs http://localhost:8080 .env   # full API chai
 
 ## Verification checklist
 
+0. `npx tsc --noEmit -p tsconfig.node.json` — must be clean; this is what now guards root cause 0.
 1. `node scripts/diagnose-images.mjs .env` — expect zero problem rows.
 2. `node scripts/diagnose-endpoints.mjs <origin> .env` — expect `url` 200 signed, `content` 200 `image/*`.
 3. Clear site data, reload → covers appear without a manual refresh.

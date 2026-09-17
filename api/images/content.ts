@@ -1,10 +1,8 @@
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { preloadFirebaseAdminFromEnv } from '../../server/firebase-admin';
-import { openImageStreamForTicket, statusForImageContentError } from '../../server/image-content';
-
-preloadFirebaseAdminFromEnv();
+import { tryPreloadFirebaseAdmin } from '../../server/firebase-admin.js';
+import { openImageStreamForTicket, statusForImageContentError } from '../../server/image-content.js';
 
 /**
  * Same-origin image bytes for <img src>.
@@ -14,6 +12,13 @@ preloadFirebaseAdminFromEnv();
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const configError = tryPreloadFirebaseAdmin();
+  if (configError) {
+    console.error('[api/images/content] configuration error:', configError);
+    res.status(500).json({ error: configError, kind: 'configuration' });
     return;
   }
 

@@ -48,10 +48,14 @@ export function loadServerSecrets(cwd = process.cwd()): ServerSecrets {
 
   if (accountPath) {
     const resolved = path.resolve(cwd, accountPath);
-    if (!fs.existsSync(resolved)) {
+    if (fs.existsSync(resolved)) {
+      firebaseServiceAccount = fs.readFileSync(resolved, 'utf8');
+    } else if (!firebaseServiceAccount) {
       throw new Error(`FIREBASE_SERVICE_ACCOUNT_PATH not found: ${resolved}`);
     }
-    firebaseServiceAccount = fs.readFileSync(resolved, 'utf8');
+    // The key file is gitignored, so it is absent on serverless deploys. Fall
+    // back to the inline FIREBASE_SERVICE_ACCOUNT rather than failing: carrying
+    // FIREBASE_SERVICE_ACCOUNT_PATH over to the host env is an easy mistake.
   }
 
   return {

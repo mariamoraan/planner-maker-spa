@@ -123,8 +123,23 @@ export async function generateSignedUploadthingUrl(
   return local.ufsUrl;
 }
 
+/** Auth failures must not read as server errors — that hides the real cause. */
+export function statusForAuthError(message: string): number | null {
+  if (message === 'Forbidden') return 403;
+  if (
+    message.includes('Unauthorized') ||
+    message.includes('Authorization header') ||
+    message.includes('Firebase ID token') ||
+    message.startsWith('Firebase token verification failed')
+  ) {
+    return 401;
+  }
+  return null;
+}
+
 export function statusForImageUrlError(message: string): number {
-  if (message === 'Forbidden' || message.includes('Unauthorized')) return 403;
+  const authStatus = statusForAuthError(message);
+  if (authStatus) return authStatus;
   // Token problems are server misconfiguration, not bad client input.
   if (message.startsWith('UPLOADTHING_TOKEN')) return 500;
   if (message === 'fileKey or url is required' || message === 'Invalid image URL') {

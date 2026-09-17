@@ -1,8 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { UTApi } from 'uploadthing/server';
-import { assertKeyBelongsToUser, verifyFirebaseToken, preloadFirebaseAdminFromEnv } from '../../server/firebase-admin';
-
-preloadFirebaseAdminFromEnv();
+import { assertKeyBelongsToUser, verifyFirebaseToken, tryPreloadFirebaseAdmin } from '../../server/firebase-admin.js';
+import { statusForAuthError } from '../../server/uploadthing-url.js';
 
 type DeleteBody = {
   fileKey?: string;
@@ -12,6 +11,13 @@ type DeleteBody = {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const configError = tryPreloadFirebaseAdmin();
+  if (configError) {
+    console.error('[api/images/delete] configuration error:', configError);
+    res.status(500).json({ error: configError, kind: 'configuration' });
     return;
   }
 
@@ -42,7 +48,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Delete failed';
-    const status = message === 'Forbidden' || message.includes('Unauthorized') ? 403 : 500;
-    res.status(status).json({ error: message });
+    res.status(statusForAuthError(message) ?? 500).json({ error: message });
   }
 }

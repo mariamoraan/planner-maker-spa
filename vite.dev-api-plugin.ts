@@ -1,7 +1,7 @@
 import type { Plugin } from 'vite';
 import { loadEnv } from 'vite';
-import { handleDevApi, isDevApiPath, loadServerEnv } from './server/dev-api';
-import { preloadFirebaseAdminFromEnv } from './server/firebase-admin';
+import { handleDevApi, isDevApiPath, loadServerEnv } from './server/dev-api.js';
+import { preloadFirebaseAdminFromEnv } from './server/firebase-admin.js';
 
 export function devApiPlugin(mode: string): Plugin {
   return {

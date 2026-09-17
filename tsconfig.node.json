@@ -2,12 +2,14 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2023"],
-    "module": "ESNext",
-    "skipLibCheck": true,
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    /* These run on Node as ESM (package.json "type": "module"), so relative
+       imports must carry an explicit .js extension. NodeNext enforces that at
+       compile time; "bundler" silently allowed extensionless imports that then
+       failed at runtime on Vercel with ERR_MODULE_NOT_FOUND. */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "skipLibCheck": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noEmit": true,
@@ -18,5 +20,5 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["vite.config.ts", "vite.dev-api-plugin.ts", "server/**/*.ts"]
+  "include": ["vite.config.ts", "vite.dev-api-plugin.ts", "server/**/*.ts", "api/**/*.ts"]
 }

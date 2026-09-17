@@ -4,8 +4,8 @@ import {
   buildOfficialFileUrl,
   getUploadthingAppId,
   isLegacyUtfsUrl,
-} from './uploadthing-url';
-import { verifyImageTicket } from './image-access';
+} from './uploadthing-url.js';
+import { verifyImageTicket } from './image-access.js';
 
 // Prefer IPv4 — Node often hangs on broken IPv6 routes to CDNs.
 try {

@@ -6,7 +6,7 @@ import {
   getUploadthingAppId,
   isLegacyUtfsUrl,
   type ImageUrlResolveBody,
-} from './uploadthing-url';
+} from './uploadthing-url.js';
 
 const TICKET_TTL_MS = 6 * 60 * 60 * 1000;
 

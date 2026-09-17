@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { assertUploadthingTokenUsable, getUploadthingAppId } from './uploadthing-url';
+import { assertUploadthingTokenUsable, getUploadthingAppId } from './uploadthing-url.js';
 
 const original = process.env.UPLOADTHING_TOKEN;
 

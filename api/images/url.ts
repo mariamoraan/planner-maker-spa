@@ -1,13 +1,18 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { assertKeyBelongsToUser, verifyFirebaseToken, preloadFirebaseAdminFromEnv } from '../../server/firebase-admin';
-import { resolveUploadthingImageAccess } from '../../server/image-access';
-import { statusForImageUrlError, type ImageUrlResolveBody } from '../../server/uploadthing-url';
-
-preloadFirebaseAdminFromEnv();
+import { assertKeyBelongsToUser, verifyFirebaseToken, tryPreloadFirebaseAdmin } from '../../server/firebase-admin.js';
+import { resolveUploadthingImageAccess } from '../../server/image-access.js';
+import { statusForImageUrlError, type ImageUrlResolveBody } from '../../server/uploadthing-url.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+
+  const configError = tryPreloadFirebaseAdmin();
+  if (configError) {
+    console.error('[api/images/url] configuration error:', configError);
+    res.status(500).json({ error: configError, kind: 'configuration' });
     return;
   }
 

@@ -3,14 +3,15 @@ import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createRouteHandler } from 'uploadthing/server';
 import { UTApi } from 'uploadthing/server';
-import { assertKeyBelongsToUser, verifyFirebaseToken, preloadFirebaseAdminFromEnv } from './firebase-admin';
+import { assertKeyBelongsToUser, verifyFirebaseToken, preloadFirebaseAdminFromEnv } from './firebase-admin.js';
 import {
+  statusForAuthError,
   statusForImageUrlError,
   type ImageUrlResolveBody,
-} from './uploadthing-url';
-import { resolveUploadthingImageAccess } from './image-access';
-import { openImageStreamForTicket, statusForImageContentError } from './image-content';
-import { uploadRouter } from './uploadthing/core';
+} from './uploadthing-url.js';
+import { resolveUploadthingImageAccess } from './image-access.js';
+import { openImageStreamForTicket, statusForImageContentError } from './image-content.js';
+import { uploadRouter } from './uploadthing/core.js';
 
 let uploadthingHandler: ReturnType<typeof createRouteHandler> | null = null;
 
@@ -75,8 +76,7 @@ export async function handleUploadthingApi(
     return;
   }
 
-  const body =
-    req.method !== 'GET' && req.method !== 'HEAD' ? await readRequestBody(req) : undefined;
+  const body = req.method === 'POST' ? await readRequestBody(req) : undefined;
   const request = toWebRequest(req, url, body);
   const response = await getUploadthingHandler()(request);
   await sendWebResponse(res, response);
@@ -127,8 +127,7 @@ export async function handleImageDeleteApi(req: IncomingMessage, res: ServerResp
     res.end(JSON.stringify({ success: true }));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Delete failed';
-    const status = message === 'Forbidden' || message.includes('Unauthorized') ? 403 : 500;
-    res.statusCode = status;
+    res.statusCode = statusForAuthError(message) ?? 500;
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: message }));
   }

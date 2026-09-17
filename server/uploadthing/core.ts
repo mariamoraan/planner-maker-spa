@@ -1,6 +1,6 @@
 import { createUploadthing, type FileRouter, UploadThingError, UTFiles, UTApi } from 'uploadthing/server';
 import { z } from 'zod';
-import { assertKeyBelongsToUser, verifyFirebaseIdToken, verifyFirebaseToken } from '../firebase-admin';
+import { assertKeyBelongsToUser, verifyFirebaseIdToken, verifyFirebaseToken } from '../firebase-admin.js';
 
 const f = createUploadthing();
 

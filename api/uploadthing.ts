@@ -1,10 +1,16 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createRouteHandler } from 'uploadthing/server';
-import { preloadFirebaseAdminFromEnv } from '../server/firebase-admin';
-import { uploadRouter } from '../server/uploadthing/core';
+import { tryPreloadFirebaseAdmin } from '../server/firebase-admin.js';
+import { uploadRouter } from '../server/uploadthing/core.js';
 
-preloadFirebaseAdminFromEnv();
-const routeHandler = createRouteHandler({ router: uploadRouter });
+// Built lazily: createRouteHandler reads UPLOADTHING_TOKEN, which is only in
+// process.env once the secrets above have been applied.
+let routeHandler: ReturnType<typeof createRouteHandler> | null = null;
+
+function getRouteHandler() {
+  if (!routeHandler) routeHandler = createRouteHandler({ router: uploadRouter });
+  return routeHandler;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET' && req.method !== 'POST') {
@@ -12,12 +18,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
+  const configError = tryPreloadFirebaseAdmin();
+  if (configError) {
+    console.error('[api/uploadthing] configuration error:', configError);
+    res.status(500).json({ error: configError, kind: 'configuration' });
+    return;
+  }
+
   const protocol = (req.headers['x-forwarded-proto'] as string | undefined) ?? 'https';
   const host = req.headers.host ?? 'localhost';
   const url = `${protocol}://${host}${req.url ?? '/api/uploadthing'}`;
 
-  let body: BodyInit | undefined;
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
+  let body: string | Buffer | undefined;
+  if (req.method === 'POST') {
     if (typeof req.body === 'string') {
       body = req.body;
     } else if (Buffer.isBuffer(req.body)) {
@@ -43,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     body,
   });
 
-  const response = await routeHandler(request);
+  const response = await getRouteHandler()(request);
 
   res.status(response.status);
   response.headers.forEach((value, key) => {

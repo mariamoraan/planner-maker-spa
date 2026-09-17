@@ -1,6 +1,6 @@
 import { cert, getApps, initializeApp, type App, type ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { applyServerSecrets, loadServerSecrets, validateServerSecrets } from './load-env';
+import { applyServerSecrets, loadServerSecrets, validateServerSecrets } from './load-env.js';
 
 let adminApp: App | null = null;
 let secretsLoaded = false;
@@ -13,7 +13,10 @@ function ensureSecretsLoaded(): void {
   secretsLoaded = true;
 }
 
-function normalizeServiceAccount(raw: ServiceAccount): ServiceAccount {
+/** Google emits snake_case keys; `cert()` accepts them alongside the camelCase type. */
+type ServiceAccountJson = ServiceAccount & { private_key?: string };
+
+function normalizeServiceAccount(raw: ServiceAccountJson): ServiceAccountJson {
   if (typeof raw.private_key === 'string') {
     raw.private_key = raw.private_key.replace(/\\n/g, '\n');
   }
@@ -30,7 +33,7 @@ function parseServiceAccount(): ServiceAccount {
 
   try {
     const decoded = raw.trim().startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8');
-    return normalizeServiceAccount(JSON.parse(decoded) as ServiceAccount);
+    return normalizeServiceAccount(JSON.parse(decoded) as ServiceAccountJson);
   } catch {
     throw new Error('FIREBASE_SERVICE_ACCOUNT must be valid JSON or base64-encoded JSON');
   }
@@ -93,4 +96,21 @@ export function preloadFirebaseAdminFromEnv(cwd = process.cwd()): void {
   validateServerSecrets(secrets);
   applyServerSecrets(secrets);
   secretsLoaded = true;
+}
+
+/**
+ * Load server secrets, returning the failure reason instead of throwing.
+ *
+ * Handlers call this per request rather than at module scope: a throw while the
+ * module is evaluating surfaces on Vercel as an opaque FUNCTION_INVOCATION_FAILED
+ * with no message anywhere, which makes a simple missing env var undiagnosable.
+ * The messages name configuration keys only, never their values.
+ */
+export function tryPreloadFirebaseAdmin(cwd = process.cwd()): string | null {
+  try {
+    preloadFirebaseAdminFromEnv(cwd);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : 'Server is misconfigured';
+  }
 }
