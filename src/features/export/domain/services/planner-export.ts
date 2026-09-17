@@ -15,7 +15,9 @@ import {
 import { resolveWorldRect } from '@/features/editor/domain/services/block-geometry';
 import { resolveLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import type { WeekStartsOn } from '@/features/template';
+import PdfWorker from '@/features/export/infrastructure/workers/pdf.worker?worker';
 import type { WorkerResponse } from '@/features/export/infrastructure/workers/pdf.worker';
+import { assemblePdfFromPages } from '@/features/export/domain/services/assemble-pdf';
 
 const PAGES_WEIGHT = 0.85;
 const PDF_WEIGHT = 0.15;
@@ -302,34 +304,65 @@ export async function generatePlannerPages(
   return pages;
 }
 
+function buildPdfOnMainThread(
+  pages: GeneratedPage[],
+  onProgress?: (current: number, total: number) => void,
+): Promise<ArrayBuffer> {
+  return assemblePdfFromPages(pages, onProgress);
+}
+
 export function buildPdfFromPages(
   pages: GeneratedPage[],
   onProgress?: (current: number, total: number) => void
 ): Promise<ArrayBuffer> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(
-      new URL('../../infrastructure/workers/pdf.worker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    let settled = false;
+    let worker: Worker | undefined;
+
+    const settleWithMainThread = () => {
+      if (settled) return;
+      settled = true;
+      try {
+        worker?.terminate();
+      } catch {
+        /* ignore */
+      }
+      buildPdfOnMainThread(pages, onProgress).then(resolve, reject);
+    };
+
+    try {
+      worker = new PdfWorker();
+    } catch {
+      settleWithMainThread();
+      return;
+    }
 
     worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
       if (e.data.status === 'progress') {
         onProgress?.(e.data.current, e.data.total);
       } else if (e.data.status === 'success') {
+        if (settled) return;
+        settled = true;
         resolve(e.data.pdfBytes);
-        worker.terminate();
+        worker?.terminate();
       } else {
-        reject(new Error(e.data.message));
-        worker.terminate();
+        settleWithMainThread();
       }
     };
 
-    worker.onerror = (error) => {
-      reject(error);
-      worker.terminate();
+    worker.onmessageerror = () => {
+      settleWithMainThread();
     };
 
-    worker.postMessage({ pages });
+    worker.onerror = () => {
+      settleWithMainThread();
+    };
+
+    try {
+      worker.postMessage({ pages });
+    } catch {
+      settleWithMainThread();
+    }
   });
 }
 

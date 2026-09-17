@@ -1,16 +1,7 @@
-import { PDFDocument } from 'pdf-lib';
-import { resolvePdfPageSizeForExport } from '@/features/export/domain/services/pdf-page-size';
-import type { PaperSize } from '@/features/template/domain/services/paper-size';
-
-type WorkerPage = {
-  imageData: string;
-  width?: number;
-  height?: number;
-  paperSize?: PaperSize;
-};
+import { assemblePdfFromPages, type PdfAssemblePage } from '@/features/export/domain/services/assemble-pdf';
 
 type WorkerMessage = {
-  pages: WorkerPage[];
+  pages: PdfAssemblePage[];
 };
 
 export type WorkerResponse =
@@ -21,39 +12,17 @@ export type WorkerResponse =
 self.onmessage = async (e: MessageEvent<WorkerMessage>) => {
   try {
     const { pages } = e.data;
-    const pdfDoc = await PDFDocument.create();
-    const total = pages.length;
-
-    for (let i = 0; i < pages.length; i++) {
-      const page = pages[i];
-      const base64 = page.imageData.split(',')[1];
-      const pngBytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-
-      const pngImage = await pdfDoc.embedPng(pngBytes);
-      const widthPx = page.width ?? pngImage.width;
-      const heightPx = page.height ?? pngImage.height;
-      const pageSize = resolvePdfPageSizeForExport(widthPx, heightPx, page.paperSize);
-
-      const pdfPage = pdfDoc.addPage([pageSize.width, pageSize.height]);
-      pdfPage.drawImage(pngImage, {
-        x: 0,
-        y: 0,
-        width: pageSize.width,
-        height: pageSize.height,
-      });
-
+    const pdfBytes = await assemblePdfFromPages(pages, (current, total) => {
       self.postMessage({
         status: 'progress',
-        current: i + 1,
+        current,
         total,
       } satisfies WorkerResponse);
-    }
-
-    const pdfBytes = await pdfDoc.save();
+    });
 
     self.postMessage(
-      { status: 'success', pdfBytes: pdfBytes.buffer as ArrayBuffer } satisfies WorkerResponse,
-      { transfer: [pdfBytes.buffer] }
+      { status: 'success', pdfBytes } satisfies WorkerResponse,
+      { transfer: [pdfBytes] },
     );
   } catch (error) {
     self.postMessage({

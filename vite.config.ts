@@ -21,6 +21,13 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  optimizeDeps: {
+    include: ["pdf-lib"],
+  },
+  worker: {
+    format: "es",
+  },
+
   css: {
     preprocessorOptions: {
       scss: {
