@@ -1,18 +1,36 @@
 .editor-preview-date-badge {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
   max-width: min(280px, 70vw);
-  padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  color: hsl(220, 12%, 35%);
-  font-size: 0.75rem;
-  line-height: 1.2;
   pointer-events: auto;
   user-select: none;
+
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 100%;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    color: hsl(220, 12%, 35%);
+    font: inherit;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease;
+
+    &:hover:not(:disabled) {
+      border-color: rgba(0, 0, 0, 0.16);
+      background: #fff;
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
 
   &__prefix {
     color: hsl(220, 8%, 52%);
@@ -26,5 +44,60 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  &__chevron {
+    flex-shrink: 0;
+    color: hsl(220, 8%, 52%);
+  }
+
+  &__popover {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-width: 200px;
+    padding: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  &__popover-title {
+    margin: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: hsl(220, 10%, 40%);
+  }
+
+  &__input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 32px;
+    padding: 0 0.5rem;
+    border: 1px solid hsl(220, 12%, 88%);
+    border-radius: 8px;
+    background: hsl(220, 20%, 99%);
+    font-size: 0.8rem;
+    color: hsl(220, 15%, 22%);
+  }
+
+  &__reset {
+    align-self: flex-start;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: hsl(168, 50%, 32%);
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 }

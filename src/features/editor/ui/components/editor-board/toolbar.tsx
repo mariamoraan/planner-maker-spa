@@ -19,7 +19,6 @@ import {
   getGridGroupForSelection,
 } from '@/features/editor/domain/services/grid-group'
 import {
-  getBindingDisplayIndex,
   pageAllowsDateRoleChoice,
   resolveEffectiveBindingSource,
   suggestedCalendarRoleForPage,
@@ -160,8 +159,6 @@ export const Toolbar = () => {
     }
 
     const config = FIELD_TYPE_CONFIG[currentSelectedBox.fieldType];
-    const sequenceIndex = getBindingDisplayIndex(currentSelectedBox, currentImage!);
-    const nameSuffix = sequenceIndex > 0 ? ` #${sequenceIndex}` : '';
     const showDateRole =
       currentImage != null &&
       pageAllowsDateRoleChoice(currentImage.type) &&
@@ -170,7 +167,7 @@ export const Toolbar = () => {
     return (
         <div className="toolbar">
              <p className='toolbar__name'>
-               {config.label}{nameSuffix}
+               {config.label}
              </p>
              {showDateRole ? (
                <>

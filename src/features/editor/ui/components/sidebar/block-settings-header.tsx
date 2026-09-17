@@ -6,7 +6,6 @@ import { BlockDeleteButton } from '@/features/editor/ui/components/shared/block-
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector';
 import { BindingSourceControls } from '@/features/editor/ui/components/shared/binding-source-controls';
 import { FIELD_TYPE_CONFIG } from '@/features/template';
-import { getBindingDisplayIndex } from '@/features/editor/domain/services/binding-group';
 
 interface BlockSettingsHeaderProps {
   rectangleId: string;
@@ -23,14 +22,12 @@ export const BlockSettingsHeader = ({ rectangleId }: BlockSettingsHeaderProps) =
   }
 
   const config = FIELD_TYPE_CONFIG[rectangle.fieldType];
-  const sequenceIndex = getBindingDisplayIndex(rectangle, currentImage);
-  const nameSuffix = sequenceIndex > 0 ? ` #${sequenceIndex}` : '';
 
   return (
     <div className="block-settings-header">
       <div className="block-settings-header__top">
         <p className="block-settings-header__name">
-          {config.label}{nameSuffix}
+          {config.label}
         </p>
         <div className="block-settings-header__actions">
           <BlockDeleteButton rectangleId={rectangleId} />

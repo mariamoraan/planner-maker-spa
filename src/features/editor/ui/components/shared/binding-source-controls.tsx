@@ -2,7 +2,6 @@ import './binding-source-controls.scss';
 
 import type { BindingSourceKind, Rectangle } from '@/features/template';
 import {
-  getBindingDisplayIndex,
   pageAllowsDateRoleChoice,
   resolveEffectiveBindingSource,
 } from '@/features/editor/domain/services/binding-group';
@@ -43,7 +42,6 @@ export function BindingSourceControls({
   if (isGridCell && !isGridVariant) return null;
 
   const source = resolveEffectiveBindingSource(rectangle, currentImage);
-  const displayIndex = getBindingDisplayIndex(rectangle, currentImage);
   const sharedGroupId = rectangle.bindingGroupId;
   const memberCount = sharedGroupId
     ? currentImage.rectangles.filter(r => r.bindingGroupId === sharedGroupId).length
@@ -77,11 +75,6 @@ export function BindingSourceControls({
           isGridVariant ? 'editor.calendarRoleGridShows' : 'editor.calendarRoleShows',
         )}
       />
-      {!isGridVariant && displayIndex > 0 ? (
-        <span className="binding-source-controls__index">
-          {t('editor.calendarRoleIndex', { index: displayIndex })}
-        </span>
-      ) : null}
     </div>
   );
 }

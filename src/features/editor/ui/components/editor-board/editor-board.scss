@@ -49,8 +49,7 @@
         display: flex;
         justify-content: center;
         box-sizing: border-box;
-        overflow-x: auto;
-        overflow-y: visible;
+        overflow: visible;
 
         @media (max-width: $editor-compact-max-width) {
             justify-content: flex-start;

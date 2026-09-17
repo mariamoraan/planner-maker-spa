@@ -12,6 +12,8 @@ interface EditorState {
   showRectangleGuides: boolean;
   canvasTool: CanvasTool;
   gridEditFocus: GridEditFocus;
+  /** Optional date used to drive editor field preview (session-only). */
+  previewAnchorDate: Date | null;
 
   setCurrentImageId: (id: string | null) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
@@ -22,6 +24,7 @@ interface EditorState {
   setShowRectangleGuides: (showRectangleGuides: boolean) => void;
   setCanvasTool: (canvasTool: CanvasTool) => void;
   setGridEditFocus: (gridEditFocus: GridEditFocus) => void;
+  setPreviewAnchorDate: (previewAnchorDate: Date | null) => void;
   resetEditorSession: () => void;
 }
 
@@ -32,6 +35,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   showRectangleGuides: false,
   canvasTool: 'select',
   gridEditFocus: 'grid',
+  previewAnchorDate: null,
 
   setCurrentImageId: (currentImageId) => set({ currentImageId }),
   setSelectedFieldType: (selectedFieldType) => set({ selectedFieldType }),
@@ -55,6 +59,7 @@ export const useEditorStore = create<EditorState>((set) => ({
   setShowRectangleGuides: (showRectangleGuides) => set({ showRectangleGuides }),
   setCanvasTool: (canvasTool) => set({ canvasTool }),
   setGridEditFocus: (gridEditFocus) => set({ gridEditFocus }),
+  setPreviewAnchorDate: (previewAnchorDate) => set({ previewAnchorDate }),
 
   resetEditorSession: () =>
     set({
@@ -64,5 +69,6 @@ export const useEditorStore = create<EditorState>((set) => ({
       showRectangleGuides: false,
       canvasTool: 'select',
       gridEditFocus: 'grid',
+      previewAnchorDate: null,
     }),
 }));

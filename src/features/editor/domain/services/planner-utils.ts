@@ -232,15 +232,32 @@ export function getEditorPreviewContext(
   templateImage: TemplateImage,
   weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
   plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
+  previewAnchor?: Date | null,
 ): FieldValueContext {
   const today = new Date();
-  const { year, month, firstOfMonth } = findPreviewMonthAlignedToWeekStart(weekStartsOn, today);
+  const hasOverride = previewAnchor instanceof Date && !Number.isNaN(previewAnchor.getTime());
+  const aligned = hasOverride
+    ? {
+        year: previewAnchor.getFullYear(),
+        month: previewAnchor.getMonth(),
+        firstOfMonth: new Date(previewAnchor.getFullYear(), previewAnchor.getMonth(), 1),
+      }
+    : findPreviewMonthAlignedToWeekStart(weekStartsOn, today);
+  const { year, month, firstOfMonth } = aligned;
   const plannerStart = plannerRange?.plannerStart ?? new Date(today.getFullYear(), 0, 1);
   const plannerEnd = plannerRange?.plannerEnd ?? new Date(today.getFullYear(), 11, 31);
 
   switch (templateImage.type) {
-    case 'daily-page':
-      return { date: firstOfMonth, year, month, plannerStart, plannerEnd };
+    case 'daily-page': {
+      const date = hasOverride ? previewAnchor : firstOfMonth;
+      return {
+        date,
+        year: date.getFullYear(),
+        month: date.getMonth(),
+        plannerStart,
+        plannerEnd,
+      };
+    }
     case 'month-cover':
       return { year, month, plannerStart, plannerEnd };
     case 'monthly-calendar':
@@ -253,11 +270,12 @@ export function getEditorPreviewContext(
       };
     case 'weekly-calendar': {
       const weekStartOption = resolveWeekStartsOn(weekStartsOn);
-      const weekStart = startOfWeek(firstOfMonth, { weekStartsOn: weekStartOption });
+      const weekAnchor = hasOverride ? previewAnchor : firstOfMonth;
+      const weekStart = startOfWeek(weekAnchor, { weekStartsOn: weekStartOption });
       const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
       return {
-        year,
-        month,
+        year: weekStart.getFullYear(),
+        month: weekStart.getMonth(),
         week: {
           weekNumber: getWeekNumber(days[0], weekStartsOn),
           startDate: days[0],
@@ -283,6 +301,8 @@ export interface EditorPreviewDateInfo {
   detail: string;
   /** Anchor date used for preview (1st of preview month, week start, etc.). */
   anchor: Date;
+  /** True when the user picked a custom preview date. */
+  isCustom: boolean;
 }
 
 /**
@@ -294,8 +314,16 @@ export function getEditorPreviewDateInfo(
   weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
   plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
   locale: Locale = DEFAULT_LOCALE,
+  previewAnchor?: Date | null,
 ): EditorPreviewDateInfo {
-  const context = getEditorPreviewContext(templateImage, weekStartsOn, plannerRange);
+  const isCustom =
+    previewAnchor instanceof Date && !Number.isNaN(previewAnchor.getTime());
+  const context = getEditorPreviewContext(
+    templateImage,
+    weekStartsOn,
+    plannerRange,
+    previewAnchor,
+  );
   const capitalize = (value: string) =>
     value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 
@@ -304,13 +332,14 @@ export function getEditorPreviewDateInfo(
       const start = context.week?.startDate;
       const end = context.week?.endDate;
       if (!start || !end) {
-        return { label: '—', detail: '', anchor: new Date() };
+        return { label: '—', detail: '', anchor: new Date(), isCustom };
       }
       const label = `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`;
       return {
         label,
-        detail: 'previewWeek',
+        detail: isCustom ? 'previewWeekCustom' : 'previewWeek',
         anchor: start,
+        isCustom,
       };
     }
     case 'cover':
@@ -321,14 +350,16 @@ export function getEditorPreviewDateInfo(
         label: `${format(start, 'd MMM yyyy', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`,
         detail: 'previewPlannerRange',
         anchor: start,
+        isCustom: false,
       };
     }
     case 'daily-page': {
       const date = context.date ?? new Date(context.year!, context.month!, 1);
       return {
         label: capitalize(format(date, 'd MMMM yyyy', { locale })),
-        detail: 'previewDayAligned',
+        detail: isCustom ? 'previewDayCustom' : 'previewDayAligned',
         anchor: date,
+        isCustom,
       };
     }
     case 'month-cover':
@@ -337,8 +368,9 @@ export function getEditorPreviewDateInfo(
       const date = new Date(context.year!, context.month!, 1);
       return {
         label: capitalize(format(date, 'MMMM yyyy', { locale })),
-        detail: 'previewMonthAligned',
+        detail: isCustom ? 'previewMonthCustom' : 'previewMonthAligned',
         anchor: date,
+        isCustom,
       };
     }
   }

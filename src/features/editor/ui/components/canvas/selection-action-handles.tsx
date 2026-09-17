@@ -19,7 +19,6 @@ import { translateGridBounds } from '@/features/editor/domain/services/grid-layo
 import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group';
 import {
   calendarRoleLabelKey,
-  getBindingDisplayIndex,
   resolveEffectiveBindingSource,
 } from '@/features/editor/domain/services/binding-group';
 import type { TemplateImage } from '@/features/template';
@@ -299,11 +298,6 @@ export const SelectionActionHandles = ({
       if (source !== 'page') {
         calendarBadge = t(calendarRoleLabelKey(source));
       }
-    }
-  } else if (selectedRects.length === 1) {
-    const index = getBindingDisplayIndex(selectedRects[0], currentImage);
-    if (index > 0) {
-      calendarBadge = t('editor.calendarRoleIndex', { index });
     }
   }
 

@@ -220,4 +220,35 @@ describe('getEditorPreviewContext', () => {
     expect(context.days?.[0]?.getDate()).toBe(1);
     expect(context.days?.[0]?.getMonth()).toBe(context.month);
   });
+
+  it('honours a custom preview anchor month', () => {
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'monthly-2',
+      type: 'monthly-calendar',
+      rectangles: [],
+    };
+    const context = getEditorPreviewContext(
+      page,
+      'monday',
+      undefined,
+      new Date(2027, 1, 15),
+    );
+    expect(context.year).toBe(2027);
+    expect(context.month).toBe(1);
+  });
+
+  it('honours a custom preview anchor day on daily pages', () => {
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'daily-1',
+      type: 'daily-page',
+      rectangles: [],
+    };
+    const anchor = new Date(2026, 5, 12);
+    const context = getEditorPreviewContext(page, 'monday', undefined, anchor);
+    expect(context.date?.getFullYear()).toBe(2026);
+    expect(context.date?.getMonth()).toBe(5);
+    expect(context.date?.getDate()).toBe(12);
+  });
 });

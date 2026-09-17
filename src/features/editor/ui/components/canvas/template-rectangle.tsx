@@ -14,6 +14,7 @@ import { useMemo, useRef } from "react";
 import { Group, Rect, Text } from "react-konva";
 import { useKonvaFade } from "./use-konva-fade";
 import { useCurrentTemplate } from "@/features/editor/ui/hooks/use-current-template";
+import { useEditorStore } from "@/features/editor/ui/stores/editor-store";
 
 function measureKonvaTextWidth(
   text: string,
@@ -95,9 +96,12 @@ export const TemplateRectangle: React.FC<TemplateRectangleProps> = ({
     !showRectangleGuides,
     );
 
+    const previewAnchorDate = useEditorStore(state => state.previewAnchorDate);
+
     const previewContext = useMemo(
-      () => getEditorPreviewContext(templateImage, weekStartsOn, { plannerStart, plannerEnd }),
-      [templateImage, weekStartsOn, plannerStart, plannerEnd],
+      () =>
+        getEditorPreviewContext(templateImage, weekStartsOn, { plannerStart, plannerEnd }, previewAnchorDate),
+      [templateImage, weekStartsOn, plannerStart, plannerEnd, previewAnchorDate],
     );
 
     const dateLocale = useMemo(() => resolveLocale(plannerLocale), [plannerLocale]);
