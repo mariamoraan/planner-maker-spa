@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import type { Template, TemplateImage, Rectangle, TemplatePage } from '@/features/template';
 import { repairGridMetadata } from '@/features/editor/domain/services/grid-group';
+import { repairBindingMetadata } from '@/features/editor/domain/services/binding-group';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import type { PaperSize } from '@/features/template/domain/services/paper-size';
 import type {
@@ -82,6 +83,10 @@ function buildPageWriteData(page: TemplatePageRecord): Record<string, unknown> {
     data.gridGroups = stripUndefined(page.gridGroups);
   }
 
+  if (page.bindingGroups !== undefined) {
+    data.bindingGroups = stripUndefined(page.bindingGroups);
+  }
+
   if (page.imageRef !== undefined) {
     data.imageRef = stripUndefined(page.imageRef);
   }
@@ -91,12 +96,13 @@ function buildPageWriteData(page: TemplatePageRecord): Record<string, unknown> {
 
 function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord {
   const gridGroups = (data.gridGroups as TemplatePageRecord['gridGroups']) ?? undefined;
+  const bindingGroups = (data.bindingGroups as TemplatePageRecord['bindingGroups']) ?? undefined;
   const rectangles = repairGridMetadata(
     (data.rectangles as Rectangle[]) ?? [],
     gridGroups,
   );
 
-  return {
+  const repaired = repairBindingMetadata({
     id,
     name: String(data.name ?? ''),
     type: data.type as TemplateImage['type'],
@@ -104,6 +110,21 @@ function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord 
     height: Number(data.height ?? 0),
     rectangles,
     gridGroups,
+    bindingGroups,
+    createdAt: toDate(data.createdAt),
+    updatedAt: toDate(data.updatedAt),
+    src: '',
+  });
+
+  return {
+    id,
+    name: String(data.name ?? ''),
+    type: data.type as TemplateImage['type'],
+    width: Number(data.width ?? 0),
+    height: Number(data.height ?? 0),
+    rectangles: repaired.rectangles,
+    gridGroups: repaired.gridGroups,
+    bindingGroups: repaired.bindingGroups,
     imageRef: normalizeImageRef(data.imageRef),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
@@ -316,7 +337,10 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     uid: string,
     templateId: string,
     pageId: string,
-    updates: Partial<TemplatePageRecord> & { gridGroups?: TemplatePageRecord['gridGroups'] | null }
+    updates: Partial<TemplatePageRecord> & {
+      gridGroups?: TemplatePageRecord['gridGroups'] | null;
+      bindingGroups?: TemplatePageRecord['bindingGroups'] | null;
+    }
   ): Promise<void> {
     const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
     if (updates.name !== undefined) payload.name = updates.name;
@@ -330,6 +354,11 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       payload.gridGroups = deleteField();
     } else if (updates.gridGroups !== undefined) {
       payload.gridGroups = stripUndefined(updates.gridGroups);
+    }
+    if (updates.bindingGroups === null) {
+      payload.bindingGroups = deleteField();
+    } else if (updates.bindingGroups !== undefined) {
+      payload.bindingGroups = stripUndefined(updates.bindingGroups);
     }
     if (updates.imageRef !== undefined) payload.imageRef = stripUndefined(updates.imageRef);
     await updateDoc(pageRef(uid, templateId, pageId), payload);

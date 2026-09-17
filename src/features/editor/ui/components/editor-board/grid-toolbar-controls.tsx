@@ -6,11 +6,13 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import type { FieldType, GridGroup } from '@/features/template';
 import { AreaStyleControls } from '@/features/editor/ui/components/shared/area-style-controls';
+import { BindingSourceControls } from '@/features/editor/ui/components/shared/binding-source-controls';
 import { BlockTypeSelector } from '@/features/editor/ui/components/shared/block-type-selector';
 import { GridAlignmentPicker } from '@/features/editor/ui/components/shared/grid-alignment-picker';
 import { SliderStepper } from '@/features/editor/ui/components/shared/slider-stepper';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import { getGridGroupFieldType } from '@/features/editor/domain/services/grid-group';
+import { pageAllowsDateRoleChoice } from '@/features/editor/domain/services/binding-group';
 import { normalizeGridSettings } from '@/features/editor/domain/services/grid-edit-types';
 import {
   getGridGap,
@@ -343,6 +345,19 @@ export const GridToolbarControls = ({ group }: GridToolbarControlsProps) => {
                 currentType={groupFieldType}
                 onSelect={(type: FieldType) => updateGroupFieldType(group.id, type)}
                 variant="popover"
+              />
+            </>
+          )}
+
+          {representativeRect &&
+            currentImage &&
+            pageAllowsDateRoleChoice(currentImage.type) && (
+            <>
+              <div className="grid-toolbar-controls__divider" />
+              <BindingSourceControls
+                rectangle={representativeRect}
+                variant="grid"
+                gridGroupId={group.id}
               />
             </>
           )}

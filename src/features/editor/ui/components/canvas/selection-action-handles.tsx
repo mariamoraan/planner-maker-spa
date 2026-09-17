@@ -17,6 +17,11 @@ import {
 } from '@/features/editor/domain/services/block-geometry';
 import { translateGridBounds } from '@/features/editor/domain/services/grid-layout';
 import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group';
+import {
+  calendarRoleLabelKey,
+  getBindingDisplayIndex,
+  resolveEffectiveBindingSource,
+} from '@/features/editor/domain/services/binding-group';
 import type { TemplateImage } from '@/features/template';
 import type { DragOverlay } from './canvas-interaction-types';
 
@@ -286,12 +291,33 @@ export const SelectionActionHandles = ({
     window.addEventListener('pointerup', onUp);
   };
 
+  let calendarBadge: string | null = null;
+  if (lockedGrid) {
+    const representative = selectedRects[0];
+    if (representative) {
+      const source = resolveEffectiveBindingSource(representative, currentImage);
+      if (source !== 'page') {
+        calendarBadge = t(calendarRoleLabelKey(source));
+      }
+    }
+  } else if (selectedRects.length === 1) {
+    const index = getBindingDisplayIndex(selectedRects[0], currentImage);
+    if (index > 0) {
+      calendarBadge = t('editor.calendarRoleIndex', { index });
+    }
+  }
+
   return (
     <div
       className="selection-action-handles"
       style={{ left, top }}
       {...blockSelectionZoneProps}
     >
+      {calendarBadge && rotationPreview === null ? (
+        <div className="selection-action-handles__calendar-badge" aria-live="polite">
+          {calendarBadge}
+        </div>
+      ) : null}
       {rotationPreview !== null && (
         <div
           className={[

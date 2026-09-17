@@ -116,18 +116,23 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
   const formatGroup = (
     <div className="area-style-controls__group">
       <p className="area-style-controls__label">Formato</p>
-      <div className="area-style-controls__options">
+      <div className="area-style-controls__options area-style-controls__options--format">
         {formatOptions.map(option => (
           <button
             key={option.id}
             type="button"
-            className={clsx('area-style-controls__option', {
-              'area-style-controls__option--active': formatVariant === option.id,
-            })}
+            className={clsx(
+              'area-style-controls__option',
+              'area-style-controls__option--format-row',
+              {
+                'area-style-controls__option--active': formatVariant === option.id,
+              },
+            )}
             title={option.preview}
             onClick={() => handleFormatChange(option.id)}
           >
-            {option.label}
+            <span>{option.label}</span>
+            <span className="area-style-controls__option-preview">{option.preview}</span>
           </button>
         ))}
       </div>
@@ -270,25 +275,30 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
       >
         {activeFormat}
         <div
-          className={clsx('area-style-controls__popover', {
+          className={clsx('area-style-controls__popover', 'area-style-controls__popover--format', {
             'area-style-controls__popover--visible': openPopover === 'format',
           })}
         >
-          <div className="area-style-controls__options">
+          <div className="area-style-controls__options area-style-controls__options--format">
             {formatOptions.map(option => (
               <button
                 key={option.id}
                 type="button"
-                className={clsx('area-style-controls__option', {
-                  'area-style-controls__option--active': formatVariant === option.id,
-                })}
+                className={clsx(
+                  'area-style-controls__option',
+                  'area-style-controls__option--format-row',
+                  {
+                    'area-style-controls__option--active': formatVariant === option.id,
+                  },
+                )}
                 title={option.preview}
                 onClick={() => {
                   handleFormatChange(option.id as FormatVariant);
                   setOpenPopover(null);
                 }}
               >
-                {option.label}
+                <span>{option.label}</span>
+                <span className="area-style-controls__option-preview">{option.preview}</span>
               </button>
             ))}
           </div>

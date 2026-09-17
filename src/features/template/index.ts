@@ -1,6 +1,14 @@
 // Domain entities & value objects
 export type { Template } from './domain/entities/template';
-export type { TemplatePage, TemplateImage, GridGroup, GridGroupBounds, GridGroupSettings } from './domain/entities/template-page';
+export type {
+  TemplatePage,
+  TemplateImage,
+  GridGroup,
+  GridGroupBounds,
+  GridGroupSettings,
+  BindingGroup,
+  BindingSourceKind,
+} from './domain/entities/template-page';
 export type { Rectangle } from './domain/entities/rectangle';
 export type {
   FieldType,

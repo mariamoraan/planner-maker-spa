@@ -20,4 +20,11 @@ export interface Rectangle {
   compositeParts?: CompositePart[];
   gridGroupId?: string;
   gridCellIndex?: number;
+  /** Date binding group; omit = page anchor (implicit `page` source). */
+  bindingGroupId?: string;
+  /**
+   * Index within a sequence binding (`monthDays` / `weekDays`).
+   * Prefer over deriving from `order` when set. Grid cells usually mirror `gridCellIndex`.
+   */
+  sequenceIndex?: number;
 }

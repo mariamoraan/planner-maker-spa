@@ -232,6 +232,9 @@ export function assignRectsToGroup(
       ...rect,
       gridGroupId: group.id,
       gridCellIndex: cellIndex,
+      ...(group.bindingGroupId
+        ? { bindingGroupId: group.bindingGroupId, sequenceIndex: cellIndex }
+        : {}),
     };
   });
 }

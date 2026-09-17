@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { FieldStyle, FieldType, FormatVariant, GridGroup, Rectangle } from '@/features/template';
+import type { BindingGroup, FieldStyle, FieldType, FormatVariant, GridGroup, Rectangle } from '@/features/template';
 import { generateId } from '@/features/template/domain/services/id-generator';
 import {
   boundsFromInferredGrid,
@@ -35,6 +35,12 @@ import {
   translateGridGroupState,
   upsertGridGroup,
 } from '@/features/editor/domain/services/grid-group';
+import {
+  createBindingGroup,
+  defaultBindingSourceForPage,
+  removeBindingGroup,
+  upsertBindingGroup,
+} from '@/features/editor/domain/services/binding-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
@@ -115,6 +121,7 @@ function syncGridCellCountLocal(
         id: generateId(),
         formatVariant: templateRect.formatVariant,
         style: templateRect.style,
+        bindingGroupId: templateRect.bindingGroupId,
       }));
 
     nextRects = [...nextRects, ...newRects];
@@ -128,15 +135,21 @@ function persistGroup(
   rectangles: Rectangle[],
   group: GridGroup,
   gridGroups: Record<string, GridGroup> | undefined,
+  bindingGroups: Record<string, BindingGroup> | undefined,
   updatePageGridState: (updates: {
     rectangles: Rectangle[];
     gridGroups?: Record<string, GridGroup> | null;
+    bindingGroups?: Record<string, BindingGroup> | null;
   }) => void,
   setSelectedRectangleIds: (ids: string[]) => void,
 ) {
   const assigned = assignRectsToGroup(rectangles, group);
   const nextGridGroups = upsertGridGroup(gridGroups, group);
-  updatePageGridState({ rectangles: assigned, gridGroups: nextGridGroups });
+  updatePageGridState({
+    rectangles: assigned,
+    gridGroups: nextGridGroups,
+    bindingGroups,
+  });
   setSelectedRectangleIds(group.rectIds);
 }
 
@@ -179,12 +192,18 @@ export function useGridGroupOps() {
       }));
       const rectIds = rectsWithIds.map(rect => rect.id);
       const nextRects = [...currentImage.rectangles, ...rectsWithIds];
-      const group = buildGridGroup(rectIds, bounds, settings);
+      const binding = createBindingGroup(defaultBindingSourceForPage(currentImage.type));
+      const group = {
+        ...buildGridGroup(rectIds, bounds, settings),
+        bindingGroupId: binding.id,
+      };
+      const nextBindingGroups = upsertBindingGroup(currentImage.bindingGroups, binding);
 
       persistGroup(
         nextRects,
         group,
         currentImage.gridGroups,
+        nextBindingGroups,
         updatePageGridState,
         setSelectedRectangleIds,
       );
@@ -279,11 +298,16 @@ export function useGridGroupOps() {
       };
 
       const layoutRects = applyGridLayout(currentImage.rectangles, rectIds, bounds, settings);
-      const group = buildGridGroup(rectIds, bounds, settings);
+      const binding = createBindingGroup(defaultBindingSourceForPage(currentImage.type));
+      const group = {
+        ...buildGridGroup(rectIds, bounds, settings),
+        bindingGroupId: binding.id,
+      };
       persistGroup(
         layoutRects,
         group,
         currentImage.gridGroups,
+        upsertBindingGroup(currentImage.bindingGroups, binding),
         updatePageGridState,
         setSelectedRectangleIds,
       );
@@ -300,10 +324,14 @@ export function useGridGroupOps() {
 
       const nextRects = clearGridGroupFromRects(currentImage.rectangles, groupId);
       const nextGridGroups = removeGridGroup(currentImage.gridGroups, groupId);
+      const nextBindingGroups = group.bindingGroupId
+        ? removeBindingGroup(currentImage.bindingGroups, group.bindingGroupId)
+        : currentImage.bindingGroups;
 
       updatePageGridState({
         rectangles: nextRects,
         gridGroups: nextGridGroups ?? null,
+        bindingGroups: nextBindingGroups ?? null,
       });
       setSelectedRectangleIds(group.rectIds);
     },
@@ -374,11 +402,15 @@ export function useGridGroupOps() {
         nextRects = applyGridLayout(nextRects, rectIds, group.bounds, nextSettings);
       }
 
-      const nextGroup = buildGridGroup(rectIds, group.bounds, nextSettings, groupId);
+      const nextGroup = {
+        ...buildGridGroup(rectIds, group.bounds, nextSettings, groupId),
+        bindingGroupId: group.bindingGroupId,
+      };
       persistGroup(
         nextRects,
         nextGroup,
         currentImage.gridGroups,
+        currentImage.bindingGroups,
         updatePageGridState,
         setSelectedRectangleIds,
       );
@@ -410,12 +442,16 @@ export function useGridGroupOps() {
         clampedBounds,
         nextSettings,
       );
-      const nextGroup = buildGridGroup(group.rectIds, clampedBounds, nextSettings, groupId);
+      const nextGroup = {
+        ...buildGridGroup(group.rectIds, clampedBounds, nextSettings, groupId),
+        bindingGroupId: group.bindingGroupId,
+      };
 
       persistGroup(
         nextRects,
         nextGroup,
         currentImage.gridGroups,
+        currentImage.bindingGroups,
         updatePageGridState,
         setSelectedRectangleIds,
       );
@@ -532,10 +568,14 @@ export function useGridGroupOps() {
       const idsToDelete = new Set(group.rectIds);
       const nextRects = currentImage.rectangles.filter(rect => !idsToDelete.has(rect.id));
       const nextGridGroups = removeGridGroup(currentImage.gridGroups, groupId);
+      const nextBindingGroups = group.bindingGroupId
+        ? removeBindingGroup(currentImage.bindingGroups, group.bindingGroupId)
+        : currentImage.bindingGroups;
 
       updatePageGridState({
         rectangles: nextRects,
         gridGroups: nextGridGroups ?? null,
+        bindingGroups: nextBindingGroups ?? null,
       });
       setSelectedRectangleIds([]);
     },

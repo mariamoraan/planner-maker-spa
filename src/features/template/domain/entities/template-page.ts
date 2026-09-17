@@ -34,6 +34,22 @@ export interface GridGroup {
   settings: GridGroupSettings;
   /** Degrees, clockwise. Rotates the whole grid around its bounds center. */
   rotation?: number;
+  /** Shared date source for cells in this grid (and any free members of the same group). */
+  bindingGroupId?: string;
+}
+
+/** How a binding group resolves dates from the page context. */
+export type BindingSourceKind = 'page' | 'monthDays' | 'weekDays';
+
+/**
+ * First-class date binding shared by one or more blocks.
+ * Independent of layout grids — a grid may reference a binding group,
+ * and free (non-grid) blocks can share one too.
+ */
+export interface BindingGroup {
+  id: string;
+  name?: string;
+  source: BindingSourceKind;
 }
 
 export interface TemplatePage {
@@ -44,6 +60,7 @@ export interface TemplatePage {
   height: number;
   rectangles: Rectangle[];
   gridGroups?: Record<string, GridGroup>;
+  bindingGroups?: Record<string, BindingGroup>;
   createdAt: Date;
   updatedAt: Date;
   src: string;

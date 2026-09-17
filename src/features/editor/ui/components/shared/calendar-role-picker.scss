@@ -1,0 +1,147 @@
+.calendar-role-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.calendar-role-picker__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  height: 2rem;
+  padding: 0 0.65rem;
+  border: 1px solid hsl(168, 40%, 78%);
+  border-radius: 8px;
+  background: rgba(0, 200, 180, 0.08);
+  color: hsl(168, 50%, 28%);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 150ms ease, border-color 150ms ease;
+
+  &:hover,
+  &--open {
+    background: rgba(0, 200, 180, 0.14);
+    border-color: hsl(168, 76%, 42%);
+  }
+
+  &--icon {
+    width: 2rem;
+    padding: 0;
+  }
+
+  &--button {
+    max-width: 7.5rem;
+    padding: 0 0.5rem 0 0.55rem;
+  }
+}
+
+.calendar-role-picker__trigger-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendar-role-picker__chevron {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.calendar-role-picker__menu {
+  position: fixed;
+  z-index: 60;
+  width: 15.5rem;
+  padding: 0.55rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.06),
+    0 12px 28px -4px rgba(0, 0, 0, 0.12);
+}
+
+.calendar-role-picker__title {
+  margin: 0 0 0.45rem;
+  padding: 0 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: hsl(220, 8%, 52%);
+}
+
+.calendar-role-picker__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calendar-role-picker__option {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+
+  &:hover {
+    background: hsl(168, 40%, 97%);
+    border-color: hsl(168, 40%, 88%);
+  }
+
+  &--active {
+    background: hsl(168, 45%, 95%);
+    border-color: hsl(168, 50%, 72%);
+
+    .calendar-role-picker__option-icon {
+      background: hsl(168, 76%, 42%);
+      color: #fff;
+    }
+
+    .calendar-role-picker__option-label {
+      color: hsl(168, 50%, 22%);
+    }
+  }
+}
+
+.calendar-role-picker__option-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 8px;
+  background: hsl(220, 14%, 94%);
+  color: hsl(220, 12%, 35%);
+}
+
+.calendar-role-picker__option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.calendar-role-picker__option-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: hsl(220, 15%, 20%);
+  line-height: 1.2;
+}
+
+.calendar-role-picker__option-hint {
+  font-size: 0.6875rem;
+  color: hsl(220, 8%, 52%);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

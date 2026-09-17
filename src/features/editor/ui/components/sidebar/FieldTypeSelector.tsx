@@ -14,10 +14,12 @@ import { EndWeekDayIcon } from './end-week-day-icon';
 import { WeekNumberIcon } from './week-number-icon';
 import { CompositeIcon } from './composite-icon';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
+import { useBindingGroupOps } from '@/features/editor/ui/hooks/use-binding-group-ops';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { getDefaultFieldStyle, getDefaultFormatVariant, resolvePlannerDefaultFontId } from '@/features/editor/domain/services/field-style-config';
 import { getDefaultBlockSize } from '@/features/editor/domain/services/default-block-size';
+import { defaultLooseBlockBindingSource } from '@/features/editor/domain/services/binding-group';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { GridIcon } from '@/core/icons';
 import { EDITOR_CHROME_INK } from '@/features/editor/domain/constants/editor-chrome';
@@ -60,6 +62,7 @@ export const FieldTypeSelector = () => {
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const setSelectedFieldType = useEditorStore(state => state.setSelectedFieldType);
   const { addArea } = useManageAreas();
+  const { setRectangleBindingSource } = useBindingGroupOps();
   const { createDefaultGrid } = useGridGroupOps();
   const currentImage = useCurrentImage();
   const template = useCurrentTemplate();
@@ -98,7 +101,7 @@ export const FieldTypeSelector = () => {
 
     const { width, height } = getDefaultBlockSize(type, currentImage.width, currentImage.height);
 
-    addArea({
+    const id = addArea({
       x: currentImage.width / 2 - width / 2,
       y: currentImage.height / 2 - height / 2,
       width,
@@ -109,6 +112,11 @@ export const FieldTypeSelector = () => {
       style: getDefaultFieldStyle(plannerFontId),
       ...(type === 'composite' ? { compositeParts: [...DEFAULT_COMPOSITE_PARTS] } : {}),
     });
+
+    const defaultSource = defaultLooseBlockBindingSource(currentImage.type);
+    if (id && defaultSource !== 'page') {
+      queueMicrotask(() => setRectangleBindingSource(id, defaultSource));
+    }
   };
 
   const handleAddGrid = () => {

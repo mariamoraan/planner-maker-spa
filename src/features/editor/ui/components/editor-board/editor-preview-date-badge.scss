@@ -1,0 +1,30 @@
+.editor-preview-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: min(280px, 70vw);
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  color: hsl(220, 12%, 35%);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  pointer-events: auto;
+  user-select: none;
+
+  &__prefix {
+    color: hsl(220, 8%, 52%);
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  &__value {
+    font-weight: 650;
+    color: hsl(220, 15%, 22%);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

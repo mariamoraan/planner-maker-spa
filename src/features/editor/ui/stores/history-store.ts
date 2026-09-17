@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GridGroup, Rectangle, TemplateImage } from '@/features/template';
+import type { BindingGroup, GridGroup, Rectangle, TemplateImage } from '@/features/template';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { applyPageImageData } from '@/features/editor/domain/services/page-image-asset';
@@ -48,10 +48,12 @@ export type HistoryAction =
       before: {
         rectangles: Rectangle[];
         gridGroups?: Record<string, GridGroup> | null;
+        bindingGroups?: Record<string, BindingGroup> | null;
       };
       after: {
         rectangles: Rectangle[];
         gridGroups?: Record<string, GridGroup> | null;
+        bindingGroups?: Record<string, BindingGroup> | null;
       };
     }
   | {

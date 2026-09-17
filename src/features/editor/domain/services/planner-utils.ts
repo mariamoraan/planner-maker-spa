@@ -38,6 +38,11 @@ import {
   resolveWeekStartsOn,
 } from '@/features/template/domain/services/locale-config';
 import { degToRad } from '@/features/editor/domain/services/block-geometry';
+import {
+  getSequenceIndex,
+  resolveEffectiveBindingSource,
+} from '@/features/editor/domain/services/binding-group';
+import type { BindingSourceKind } from '@/features/template';
 
 /** @deprecated Use formatMonthName with locale instead */
 export const MONTH_NAMES = [
@@ -194,17 +199,44 @@ export function getMonthsBetween({
   return months;
 }
 
+/**
+ * Pick a nearby month whose day 1 falls on the planner's first weekday.
+ * Keeps editor preview grids aligned: cell 0 = day 1 (no leading padding).
+ */
+export function findPreviewMonthAlignedToWeekStart(
+  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
+  from: Date = new Date(),
+): { year: number; month: number; firstOfMonth: Date } {
+  const targetWeekday = resolveWeekStartsOn(weekStartsOn);
+
+  for (let offset = 0; offset < 12; offset++) {
+    const firstOfMonth = new Date(from.getFullYear(), from.getMonth() + offset, 1);
+    if (firstOfMonth.getDay() === targetWeekday) {
+      return {
+        year: firstOfMonth.getFullYear(),
+        month: firstOfMonth.getMonth(),
+        firstOfMonth,
+      };
+    }
+  }
+
+  const fallback = new Date(from.getFullYear(), from.getMonth(), 1);
+  return {
+    year: fallback.getFullYear(),
+    month: fallback.getMonth(),
+    firstOfMonth: fallback,
+  };
+}
+
 export function getEditorPreviewContext(
   templateImage: TemplateImage,
   weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
   plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
 ): FieldValueContext {
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
-  const firstOfMonth = new Date(year, month, 1);
-  const plannerStart = plannerRange?.plannerStart ?? new Date(year, 0, 1);
-  const plannerEnd = plannerRange?.plannerEnd ?? new Date(year, 11, 31);
+  const { year, month, firstOfMonth } = findPreviewMonthAlignedToWeekStart(weekStartsOn, today);
+  const plannerStart = plannerRange?.plannerStart ?? new Date(today.getFullYear(), 0, 1);
+  const plannerEnd = plannerRange?.plannerEnd ?? new Date(today.getFullYear(), 11, 31);
 
   switch (templateImage.type) {
     case 'daily-page':
@@ -241,6 +273,74 @@ export function getEditorPreviewContext(
       return { plannerStart, plannerEnd, year: plannerStart.getFullYear(), date: plannerStart };
     default:
       return { year, month, date: firstOfMonth, plannerStart, plannerEnd };
+  }
+}
+
+export interface EditorPreviewDateInfo {
+  /** Short label shown in the badge, e.g. "febrero 2027". */
+  label: string;
+  /** Longer explanation for title/tooltip. */
+  detail: string;
+  /** Anchor date used for preview (1st of preview month, week start, etc.). */
+  anchor: Date;
+}
+
+/**
+ * Human-readable description of the date window used by the editor preview.
+ * Helps users understand why they may see a future month (week-start alignment).
+ */
+export function getEditorPreviewDateInfo(
+  templateImage: TemplateImage,
+  weekStartsOn: WeekStartsOn = DEFAULT_WEEK_STARTS_ON,
+  plannerRange?: { plannerStart?: Date; plannerEnd?: Date },
+  locale: Locale = DEFAULT_LOCALE,
+): EditorPreviewDateInfo {
+  const context = getEditorPreviewContext(templateImage, weekStartsOn, plannerRange);
+  const capitalize = (value: string) =>
+    value.length > 0 ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+
+  switch (templateImage.type) {
+    case 'weekly-calendar': {
+      const start = context.week?.startDate;
+      const end = context.week?.endDate;
+      if (!start || !end) {
+        return { label: '—', detail: '', anchor: new Date() };
+      }
+      const label = `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`;
+      return {
+        label,
+        detail: 'previewWeek',
+        anchor: start,
+      };
+    }
+    case 'cover':
+    case 'extra': {
+      const start = context.plannerStart ?? new Date();
+      const end = context.plannerEnd ?? start;
+      return {
+        label: `${format(start, 'd MMM yyyy', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`,
+        detail: 'previewPlannerRange',
+        anchor: start,
+      };
+    }
+    case 'daily-page': {
+      const date = context.date ?? new Date(context.year!, context.month!, 1);
+      return {
+        label: capitalize(format(date, 'd MMMM yyyy', { locale })),
+        detail: 'previewDayAligned',
+        anchor: date,
+      };
+    }
+    case 'month-cover':
+    case 'monthly-calendar':
+    default: {
+      const date = new Date(context.year!, context.month!, 1);
+      return {
+        label: capitalize(format(date, 'MMMM yyyy', { locale })),
+        detail: 'previewMonthAligned',
+        anchor: date,
+      };
+    }
   }
 }
 
@@ -366,6 +466,145 @@ export function resolveWeekNumberDate(
   }
 }
 
+export interface ResolvedBindingDate {
+  date: Date | null;
+  referenceMonth: number | undefined;
+  source: BindingSourceKind;
+  sequenceIndex: number;
+}
+
+function resolveMonthDayList(
+  context: FieldValueContext,
+  weekStartsOn: WeekStartsOn,
+): { dates: Date[]; referenceMonth: number } | null {
+  if (context.days?.length) {
+    const referenceMonth =
+      context.month ??
+      context.date?.getMonth() ??
+      context.days[Math.min(15, context.days.length - 1)]?.getMonth() ??
+      0;
+    return { dates: context.days, referenceMonth };
+  }
+
+  const anchor =
+    context.date ??
+    (context.year !== undefined && context.month !== undefined
+      ? new Date(context.year, context.month, 1)
+      : null);
+  if (!anchor) return null;
+
+  const year = anchor.getFullYear();
+  const month = anchor.getMonth();
+  return {
+    dates: getMonthDatesForGrid({ year, month, weekStartsOn }),
+    referenceMonth: month,
+  };
+}
+
+function resolveWeekDayList(
+  context: FieldValueContext,
+  weekStartsOn: WeekStartsOn,
+): { dates: Date[]; referenceMonth: number } | null {
+  if (context.week?.days?.length) {
+    return {
+      dates: context.week.days,
+      referenceMonth: context.month ?? context.week.days[0]?.getMonth(),
+    };
+  }
+
+  const anchor =
+    context.date ??
+    context.week?.startDate ??
+    (context.year !== undefined && context.month !== undefined
+      ? new Date(context.year, context.month, 1)
+      : null);
+  if (!anchor) return null;
+
+  const weekStartOption = resolveWeekStartsOn(weekStartsOn);
+  const weekStart = startOfWeek(anchor, { weekStartsOn: weekStartOption });
+  const dates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  return {
+    dates,
+    referenceMonth: context.month ?? anchor.getMonth(),
+  };
+}
+
+/**
+ * Resolve the date a rectangle should display from its binding group
+ * (or implicit page anchor when unbound).
+ */
+export function resolveBindingDate({
+  rectangle,
+  templateImage,
+  context,
+  weekStartsOn = DEFAULT_WEEK_STARTS_ON,
+  endpoint,
+}: {
+  rectangle: Rectangle;
+  templateImage: TemplateImage;
+  context: FieldValueContext;
+  weekStartsOn?: WeekStartsOn;
+  endpoint?: 'start' | 'end';
+}): ResolvedBindingDate {
+  const source = resolveEffectiveBindingSource(rectangle, templateImage);
+  const sequenceIndex = getSequenceIndex(rectangle, templateImage.rectangles);
+
+  if (source === 'page') {
+    if (endpoint) {
+      return {
+        date: resolveRangeEndpointDate(endpoint, context, templateImage, weekStartsOn),
+        referenceMonth: context.month,
+        source,
+        sequenceIndex: 0,
+      };
+    }
+    return {
+      date: resolveCompositeAnchorDate(context, templateImage),
+      referenceMonth: context.month,
+      source,
+      sequenceIndex: 0,
+    };
+  }
+
+  const list =
+    source === 'monthDays'
+      ? resolveMonthDayList(context, weekStartsOn)
+      : resolveWeekDayList(context, weekStartsOn);
+
+  if (!list) {
+    return {
+      date: null,
+      referenceMonth: context.month,
+      source,
+      sequenceIndex,
+    };
+  }
+
+  if (endpoint === 'start') {
+    return {
+      date: list.dates[0] ?? null,
+      referenceMonth: list.referenceMonth,
+      source,
+      sequenceIndex: 0,
+    };
+  }
+  if (endpoint === 'end') {
+    return {
+      date: list.dates.at(-1) ?? null,
+      referenceMonth: list.referenceMonth,
+      source,
+      sequenceIndex: Math.max(0, list.dates.length - 1),
+    };
+  }
+
+  return {
+    date: list.dates[sequenceIndex] ?? null,
+    referenceMonth: list.referenceMonth,
+    source,
+    sequenceIndex,
+  };
+}
+
 function formatCompositePart(
   part: CompositePart,
   date: Date,
@@ -418,7 +657,6 @@ export function getFieldValue({
   locale?: Locale;
   weekStartsOn?: WeekStartsOn;
 }): {fieldValue: string, fieldColor: string} {
-  const dateContext = context.date;
   const formatVariant = getFormatVariant(rectangle);
   const style = resolveFieldStyle(rectangle);
   const userColor = style.color;
@@ -429,89 +667,90 @@ export function getFieldValue({
     fieldColor,
   });
 
+  // Legacy unbound `day` sequencing (pre-bindingGroups) on monthly/weekly pages.
+  if (
+    fieldType === 'day' &&
+    !rectangle.bindingGroupId &&
+    !context.date &&
+    (context.week || context.days)
+  ) {
+    const dayRectangles = templateImage.rectangles
+      .filter(rect => rect.fieldType === 'day' && !rect.bindingGroupId)
+      .sort((a, b) => a.order - b.order);
+    const index = dayRectangles.findIndex(rect => rect.id === rectangle.id);
+    const dayList = context.week?.days ?? context.days ?? [];
+    if (index >= 0 && index < dayList.length) {
+      const day = dayList[index];
+      const isDayInCurrentMonth = day.getMonth() === context.month;
+      const allowOutOfMonth = context.week
+        ? Boolean(fillIncompleteWeeks)
+        : Boolean(fillIncompleteMonths);
+      if (!isDayInCurrentMonth && !allowOutOfMonth) {
+        return result('', userColor);
+      }
+      return result(
+        formatDayValue(day, formatVariant, locale),
+        resolveFieldColor(isDayInCurrentMonth, userColor),
+      );
+    }
+    return result('', userColor);
+  }
+
+  const endpoint =
+    fieldType === 'startDay' ? 'start' : fieldType === 'endDay' ? 'end' : undefined;
+
+  const resolved = resolveBindingDate({
+    rectangle,
+    templateImage,
+    context,
+    weekStartsOn,
+    endpoint,
+  });
+
+  const date = resolved.date;
+  if (!date) {
+    return result('', userColor);
+  }
+
+  const isSequence = resolved.source === 'monthDays' || resolved.source === 'weekDays';
+  const referenceMonth = resolved.referenceMonth;
+  const isInCurrentMonth =
+    referenceMonth === undefined || date.getMonth() === referenceMonth;
+  const shouldMuteOutOfMonth = isSequence && !isInCurrentMonth;
+
+  const allowOutOfMonth =
+    resolved.source === 'weekDays'
+      ? Boolean(fillIncompleteWeeks)
+      : resolved.source === 'monthDays'
+        ? Boolean(fillIncompleteMonths)
+        : true;
+
+  if (shouldMuteOutOfMonth && !allowOutOfMonth) {
+    return result('', userColor);
+  }
+
+  const resolvedColor = shouldMuteOutOfMonth
+    ? resolveFieldColor(false, userColor)
+    : userColor;
+
   switch (fieldType) {
     case 'year':
-      if (dateContext) {
-        return result(formatYearValue(dateContext, formatVariant), userColor);
-      }
-      if (context.year !== undefined) {
-        const yearDate = new Date(context.year, 0, 1);
-        return result(formatYearValue(yearDate, formatVariant), userColor);
-      }
-      return result('', userColor);
+      return result(formatYearValue(date, formatVariant), resolvedColor);
     case 'month':
-      if (dateContext) {
-        return result(formatMonthValue(dateContext, formatVariant, locale), userColor);
-      }
-      if (context.month !== undefined && context.year !== undefined) {
-        const monthDate = new Date(context.year, context.month, 1);
-        return result(formatMonthValue(monthDate, formatVariant, locale), userColor);
-      }
-      return result('', userColor);
+      return result(formatMonthValue(date, formatVariant, locale), resolvedColor);
     case 'day':
-      if (dateContext) {
-        return result(formatDayValue(dateContext, formatVariant, locale), userColor);
-      }
-      if (context.week) {
-        const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
-
-        const index = dayRectangles.indexOf(rectangle);
-        if (index >= 0 && index < context.week.days.length) {
-          const day = context.week.days[index];
-          const isDayInCurrentMonth = day.getMonth() === context.month;
-          if(fillIncompleteWeeks) {
-            return result(
-              formatDayValue(day, formatVariant, locale),
-              resolveFieldColor(isDayInCurrentMonth, userColor),
-            );
-          }
-          else if (isDayInCurrentMonth) {
-            return result(formatDayValue(day, formatVariant, locale), userColor);
-          }
-        }
-      }
-      if (context.days) {
-        const dayRectangles = templateImage.rectangles.filter(rect => rect.fieldType === 'day').sort((a, b) => a.order - b.order );
-
-        const index = dayRectangles.indexOf(rectangle);
-        if (index >= 0 && index < context.days.length) {
-          const day = context.days[index];
-          const isDayInCurrentMonth = day.getMonth() === context.month;
-          if(fillIncompleteMonths) {
-            return result(
-              formatDayValue(day, formatVariant, locale),
-              resolveFieldColor(isDayInCurrentMonth, userColor),
-            );
-          }
-          else if (isDayInCurrentMonth) {
-            return result(formatDayValue(day, formatVariant, locale), userColor);
-          }
-        }
-      }
-      return result('', userColor);
-    case 'startDay': {
-      const startDate = resolveRangeEndpointDate('start', context, templateImage, weekStartsOn);
-      if (!startDate) return result('', userColor);
-      return result(formatStartEndValue(startDate, formatVariant, locale), userColor);
-    }
-    case 'endDay': {
-      const endDate = resolveRangeEndpointDate('end', context, templateImage, weekStartsOn);
-      if (!endDate) return result('', userColor);
-      return result(formatStartEndValue(endDate, formatVariant, locale), userColor);
-    }
-    case 'weekNumber': {
-      const weekDate = resolveWeekNumberDate(context, templateImage);
-      if (!weekDate) return result('', userColor);
-      return result(String(getWeekNumber(weekDate, weekStartsOn)), userColor);
-    }
+      return result(formatDayValue(date, formatVariant, locale), resolvedColor);
+    case 'startDay':
+    case 'endDay':
+      return result(formatStartEndValue(date, formatVariant, locale), resolvedColor);
+    case 'weekNumber':
+      return result(String(getWeekNumber(date, weekStartsOn)), resolvedColor);
     case 'composite': {
-      const anchor = resolveCompositeAnchorDate(context, templateImage);
-      if (!anchor) return result('', userColor);
       const parts = resolveCompositeParts(rectangle);
       const value = parts
-        .map(part => formatCompositePart(part, anchor, locale, weekStartsOn))
+        .map(part => formatCompositePart(part, date, locale, weekStartsOn))
         .join('');
-      return result(value, userColor);
+      return result(value, resolvedColor);
     }
     default:
       return result('', userColor);

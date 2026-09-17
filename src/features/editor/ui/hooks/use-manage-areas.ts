@@ -1,7 +1,7 @@
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useHistoryStore } from '@/features/editor/ui/stores/history-store';
-import { DEFAULT_COMPOSITE_PARTS, FieldType, Rectangle, type GridGroup } from '@/features/template';
+import { DEFAULT_COMPOSITE_PARTS, FieldType, Rectangle, type BindingGroup, type GridGroup } from '@/features/template';
 import { getDefaultFormatVariant } from '@/features/editor/domain/services/field-style-config';
 import { removeGridGroupsFullyCoveredBy } from '@/features/editor/domain/services/grid-group';
 import {
@@ -107,6 +107,7 @@ export const useManageAreas = () => {
         updates: {
           rectangles: Rectangle[];
           gridGroups?: Record<string, GridGroup> | null;
+          bindingGroups?: Record<string, BindingGroup> | null;
         },
         options?: { recordHistory?: boolean },
       ) => {
@@ -125,6 +126,9 @@ export const useManageAreas = () => {
               gridGroups: currentImage.gridGroups
                 ? structuredClone(currentImage.gridGroups)
                 : null,
+              bindingGroups: currentImage.bindingGroups
+                ? structuredClone(currentImage.bindingGroups)
+                : null,
             },
             after: {
               rectangles: structuredClone(updates.rectangles),
@@ -135,6 +139,14 @@ export const useManageAreas = () => {
                     : null
                   : currentImage.gridGroups
                     ? structuredClone(currentImage.gridGroups)
+                    : null,
+              bindingGroups:
+                updates.bindingGroups !== undefined
+                  ? updates.bindingGroups
+                    ? structuredClone(updates.bindingGroups)
+                    : null
+                  : currentImage.bindingGroups
+                    ? structuredClone(currentImage.bindingGroups)
                     : null,
             },
           });

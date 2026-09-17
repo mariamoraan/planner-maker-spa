@@ -37,22 +37,47 @@
                 gap: 12px;
             }
         }
+    }
 
-        &__toolbar-slot {
-            position: relative;
-            z-index: 10;
-            height: 52px;
-            flex-shrink: 0;
-            width: 100%;
-            min-width: 0;
-            display: flex;
-            justify-content: center;
-            overflow-x: auto;
-            overflow-y: visible;
+    &__toolbar-slot {
+        position: relative;
+        z-index: 10;
+        height: 52px;
+        flex-shrink: 0;
+        width: 100%;
+        min-width: 0;
+        display: flex;
+        justify-content: center;
+        box-sizing: border-box;
+        overflow-x: auto;
+        overflow-y: visible;
+
+        @media (max-width: $editor-compact-max-width) {
+            justify-content: flex-start;
+        }
+
+        &--with-preview-date {
+            // Reserve room for the preview-date badge on the right
+            // (badge max-width ~280px + gap) so Generar planner does not overlap.
+            padding-right: min(292px, 42vw);
 
             @media (max-width: $editor-compact-max-width) {
-                justify-content: flex-start;
+                padding-right: min(240px, 48vw);
             }
+        }
+    }
+
+    &__preview-date {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 11;
+        max-width: min(280px, 70vw);
+        pointer-events: none;
+
+        > * {
+            pointer-events: auto;
         }
     }
 }

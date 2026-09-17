@@ -3,6 +3,8 @@ import {
   getMonthDatesForGrid,
   getMonthsBetween,
   getFieldValue,
+  findPreviewMonthAlignedToWeekStart,
+  getEditorPreviewContext,
 } from '@/features/editor/domain/services/planner-utils';
 import type { Rectangle, TemplateImage } from '@/features/template';
 
@@ -183,5 +185,39 @@ describe('getFieldValue startDay/endDay with weekStartsOn', () => {
         rectangle: weeklyTemplate.rectangles[1] as Rectangle,
       }).fieldValue
     ).toBe('7');
+  });
+});
+
+describe('findPreviewMonthAlignedToWeekStart', () => {
+  it('returns a month whose day 1 is Monday when week starts on Monday', () => {
+    const { firstOfMonth } = findPreviewMonthAlignedToWeekStart(
+      'monday',
+      new Date(2026, 8, 17),
+    );
+    expect(firstOfMonth.getDay()).toBe(1);
+    expect(firstOfMonth.getDate()).toBe(1);
+  });
+
+  it('returns a month whose day 1 is Sunday when week starts on Sunday', () => {
+    const { firstOfMonth } = findPreviewMonthAlignedToWeekStart(
+      'sunday',
+      new Date(2026, 8, 17),
+    );
+    expect(firstOfMonth.getDay()).toBe(0);
+    expect(firstOfMonth.getDate()).toBe(1);
+  });
+});
+
+describe('getEditorPreviewContext', () => {
+  it('uses an aligned month so the monthly grid starts on day 1', () => {
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'monthly-1',
+      type: 'monthly-calendar',
+      rectangles: [],
+    };
+    const context = getEditorPreviewContext(page, 'monday');
+    expect(context.days?.[0]?.getDate()).toBe(1);
+    expect(context.days?.[0]?.getMonth()).toBe(context.month);
   });
 });

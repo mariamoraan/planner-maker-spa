@@ -1,6 +1,7 @@
 import { TemplateCanvas } from "../canvas/TemplateCanvas"
 import { PagesMap } from "../pages-map/pages-map"
 import { Toolbar } from "./toolbar"
+import { EditorPreviewDateBadge } from "./editor-preview-date-badge"
 import './editor-board.scss'
 import { EditorSidebar } from "../sidebar/editor-sidebar"
 import { blockSelectionZoneProps } from "@/features/editor/domain/services/block-selection"
@@ -20,8 +21,21 @@ export const EditorBoard = () => {
             <div className="editor-board__main">
                 <EditorSidebar />
                 <div className="editor-board__main__content">
-                <div className="editor-board__toolbar-slot" {...blockSelectionZoneProps} data-tour-anchor="toolbar">
+                <div
+                  className={
+                    currentImage
+                      ? 'editor-board__toolbar-slot editor-board__toolbar-slot--with-preview-date'
+                      : 'editor-board__toolbar-slot'
+                  }
+                  {...blockSelectionZoneProps}
+                  data-tour-anchor="toolbar"
+                >
                     <Toolbar />
+                    {currentImage ? (
+                      <div className="editor-board__preview-date">
+                        <EditorPreviewDateBadge />
+                      </div>
+                    ) : null}
                 </div>
                     {currentImage ? <TemplateCanvas /> : <EmptyPlannerSetup />}
                     <PagesMap />

@@ -23,6 +23,7 @@ import { isDisplaySrcFresh } from '@/features/template/infrastructure/uploadthin
 import type { TemplatePageRecord } from '@/features/template/domain/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/canvas-snap';
 import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/domain/services/grid-group';
+import { withRepairedBindingMetadata } from '@/features/editor/domain/services/binding-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
 const RECTANGLE_SYNC_DELAY_MS = 500;
@@ -150,8 +151,11 @@ function loadPageSrcOnce(uid: string | null, image: TemplateImage): Promise<Temp
 function withRepairedGridMetadata(image: TemplateImage): TemplateImage {
   const gridGroups = repairGridGroupSettings(image.gridGroups);
   const rectangles = repairGridMetadata(image.rectangles, gridGroups);
-  if (rectangles === image.rectangles && gridGroups === image.gridGroups) return image;
-  return { ...image, rectangles, gridGroups };
+  const withGrid =
+    rectangles === image.rectangles && gridGroups === image.gridGroups
+      ? image
+      : { ...image, rectangles, gridGroups };
+  return withRepairedBindingMetadata(withGrid);
 }
 
 function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
@@ -164,6 +168,7 @@ function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
     height: image.height,
     rectangles: image.rectangles,
     gridGroups: image.gridGroups,
+    bindingGroups: image.bindingGroups,
     imageRef,
     createdAt: image.createdAt,
     updatedAt: image.updatedAt,
@@ -199,7 +204,10 @@ interface TemplateState {
     name?: string;
   }) => Promise<string>;
   getImageData: (imageId: string) => Promise<string | undefined>;
-  updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage> & { gridGroups?: TemplateImage['gridGroups'] | null }) => void;
+  updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage> & {
+    gridGroups?: TemplateImage['gridGroups'] | null;
+    bindingGroups?: TemplateImage['bindingGroups'] | null;
+  }) => void;
   deleteImage: (templateId: string, imageId: string) => Promise<void>;
   setCurrentImage: (id: string | null) => Promise<void>;
   getCurrentImage: (templateId: string) => TemplateImage | null;
@@ -539,6 +547,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     const localUpdates: Partial<TemplateImage> = {
       ...updates,
       gridGroups: updates.gridGroups === null ? undefined : updates.gridGroups,
+      bindingGroups: updates.bindingGroups === null ? undefined : updates.bindingGroups,
     };
 
     set(state => ({
@@ -559,6 +568,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     if (uid) {
       const pageUpdates: Partial<TemplatePageRecord> & {
         gridGroups?: TemplatePageRecord['gridGroups'] | null;
+        bindingGroups?: TemplatePageRecord['bindingGroups'] | null;
       } = {};
       if (updates.name !== undefined) pageUpdates.name = updates.name;
       if (updates.type !== undefined) pageUpdates.type = updates.type;
@@ -567,6 +577,9 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       if (updates.rectangles !== undefined) pageUpdates.rectangles = updates.rectangles;
       if (updates.gridGroups !== undefined) {
         pageUpdates.gridGroups = updates.gridGroups;
+      }
+      if (updates.bindingGroups !== undefined) {
+        pageUpdates.bindingGroups = updates.bindingGroups;
       }
       if (updates.imageRef !== undefined) pageUpdates.imageRef = updates.imageRef;
 

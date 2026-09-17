@@ -29,8 +29,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    width: 400px;
-    max-width: max-content;
+    width: max-content;
+    max-width: 100%;
 
     &--fonts {
       flex-direction: column;
@@ -42,6 +42,14 @@
       overscroll-behavior: contain;
       padding-right: 2px;
       scrollbar-width: thin;
+    }
+
+    &--format {
+      flex-direction: column;
+      flex-wrap: nowrap;
+      gap: 4px;
+      width: 11.5rem;
+      max-width: 100%;
     }
 
     &--text-case {
@@ -73,6 +81,24 @@
       min-width: 40px;
       font-size: 14px;
     }
+
+    &--format-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      width: 100%;
+      min-width: 0;
+      padding: 8px 10px;
+      text-align: left;
+    }
+  }
+
+  &__option-preview {
+    font-size: 12px;
+    font-weight: 500;
+    color: #888;
+    font-variant-numeric: tabular-nums;
   }
 
   &__color-row {
@@ -223,12 +249,13 @@
     left: 50%;
     transform: translateX(-50%);
     z-index: 10;
-    padding: 16px;
-    min-width: 160px;
-    max-width: min(260px, 80vw);
+    padding: 8px;
+    min-width: 0;
+    width: max-content;
+    max-width: min(280px, 80vw);
     display: none;
     background: white;
-    border-radius: 16px;
+    border-radius: 12px;
     box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
 
     &--visible {
@@ -238,12 +265,17 @@
     &--color {
       min-width: 200px;
       max-width: min(280px, 80vw);
+      padding: 12px;
 
       .area-style-controls__hex-input {
         flex: none;
         width: 100%;
         min-width: 0;
       }
+    }
+
+    &--format {
+      padding: 6px;
     }
   }
 }

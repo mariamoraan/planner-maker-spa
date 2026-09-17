@@ -79,7 +79,59 @@ $toolbar-padding-x-compact: 16px;
         line-height: 1;
         white-space: nowrap;
         flex-shrink: 0;
+
+        &--count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 1.75rem;
+            height: 1.75rem;
+            padding: 0 0.45rem;
+            border-radius: 999px;
+            font-size: 12px;
+            background: hsl(220, 14%, 94%);
+            color: hsl(220, 12%, 35%);
+        }
     }
+
+    &__icon-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    &__icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        border: 1px solid hsl(168, 40%, 78%);
+        border-radius: 8px;
+        background: rgba(0, 200, 180, 0.08);
+        color: hsl(168, 50%, 28%);
+        cursor: pointer;
+        transition: background 150ms ease, border-color 150ms ease;
+
+        &:hover {
+            background: rgba(0, 200, 180, 0.14);
+            border-color: hsl(168, 76%, 42%);
+        }
+
+        &--danger {
+            border-color: #fecaca;
+            background: #fef2f2;
+            color: #dc2626;
+
+            &:hover {
+                background: #fee2e2;
+                border-color: #fca5a5;
+            }
+        }
+    }
+
     &__delete-button {
         flex-shrink: 0;
     }
