@@ -199,6 +199,8 @@
     "startProject": "Start a project",
     "createFirst": "Create your first planner",
     "recent": "Recent",
+    "renameProject": "Rename",
+    "deleteProject": "Delete project",
     "deleteConfirm": "Delete this project?",
     "exploreBrand": "Explore Amark"
   },
@@ -310,7 +312,7 @@
     "calendarRolePage": "This page’s date",
     "calendarRoleMonth": "Month calendar",
     "calendarRoleWeek": "Week calendar",
-    "calendarRolePageShort": "Page",
+    "calendarRolePageShort": "This page",
     "calendarRoleMonthShort": "Month",
     "calendarRoleWeekShort": "Week",
     "calendarUseAsCalendar": "Use as calendar",

@@ -62,6 +62,21 @@
     text-overflow: ellipsis;
   }
 
+  &__name-input {
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+    padding: 2px 6px;
+    border: 1px solid hsl(var(--ring));
+    border-radius: 6px;
+    background: hsl(var(--background));
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: hsl(var(--foreground));
+    outline: none;
+  }
+
   &__format {
     flex-shrink: 0;
     padding: 2px 8px;

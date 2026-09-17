@@ -53,17 +53,25 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const handleConfirmUpload = useCallback(() => {
     if (!pendingImage) return;
 
+    const image = pendingImage;
+    const templateType = selectedTemplateType;
+
     onUploadComplete?.();
+    setPendingImage(null);
+    setUploadDialogOpen(false);
+
     void (async () => {
-      await addImage(
-        pendingImage.data,
-        pendingImage.width,
-        pendingImage.height,
-        pendingImage.name,
-        selectedTemplateType,
-      );
-      setPendingImage(null);
-      setUploadDialogOpen(false);
+      try {
+        await addImage(
+          image.data,
+          image.width,
+          image.height,
+          image.name,
+          templateType,
+        );
+      } catch (error) {
+        console.error('Error adding page:', error);
+      }
     })();
   }, [pendingImage, selectedTemplateType, addImage, onUploadComplete]);
 

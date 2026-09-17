@@ -2,7 +2,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 100%;
+  width: max-content;
+  max-width: 100%;
 
   &__badge {
     margin: 0;
@@ -95,7 +96,6 @@
   }
 
   &__delete {
-    margin-left: auto;
     display: inline-flex;
     align-items: center;
     justify-content: center;

@@ -9,6 +9,8 @@ import './page-thumbnail.scss'
 import { useManageImages } from "@/features/editor/ui/hooks/use-manage-images";
 import { Trash } from "lucide-react";
 
+const EXIT_MS = 200;
+
 interface Props {
     image: TemplateImage;
 }
@@ -16,6 +18,7 @@ interface Props {
 export const PageThumbnail = ({image}: Props) => {
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+    const [isExiting, setIsExiting] = useState(false);
     const contextMenuRef = useRef<HTMLUListElement>(null);
     const thumbnailRef = useRef<HTMLDivElement>(null);
     const { setCurrentImage } = useTemplateStore();
@@ -33,11 +36,13 @@ export const PageThumbnail = ({image}: Props) => {
     });
 
     const selectPage = () => {
+        if (isExiting) return;
         clearSelection()
         setCurrentImage(image.id)
     }
 
     const openContextMenu = (e: React.MouseEvent) => {
+        if (isExiting) return;
         e.preventDefault();
         const rect = thumbnailRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -49,9 +54,16 @@ export const PageThumbnail = ({image}: Props) => {
         setIsContextMenuOpen(true);
     };
 
-    const handleDelete = async () => {
+    const handleDelete = () => {
         closeContextMenu();
-        await deleteImage(image.id);
+        if (isExiting) return;
+        setIsExiting(true);
+
+        window.setTimeout(() => {
+            void deleteImage(image.id).catch(error => {
+                console.error('Error deleting page:', error);
+            });
+        }, EXIT_MS);
     };
 
     return (
@@ -59,12 +71,14 @@ export const PageThumbnail = ({image}: Props) => {
             ref={thumbnailRef}
             className={clsx('page-thumbnail', {
                 'page-thumbnail--menu-open': isContextMenuOpen,
+                'page-thumbnail--exiting': isExiting,
             })}
         >
             <button 
             className='page-thumbnail__button'
             onClick={selectPage} 
             onContextMenu={openContextMenu}
+            disabled={isExiting}
             >
                 <img
                   className='page-thumbnail__button__img'

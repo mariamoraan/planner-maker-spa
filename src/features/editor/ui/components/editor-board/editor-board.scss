@@ -56,12 +56,12 @@
         }
 
         &--with-preview-date {
-            // Reserve room for the preview-date badge on the right
-            // (badge max-width ~280px + gap) so Generar planner does not overlap.
-            padding-right: min(292px, 42vw);
+            // Equal insets so the toolbar stays centered on the same axis as the canvas
+            // while leaving room for the absolute preview-date badge on the right.
+            padding-inline: min(176px, 28vw);
 
             @media (max-width: $editor-compact-max-width) {
-                padding-right: min(240px, 48vw);
+                padding-inline: min(156px, 36vw);
             }
         }
     }
@@ -72,7 +72,7 @@
         top: 50%;
         transform: translateY(-50%);
         z-index: 11;
-        max-width: min(280px, 70vw);
+        max-width: min(168px, 42vw);
         pointer-events: none;
 
         > * {

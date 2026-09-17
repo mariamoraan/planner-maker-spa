@@ -590,15 +590,12 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
   deleteImage: async (templateId, imageId) => {
     const uid = get().syncUid;
     const template = get().templates.find(t => t.id === templateId);
-    const image = template?.images.find(img => img.id === imageId);
-    if (image) {
-      const ref = resolveImageRef(uid, imageId, image.imageRef);
-      await getInfra().images.delete(ref);
-    }
+    const index = template?.images.findIndex(img => img.id === imageId) ?? -1;
+    const image = index >= 0 ? template?.images[index] : undefined;
+    if (!image || index < 0) return;
 
-    if (uid) {
-      await getInfra().templates.deletePage(uid, templateId, imageId);
-    }
+    const editor = useEditorStore.getState();
+    const wasCurrent = editor.currentImageId === imageId;
 
     set(state => ({
       templates: state.templates.map(t =>
@@ -608,9 +605,35 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       ),
     }));
 
-    const editor = useEditorStore.getState();
-    if (editor.currentImageId === imageId) {
+    if (wasCurrent) {
       editor.setCurrentImageId(null);
+    }
+
+    try {
+      const ref = resolveImageRef(uid, imageId, image.imageRef);
+      await getInfra().images.delete(ref);
+
+      if (uid) {
+        await getInfra().templates.deletePage(uid, templateId, imageId);
+      }
+    } catch (error) {
+      console.error('[template-store] deleteImage failed, rolling back:', error);
+
+      set(state => ({
+        templates: state.templates.map(t => {
+          if (t.id !== templateId) return t;
+          if (t.images.some(img => img.id === imageId)) return t;
+          const images = [...t.images];
+          images.splice(Math.min(index, images.length), 0, image);
+          return { ...t, images, updatedAt: new Date() };
+        }),
+      }));
+
+      if (wasCurrent) {
+        useEditorStore.getState().setCurrentImageId(imageId);
+      }
+
+      throw error;
     }
   },
 

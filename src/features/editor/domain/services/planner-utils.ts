@@ -5,6 +5,8 @@ import {
   addDays,
   getISOWeek,
   getWeek,
+  isSameMonth,
+  isSameYear,
 } from 'date-fns';
 import type { Locale } from 'date-fns';
 import type {
@@ -334,7 +336,14 @@ export function getEditorPreviewDateInfo(
       if (!start || !end) {
         return { label: '—', detail: '', anchor: new Date(), isCustom };
       }
-      const label = `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`;
+      let label: string;
+      if (isSameMonth(start, end) && isSameYear(start, end)) {
+        label = `${format(start, 'd', { locale })}–${format(end, 'd MMM', { locale })}`;
+      } else if (isSameYear(start, end)) {
+        label = `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM', { locale })}`;
+      } else {
+        label = `${format(start, 'd MMM', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`;
+      }
       return {
         label,
         detail: isCustom ? 'previewWeekCustom' : 'previewWeek',
@@ -346,8 +355,11 @@ export function getEditorPreviewDateInfo(
     case 'extra': {
       const start = context.plannerStart ?? new Date();
       const end = context.plannerEnd ?? start;
+      const label = isSameYear(start, end)
+        ? `${format(start, 'MMM', { locale })} – ${format(end, 'MMM yyyy', { locale })}`
+        : `${format(start, 'MMM yyyy', { locale })} – ${format(end, 'MMM yyyy', { locale })}`;
       return {
-        label: `${format(start, 'd MMM yyyy', { locale })} – ${format(end, 'd MMM yyyy', { locale })}`,
+        label,
         detail: 'previewPlannerRange',
         anchor: start,
         isCustom: false,

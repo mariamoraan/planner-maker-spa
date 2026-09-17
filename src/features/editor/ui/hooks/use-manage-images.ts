@@ -52,7 +52,10 @@ export const useManageImages = () => {
         const image = template?.images[index];
         if (!image || index < 0) return;
 
-        const imageData = (await getImageData(id)) ?? image.src ?? '';
+        const imageData =
+          (typeof image.src === 'string' && image.src.length > 0
+            ? image.src
+            : await getImageData(id)) ?? '';
 
         pushHistory(templateId, {
           type: 'deleteImage',
@@ -61,7 +64,26 @@ export const useManageImages = () => {
           index,
         });
 
-        await deleteImageStore(templateId, id);
+        try {
+          await deleteImageStore(templateId, id);
+        } catch (error) {
+          useHistoryStore.setState(state => {
+            const current = state.histories[templateId];
+            if (!current?.past.length) return state;
+            const last = current.past[current.past.length - 1];
+            if (last?.type !== 'deleteImage' || last.image.id !== id) return state;
+            return {
+              histories: {
+                ...state.histories,
+                [templateId]: {
+                  ...current,
+                  past: current.past.slice(0, -1),
+                },
+              },
+            };
+          });
+          throw error;
+        }
     }, [templateId, deleteImageStore, getImageData, getTemplate, pushHistory]);
 
     const addImage = useCallback(async (

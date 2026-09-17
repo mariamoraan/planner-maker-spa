@@ -7,7 +7,7 @@ $toolbar-padding-x-compact: 16px;
 %editor-toolbar-shell {
     box-sizing: border-box;
     height: $toolbar-height;
-    min-width: min(600px, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
+    min-width: 0;
     min-height: $toolbar-height;
     max-height: $toolbar-height;
     padding: 0 $toolbar-padding-x;
@@ -27,6 +27,7 @@ $toolbar-padding-x-compact: 16px;
 .base-toolbar {
     @extend %editor-toolbar-shell;
     width: max-content;
+    min-width: 600px;
     gap: 24px;
 
     &__undo,
@@ -171,7 +172,12 @@ $toolbar-padding-x-compact: 16px;
     }
 
     &--grid {
-        width: 100%;
-        max-width: min(900px, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
+        width: max-content;
+        max-width: min(100%, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
+    }
+
+    &--multi {
+        width: max-content;
+        max-width: min(100%, calc(100vw - var(--editor-sidebar-width, #{$editor-sidebar-width}) - 80px));
     }
 }

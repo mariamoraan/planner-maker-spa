@@ -136,19 +136,21 @@ export function EditorPreviewDateBadge() {
           if (canPick) setOpen(prev => !prev);
         }}
       >
-        <CalendarDays size={13} strokeWidth={2.1} aria-hidden />
-        <span className="editor-preview-date-badge__prefix">
-          {t('editor.previewDateLabel')}
+        <span className="editor-preview-date-badge__row">
+          <CalendarDays size={13} strokeWidth={2.1} aria-hidden />
+          <span className="editor-preview-date-badge__prefix">
+            {t('editor.previewDateLabel')}
+          </span>
+          {canPick ? (
+            <ChevronDown
+              size={12}
+              strokeWidth={2.2}
+              className="editor-preview-date-badge__chevron"
+              aria-hidden
+            />
+          ) : null}
         </span>
         <span className="editor-preview-date-badge__value">{info.label}</span>
-        {canPick ? (
-          <ChevronDown
-            size={12}
-            strokeWidth={2.2}
-            className="editor-preview-date-badge__chevron"
-            aria-hidden
-          />
-        ) : null}
       </button>
 
       {open && canPick ? (

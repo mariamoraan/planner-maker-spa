@@ -1,18 +1,20 @@
 .editor-preview-date-badge {
   position: relative;
   display: inline-flex;
-  max-width: min(280px, 70vw);
+  max-width: min(168px, 42vw);
   pointer-events: auto;
   user-select: none;
 
   &__trigger {
     display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
     max-width: 100%;
-    padding: 0.35rem 0.65rem;
+    min-width: 0;
+    padding: 12px;
     border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 999px;
+    border-radius: 12px;
     background: rgba(255, 255, 255, 0.95);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     color: hsl(220, 12%, 35%);
@@ -32,6 +34,13 @@
     }
   }
 
+  &__row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
   &__prefix {
     color: hsl(220, 8%, 52%);
     font-weight: 500;
@@ -44,10 +53,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: left;
   }
 
   &__chevron {
     flex-shrink: 0;
+    margin-left: auto;
     color: hsl(220, 8%, 52%);
   }
 
