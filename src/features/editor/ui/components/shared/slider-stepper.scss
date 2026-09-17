@@ -34,7 +34,7 @@
   &__range {
     flex: 1;
     height: 4px;
-    accent-color: hsl(168, 76%, 42%);
+    accent-color: hsl(var(--accent));
     cursor: pointer;
   }
 

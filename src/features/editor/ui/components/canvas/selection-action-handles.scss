@@ -30,8 +30,8 @@
 
   &--snapped {
     color: #fff;
-    background: hsl(168, 76%, 42%);
-    border-color: hsl(168, 76%, 36%);
+    background: hsl(var(--accent));
+    border-color: hsl(var(--accent) / 0.9);
   }
 }
 
@@ -74,11 +74,11 @@
 
   &--rotate {
     color: #fff;
-    background: hsl(168, 76%, 42%);
-    border: 1px solid hsl(168, 76%, 36%);
+    background: hsl(var(--accent));
+    border: 1px solid hsl(var(--accent) / 0.9);
 
     &:hover {
-      background: hsl(168, 76%, 38%);
+      background: hsl(var(--accent) / 0.9);
     }
   }
 

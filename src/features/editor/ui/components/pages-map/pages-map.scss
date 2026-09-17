@@ -54,8 +54,8 @@
         padding: 0;
 
         &:hover {
-            border-color: hsl(168, 76%, 42%);
-            color: hsl(168, 76%, 42%);
+            border-color: hsl(var(--accent));
+            color: hsl(var(--accent));
         }
     }
 

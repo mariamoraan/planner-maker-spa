@@ -39,6 +39,6 @@
   position: absolute;
   right: 3px;
   bottom: 3px;
-  color: hsl(168, 76%, 36%);
+  color: hsl(var(--accent) / 0.9);
   stroke-width: 2.5;
 }

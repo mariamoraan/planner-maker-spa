@@ -33,7 +33,7 @@
     }
 
     &:focus-visible {
-      outline: 2px solid hsl(168, 76%, 42%);
+      outline: 2px solid hsl(var(--accent));
       outline-offset: 1px;
     }
   }
@@ -43,9 +43,9 @@
     width: 16px;
     height: 16px;
     padding: 3px;
-    border: 1px solid hsl(168, 76%, 38%);
+    border: 1px solid hsl(var(--accent) / 0.9);
     border-radius: 4px;
-    background: hsl(168, 76%, 42%);
+    background: hsl(var(--accent));
     box-sizing: border-box;
 
     &[data-align-h='left'] {
@@ -123,10 +123,10 @@
 
     &--active {
       background: white;
-      border-color: hsl(168, 76%, 42%);
+      border-color: hsl(var(--accent));
 
       .grid-alignment-picker__dot {
-        background: hsl(168, 76%, 42%);
+        background: hsl(var(--accent));
       }
     }
   }

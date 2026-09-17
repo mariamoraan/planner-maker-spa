@@ -337,8 +337,8 @@
     padding: 6px 10px;
     font-size: 12px;
     font-weight: 600;
-    color: hsl(168, 50%, 28%);
-    background: rgba(0, 200, 180, 0.12);
+    color: hsl(var(--accent));
+    background: hsl(var(--accent) / 0.12);
     border-radius: 6px;
 }
 
@@ -354,8 +354,8 @@
     padding: 8px 12px;
     font-size: 13px;
     font-weight: 600;
-    color: hsl(168, 50%, 28%);
-    background: rgba(0, 200, 180, 0.08);
+    color: hsl(var(--accent));
+    background: hsl(var(--accent) / 0.08);
     border: 1px solid hsl(var(--accent));
     border-radius: 8px;
     cursor: pointer;
@@ -402,9 +402,9 @@
         cursor: wait;
         opacity: 0.85;
         pointer-events: none;
-        border-color: hsl(168, 76%, 42%);
-        color: hsl(168, 50%, 28%);
-        background: rgba(0, 200, 180, 0.06);
+        border-color: hsl(var(--accent));
+        color: hsl(var(--accent));
+        background: hsl(var(--accent) / 0.06);
 
         &::after {
             content: '';

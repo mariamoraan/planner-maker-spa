@@ -12,10 +12,10 @@
   gap: 0.35rem;
   height: 2rem;
   padding: 0 0.65rem;
-  border: 1px solid hsl(168, 40%, 78%);
+  border: 1px solid hsl(var(--accent) / 0.35);
   border-radius: 8px;
-  background: rgba(0, 200, 180, 0.08);
-  color: hsl(168, 50%, 28%);
+  background: hsl(var(--accent) / 0.08);
+  color: hsl(var(--accent));
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -24,8 +24,8 @@
 
   &:hover,
   &--open {
-    background: rgba(0, 200, 180, 0.14);
-    border-color: hsl(168, 76%, 42%);
+    background: hsl(var(--accent) / 0.14);
+    border-color: hsl(var(--accent));
   }
 
   &--icon {
@@ -92,21 +92,21 @@
   transition: background 120ms ease, border-color 120ms ease;
 
   &:hover {
-    background: hsl(168, 40%, 97%);
-    border-color: hsl(168, 40%, 88%);
+    background: hsl(var(--accent) / 0.06);
+    border-color: hsl(var(--accent) / 0.2);
   }
 
   &--active {
-    background: hsl(168, 45%, 95%);
-    border-color: hsl(168, 50%, 72%);
+    background: hsl(var(--accent) / 0.1);
+    border-color: hsl(var(--accent) / 0.35);
 
     .calendar-role-picker__option-icon {
-      background: hsl(168, 76%, 42%);
+      background: hsl(var(--accent));
       color: #fff;
     }
 
     .calendar-role-picker__option-label {
-      color: hsl(168, 50%, 22%);
+      color: hsl(var(--accent));
     }
   }
 }

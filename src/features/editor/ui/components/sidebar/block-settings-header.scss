@@ -26,10 +26,10 @@
   &__grid-btn {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid hsl(168, 76%, 42%);
+    border: 1px solid hsl(var(--accent));
     border-radius: 8px;
-    background: rgba(0, 200, 180, 0.08);
-    color: hsl(168, 50%, 28%);
+    background: hsl(var(--accent) / 0.08);
+    color: hsl(var(--accent));
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;

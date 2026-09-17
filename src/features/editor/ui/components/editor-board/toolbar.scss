@@ -108,16 +108,16 @@ $toolbar-padding-x-compact: 16px;
         width: 2rem;
         height: 2rem;
         padding: 0;
-        border: 1px solid hsl(168, 40%, 78%);
+        border: 1px solid hsl(var(--accent) / 0.35);
         border-radius: 8px;
-        background: rgba(0, 200, 180, 0.08);
-        color: hsl(168, 50%, 28%);
+        background: hsl(var(--accent) / 0.08);
+        color: hsl(var(--accent));
         cursor: pointer;
         transition: background 150ms ease, border-color 150ms ease;
 
         &:hover {
-            background: rgba(0, 200, 180, 0.14);
-            border-color: hsl(168, 76%, 42%);
+            background: hsl(var(--accent) / 0.14);
+            border-color: hsl(var(--accent));
         }
 
         &--danger {
@@ -157,9 +157,9 @@ $toolbar-padding-x-compact: 16px;
         padding: 6px 12px;
         font-size: 13px;
         font-weight: 600;
-        color: hsl(168, 50%, 28%);
-        background: rgba(0, 200, 180, 0.08);
-        border: 1px solid hsl(168, 76%, 42%);
+        color: hsl(var(--accent));
+        background: hsl(var(--accent) / 0.08);
+        border: 1px solid hsl(var(--accent));
         border-radius: 8px;
         cursor: pointer;
         white-space: nowrap;
