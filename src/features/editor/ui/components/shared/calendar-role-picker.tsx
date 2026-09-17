@@ -154,7 +154,6 @@ export function CalendarRolePicker({
                     })}
                     onClick={() => {
                       onSelect(option);
-                      close();
                     }}
                     title={t(calendarRoleLabelKey(option))}
                     aria-pressed={isActive}

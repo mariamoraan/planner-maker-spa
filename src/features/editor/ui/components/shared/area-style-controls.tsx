@@ -8,9 +8,15 @@ import { useAreaStyleEditing, type AreaStyleEditing } from '@/features/editor/ui
 import {
   COLOR_PRESET_REGISTRY,
   FONT_REGISTRY,
+  START_END_DATE_PART_OPTIONS,
   TEXT_ALIGN_REGISTRY,
   TEXT_CASE_REGISTRY,
+  getStartEndDatePart,
+  getDefaultStartEndVariantForPart,
+  getStartEndFormatOptionsForPart,
+  getStartEndPartLabel,
   normalizeHexColor,
+  type StartEndDatePart,
 } from '@/features/editor/domain/services/field-style-config';
 import type { FontId, FormatVariant, Rectangle, TextAlign, TextCase } from '@/features/template';
 import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, CaseSensitiveIcon, FontIcon } from '@/core/icons';
@@ -78,6 +84,11 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
 
   const togglePopover = (id: PopoverId) => (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Popovers are nested inside the trigger button; ignore option clicks
+    // so selecting does not toggle the menu closed.
+    if ((e.target as HTMLElement).closest('.area-style-controls__popover')) {
+      return;
+    }
     setOpenPopover(prev => (prev === id ? null : id));
   };
 
@@ -113,28 +124,70 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     </div>
   );
 
-  const formatGroup = (
+  const isStartEndField =
+    rectangle.fieldType === 'startDay' || rectangle.fieldType === 'endDay';
+  const startEndPart = isStartEndField ? getStartEndDatePart(formatVariant) : null;
+  const startEndFormatOptions =
+    startEndPart !== null ? getStartEndFormatOptionsForPart(startEndPart) : formatOptions;
+
+  const handleStartEndPartChange = (part: StartEndDatePart) => {
+    handleFormatChange(getDefaultStartEndVariantForPart(part));
+  };
+
+  const formatOptionButtons = (options: typeof formatOptions) =>
+    options.map(option => (
+      <button
+        key={option.id}
+        type="button"
+        className={clsx(
+          'area-style-controls__option',
+          'area-style-controls__option--format-row',
+          {
+            'area-style-controls__option--active': formatVariant === option.id,
+          },
+        )}
+        title={option.preview}
+        onClick={() => handleFormatChange(option.id as FormatVariant)}
+      >
+        <span>{option.label}</span>
+        <span className="area-style-controls__option-preview">{option.preview}</span>
+      </button>
+    ));
+
+  const startEndPartButtons = () =>
+    START_END_DATE_PART_OPTIONS.map(option => (
+      <button
+        key={option.id}
+        type="button"
+        className={clsx('area-style-controls__option', 'area-style-controls__option--part', {
+          'area-style-controls__option--active': startEndPart === option.id,
+        })}
+        onClick={() => handleStartEndPartChange(option.id)}
+      >
+        {option.label}
+      </button>
+    ));
+
+  const formatGroup = isStartEndField ? (
+    <>
+      <div className="area-style-controls__group">
+        <p className="area-style-controls__label">Parte</p>
+        <div className="area-style-controls__options area-style-controls__options--parts">
+          {startEndPartButtons()}
+        </div>
+      </div>
+      <div className="area-style-controls__group">
+        <p className="area-style-controls__label">Formato</p>
+        <div className="area-style-controls__options area-style-controls__options--format">
+          {formatOptionButtons(startEndFormatOptions)}
+        </div>
+      </div>
+    </>
+  ) : (
     <div className="area-style-controls__group">
       <p className="area-style-controls__label">Formato</p>
       <div className="area-style-controls__options area-style-controls__options--format">
-        {formatOptions.map(option => (
-          <button
-            key={option.id}
-            type="button"
-            className={clsx(
-              'area-style-controls__option',
-              'area-style-controls__option--format-row',
-              {
-                'area-style-controls__option--active': formatVariant === option.id,
-              },
-            )}
-            title={option.preview}
-            onClick={() => handleFormatChange(option.id)}
-          >
-            <span>{option.label}</span>
-            <span className="area-style-controls__option-preview">{option.preview}</span>
-          </button>
-        ))}
+        {formatOptionButtons(formatOptions)}
       </div>
     </div>
   );
@@ -261,7 +314,9 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     );
   }
 
-  const activeFormat = formatOptions.find(o => o.id === formatVariant)?.label ?? 'Formato';
+  const activeFormat = isStartEndField && startEndPart !== null
+    ? getStartEndPartLabel(startEndPart)
+    : (formatOptions.find(o => o.id === formatVariant)?.label ?? 'Formato');
   const activeFont = FONT_REGISTRY.find(f => f.id === style.fontId)?.label ?? 'Tipografía';
 
   return (
@@ -276,32 +331,29 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
         {activeFormat}
         <div
           className={clsx('area-style-controls__popover', 'area-style-controls__popover--format', {
+            'area-style-controls__popover--format-start-end': isStartEndField,
             'area-style-controls__popover--visible': openPopover === 'format',
           })}
+          onMouseDown={e => e.stopPropagation()}
         >
-          <div className="area-style-controls__options area-style-controls__options--format">
-            {formatOptions.map(option => (
-              <button
-                key={option.id}
-                type="button"
-                className={clsx(
-                  'area-style-controls__option',
-                  'area-style-controls__option--format-row',
-                  {
-                    'area-style-controls__option--active': formatVariant === option.id,
-                  },
-                )}
-                title={option.preview}
-                onClick={() => {
-                  handleFormatChange(option.id as FormatVariant);
-                  setOpenPopover(null);
-                }}
-              >
-                <span>{option.label}</span>
-                <span className="area-style-controls__option-preview">{option.preview}</span>
-              </button>
-            ))}
-          </div>
+          {isStartEndField ? (
+            <>
+              <p className="area-style-controls__label">Parte</p>
+              <div className="area-style-controls__options area-style-controls__options--parts">
+                {startEndPartButtons()}
+              </div>
+              <p className="area-style-controls__label area-style-controls__label--nested">
+                Formato
+              </p>
+              <div className="area-style-controls__options area-style-controls__options--format">
+                {formatOptionButtons(startEndFormatOptions)}
+              </div>
+            </>
+          ) : (
+            <div className="area-style-controls__options area-style-controls__options--format">
+              {formatOptionButtons(formatOptions)}
+            </div>
+          )}
         </div>
       </button>
       ) : null}
@@ -360,10 +412,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
                   'area-style-controls__font-option--active': style.fontId === font.id,
                 })}
                 style={{ fontFamily: font.family }}
-                onClick={() => {
-                  updateStyle({ fontId: font.id as FontId });
-                  setOpenPopover(null);
-                }}
+                onClick={() => updateStyle({ fontId: font.id as FontId })}
               >
                 {font.label}
               </button>

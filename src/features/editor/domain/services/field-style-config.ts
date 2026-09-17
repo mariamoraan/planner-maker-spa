@@ -113,6 +113,60 @@ const START_END_FORMAT_OPTIONS: readonly FormatOption[] = [
   { id: 'YY', label: 'Año 2', preview: '26' },
 ] as const;
 
+/** Date-part choice for startDay/endDay (format popover section 1). */
+export type StartEndDatePart = 'day' | 'month' | 'year';
+
+export const START_END_DATE_PART_OPTIONS: readonly { id: StartEndDatePart; label: string }[] = [
+  { id: 'day', label: 'Día' },
+  { id: 'month', label: 'Mes' },
+  { id: 'year', label: 'Año' },
+] as const;
+
+const START_END_DAY_FORMAT_OPTIONS: readonly FormatOption[] = [
+  { id: 'dayNumeric', label: 'Número', preview: '15' },
+  { id: 'weekdayName', label: 'Texto', preview: 'jueves' },
+] as const;
+
+const START_END_MONTH_FORMAT_OPTIONS: readonly FormatOption[] = [
+  { id: 'monthNumeric', label: 'Número', preview: '5' },
+  { id: 'monthName', label: 'Texto', preview: 'mayo' },
+] as const;
+
+export function getStartEndDatePart(variant: FormatVariant): StartEndDatePart {
+  const normalized = normalizeStartEndFormatVariant(variant);
+  if (normalized === 'dayNumeric' || normalized === 'weekdayName') return 'day';
+  if (normalized === 'monthNumeric' || normalized === 'monthName') return 'month';
+  return 'year';
+}
+
+export function getDefaultStartEndVariantForPart(
+  part: StartEndDatePart,
+): Exclude<StartEndFormatVariant, 'numeric'> {
+  switch (part) {
+    case 'day':
+      return 'dayNumeric';
+    case 'month':
+      return 'monthName';
+    case 'year':
+      return 'YYYY';
+  }
+}
+
+export function getStartEndFormatOptionsForPart(part: StartEndDatePart): readonly FormatOption[] {
+  switch (part) {
+    case 'day':
+      return START_END_DAY_FORMAT_OPTIONS;
+    case 'month':
+      return START_END_MONTH_FORMAT_OPTIONS;
+    case 'year':
+      return YEAR_FORMAT_OPTIONS;
+  }
+}
+
+export function getStartEndPartLabel(part: StartEndDatePart): string {
+  return START_END_DATE_PART_OPTIONS.find(option => option.id === part)?.label ?? 'Día';
+}
+
 export const FIELD_FORMAT_REGISTRY: Record<FieldType, readonly FormatOption[]> = {
   year: YEAR_FORMAT_OPTIONS,
   month: MONTH_FORMAT_OPTIONS,

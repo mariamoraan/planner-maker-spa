@@ -194,10 +194,7 @@ export function GridAlignmentPicker({
               <AlignmentGrid
                 alignH={alignH}
                 alignV={alignV}
-                onSelect={(h, v) => {
-                  onChange(h, v);
-                  popover.close();
-                }}
+                onSelect={onChange}
               />
             </div>,
             document.body,

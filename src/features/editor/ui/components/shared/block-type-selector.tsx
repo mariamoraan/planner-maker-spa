@@ -70,14 +70,8 @@ export const BlockTypeSelector = ({
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    setIsOpen(false);
-    setMenuPosition(null);
-  }, [currentType]);
-
   const handleSelect = (type: FieldType) => {
     onSelect(type);
-    closeMenu();
   };
 
   const typeOptions = Object.keys(FIELD_TYPE_CONFIG) as FieldType[];

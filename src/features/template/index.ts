@@ -22,6 +22,7 @@ export type {
   DayFormatVariant,
   StartEndFormatVariant,
   CompositePart,
+  CompositeDateSource,
 } from './domain/value-objects/field-style';
 export {
   DEFAULT_PLANNER_FONT_ID,

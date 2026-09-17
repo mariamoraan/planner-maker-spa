@@ -60,7 +60,7 @@ export const COMPOSITE_PRESETS: readonly CompositePreset[] = [
     preview: 'Lunes↵3',
     parts: [
       { kind: 'weekday', variant: 'full' },
-      { kind: 'literal', value: '\n' },
+      { kind: 'linebreak' },
       { kind: 'day', variant: 'numeric' },
     ],
   },

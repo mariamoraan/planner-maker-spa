@@ -23,6 +23,10 @@
     font-weight: 600;
     color: grey;
     text-transform: uppercase;
+
+    &--nested {
+      margin-top: 10px;
+    }
   }
 
   &__options {
@@ -50,6 +54,12 @@
       gap: 4px;
       width: 11.5rem;
       max-width: 100%;
+    }
+
+    &--parts {
+      flex-wrap: nowrap;
+      gap: 6px;
+      width: 100%;
     }
 
     &--text-case {
@@ -80,6 +90,12 @@
     &--text-case {
       min-width: 40px;
       font-size: 14px;
+    }
+
+    &--part {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
     }
 
     &--format-row {
@@ -276,6 +292,11 @@
 
     &--format {
       padding: 6px;
+
+      &.area-style-controls__popover--format-start-end {
+        padding: 10px;
+        min-width: 12.5rem;
+      }
     }
   }
 }

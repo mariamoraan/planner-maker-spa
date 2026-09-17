@@ -247,6 +247,71 @@ describe('composite field', () => {
     ).toBe('viernes\n15');
   });
 
+  it('migrates legacy newline literals to linebreak', () => {
+    const page = makePage('daily-page');
+    const date = new Date(2026, 4, 15);
+    const rectangle = makeRect({
+      id: 'c',
+      fieldType: 'composite',
+      compositeParts: [
+        { kind: 'weekday', variant: 'full' },
+        { kind: 'literal', value: '\n' },
+        { kind: 'day', variant: 'numeric' },
+      ],
+      style: {
+        color: '#1f2a3d',
+        fontId: 'lato',
+        bold: false,
+        italic: false,
+        textCase: 'default',
+        textAlign: 'center',
+      },
+    });
+
+    expect(
+      getFieldValue({
+        fieldType: 'composite',
+        context: { date, year: 2026, month: 4 },
+        templateImage: page,
+        rectangle,
+      }).fieldValue,
+    ).toBe('viernes\n15');
+  });
+
+  it('formats start and end month/year parts from range endpoints', () => {
+    const page = makePage('monthly-calendar');
+    const rectangle = makeRect({
+      id: 'c',
+      fieldType: 'composite',
+      compositeParts: [
+        { kind: 'day', variant: 'numeric', source: 'start' },
+        { kind: 'literal', value: '–' },
+        { kind: 'day', variant: 'numeric', source: 'end' },
+        { kind: 'literal', value: ' ' },
+        { kind: 'month', variant: 'name', source: 'start' },
+        { kind: 'literal', value: ' ' },
+        { kind: 'year', variant: 'YYYY', source: 'end' },
+      ],
+      style: {
+        color: '#1f2a3d',
+        fontId: 'lato',
+        bold: false,
+        italic: false,
+        textCase: 'default',
+        textAlign: 'center',
+      },
+    });
+
+    expect(
+      getFieldValue({
+        fieldType: 'composite',
+        context: { year: 2026, month: 4 },
+        templateImage: page,
+        rectangle,
+      }).fieldValue,
+    ).toBe('1–31 mayo 2026');
+  });
+
   it('anchors monthly composite to first of month', () => {
     const page = makePage('monthly-calendar');
     expect(

@@ -15,6 +15,7 @@ import type {
   TemplateImage,
   WeekStartsOn,
   CompositePart,
+  CompositeDateSource,
   FormatVariant,
 } from '@/features/template';
 import { DEFAULT_COMPOSITE_PARTS } from '@/features/template';
@@ -680,6 +681,19 @@ export function resolveBindingDate({
   };
 }
 
+function resolveCompositePartDate(
+  source: CompositeDateSource | undefined,
+  anchorDate: Date,
+  context: FieldValueContext,
+  templateImage: TemplateImage,
+  weekStartsOn: WeekStartsOn,
+): Date | null {
+  if (!source || source === 'current') {
+    return anchorDate;
+  }
+  return resolveRangeEndpointDate(source, context, templateImage, weekStartsOn);
+}
+
 function formatCompositePart(
   part: CompositePart,
   date: Date,
@@ -699,15 +713,25 @@ function formatCompositePart(
       return part.variant === 'YY' ? format(date, 'yy') : format(date, 'yyyy');
     case 'weekNumber':
       return String(getWeekNumber(date, weekStartsOn));
+    case 'linebreak':
+      return '\n';
     case 'literal':
       return part.value;
   }
 }
 
+function migrateCompositePart(part: CompositePart): CompositePart {
+  if (part.kind === 'literal' && part.value === '\n') {
+    return part.id ? { kind: 'linebreak', id: part.id } : { kind: 'linebreak' };
+  }
+  return part;
+}
+
 export function resolveCompositeParts(rectangle: Rectangle): CompositePart[] {
-  return rectangle.compositeParts?.length
+  const parts = rectangle.compositeParts?.length
     ? rectangle.compositeParts
     : DEFAULT_COMPOSITE_PARTS;
+  return parts.map(migrateCompositePart);
 }
 
 /**
@@ -823,7 +847,21 @@ export function getFieldValue({
     case 'composite': {
       const parts = resolveCompositeParts(rectangle);
       const value = parts
-        .map(part => formatCompositePart(part, date, locale, weekStartsOn))
+        .map(part => {
+          const partSource =
+            part.kind === 'literal' || part.kind === 'linebreak'
+              ? undefined
+              : part.source;
+          const partDate = resolveCompositePartDate(
+            partSource,
+            date,
+            context,
+            templateImage,
+            weekStartsOn,
+          );
+          if (!partDate) return '';
+          return formatCompositePart(part, partDate, locale, weekStartsOn);
+        })
         .join('');
       return result(value, resolvedColor);
     }

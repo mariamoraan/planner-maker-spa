@@ -27,13 +27,17 @@ export type FormatVariant =
   | DayFormatVariant
   | StartEndFormatVariant;
 
+/** Which date a composite token reads from (default / omit = page anchor). */
+export type CompositeDateSource = 'current' | 'start' | 'end';
+
 export type CompositePart =
-  | { kind: 'weekday'; variant: 'full' }
-  | { kind: 'day'; variant: 'numeric' }
-  | { kind: 'month'; variant: 'numeric' | 'name' }
-  | { kind: 'year'; variant: 'YYYY' | 'YY' }
-  | { kind: 'weekNumber' }
-  | { kind: 'literal'; value: string };
+  | { kind: 'weekday'; variant: 'full'; source?: CompositeDateSource; id?: string }
+  | { kind: 'day'; variant: 'numeric'; source?: CompositeDateSource; id?: string }
+  | { kind: 'month'; variant: 'numeric' | 'name'; source?: CompositeDateSource; id?: string }
+  | { kind: 'year'; variant: 'YYYY' | 'YY'; source?: CompositeDateSource; id?: string }
+  | { kind: 'weekNumber'; source?: CompositeDateSource; id?: string }
+  | { kind: 'linebreak'; id?: string }
+  | { kind: 'literal'; value: string; id?: string };
 
 export type FontId =
   | 'montserrat'
