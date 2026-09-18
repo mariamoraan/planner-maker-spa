@@ -1,18 +1,24 @@
 .template-card {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  background: hsl(var(--card));
-  border-radius: 16px;
-  box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px;
-  transition: transform 200ms ease, box-shadow 200ms ease;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      rgba(0, 0, 0, 0.05) 0 0 0 1px,
-      var(--shadow-lg);
+  &__surface {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    background: hsl(var(--card));
+    border-radius: 16px;
+    box-shadow: rgba(0, 0, 0, 0.05) 0 0 0 1px;
+    transition: transform 200ms ease, box-shadow 200ms ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        rgba(0, 0, 0, 0.05) 0 0 0 1px,
+        var(--shadow-lg);
+    }
   }
 
   &__trigger {

@@ -9,11 +9,6 @@ import { TemplateCoverThumb } from '@/features/template/ui/components/template-c
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import './template-card.scss';
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0 },
-};
-
 export const getCoverImage = (images: TemplateImage[]): TemplateImage | null => {
   const cover = images.find(image => image.type === 'cover');
   if (cover) return cover;
@@ -78,77 +73,82 @@ export const TemplateCard = ({ template, index, onOpen, onDelete }: TemplateCard
   return (
     <motion.li
       className="template-card"
-      variants={fadeUp}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.08, duration: 0.5 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{
+        opacity: 0,
+        scale: 0.92,
+        transition: { duration: 0.2, ease: [0.4, 0, 1, 1] },
+      }}
+      transition={{ duration: 0.4, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
     >
-      <button
-        type="button"
-        className="template-card__trigger"
-        onClick={onOpen}
-        aria-label={`Abrir ${template.name}`}
-      >
-        <TemplateCoverThumb image={cover} alt={template.name} size="card" />
-      </button>
-
-      <div className="template-card__footer">
-        <div className="template-card__meta">
-          {isRenaming ? (
-            <input
-              ref={inputRef}
-              type="text"
-              className="template-card__name-input"
-              value={draftName}
-              aria-label={t('home.renameProject')}
-              onChange={event => setDraftName(event.target.value)}
-              onBlur={commitRename}
-              onClick={event => event.stopPropagation()}
-              onKeyDown={event => {
-                event.stopPropagation();
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  commitRename();
-                }
-                if (event.key === 'Escape') {
-                  event.preventDefault();
-                  cancelRename();
-                }
-              }}
-            />
-          ) : (
-            <p className="template-card__name">
-              <span className="template-card__name-text">{template.name}</span>
-              {paperSizeLabel ? (
-                <span className="template-card__format">{paperSizeLabel}</span>
-              ) : null}
-            </p>
-          )}
-          <p className="template-card__date">Editado el {formattedDate}</p>
-        </div>
-        <div
-          className="template-card__menu"
-          onClick={event => event.stopPropagation()}
-          onKeyDown={event => event.stopPropagation()}
+      <div className="template-card__surface">
+        <button
+          type="button"
+          className="template-card__trigger"
+          onClick={onOpen}
+          aria-label={`Abrir ${template.name}`}
         >
-          <ActionMenuButton
-            icon={<EllipsisIcon />}
-            ariaLabel={`Acciones de ${template.name}`}
-            actions={[
-              {
-                icon: <PencilIcon />,
-                name: t('home.renameProject'),
-                onClick: startRename,
-              },
-              {
-                icon: <TrashIcon />,
-                name: t('home.deleteProject'),
-                onClick: onDelete,
-                variant: 'error',
-              },
-            ]}
-          />
+          <TemplateCoverThumb image={cover} alt={template.name} size="card" />
+        </button>
+
+        <div className="template-card__footer">
+          <div className="template-card__meta">
+            {isRenaming ? (
+              <input
+                ref={inputRef}
+                type="text"
+                className="template-card__name-input"
+                value={draftName}
+                aria-label={t('home.renameProject')}
+                onChange={event => setDraftName(event.target.value)}
+                onBlur={commitRename}
+                onClick={event => event.stopPropagation()}
+                onKeyDown={event => {
+                  event.stopPropagation();
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    commitRename();
+                  }
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    cancelRename();
+                  }
+                }}
+              />
+            ) : (
+              <p className="template-card__name">
+                <span className="template-card__name-text">{template.name}</span>
+                {paperSizeLabel ? (
+                  <span className="template-card__format">{paperSizeLabel}</span>
+                ) : null}
+              </p>
+            )}
+            <p className="template-card__date">Editado el {formattedDate}</p>
+          </div>
+          <div
+            className="template-card__menu"
+            onClick={event => event.stopPropagation()}
+            onKeyDown={event => event.stopPropagation()}
+          >
+            <ActionMenuButton
+              icon={<EllipsisIcon />}
+              ariaLabel={`Acciones de ${template.name}`}
+              actions={[
+                {
+                  icon: <PencilIcon />,
+                  name: t('home.renameProject'),
+                  onClick: startRename,
+                },
+                {
+                  icon: <TrashIcon />,
+                  name: t('home.deleteProject'),
+                  onClick: onDelete,
+                  variant: 'error',
+                },
+              ]}
+            />
+          </div>
         </div>
       </div>
     </motion.li>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CloudUpload, Loader2 } from 'lucide-react';
+import { CloudUpload } from 'lucide-react';
 import type { TemplateImage } from '@/features/template';
 import './template-cover-thumb.scss';
 
@@ -35,9 +35,9 @@ export const TemplateCoverThumb = ({
   const [triedAlt, setTriedAlt] = useState(false);
 
   const pendingResolve = isTemplateImagePending(image) && !resolveTimedOut;
-  const showSpinner = pendingResolve || (Boolean(activeSrc) && !imgReady && !imgFailed);
+  const showSkeleton = pendingResolve || (Boolean(activeSrc) && !imgReady && !imgFailed);
   const showImage = Boolean(activeSrc) && !imgFailed;
-  const showEmpty = !showSpinner && !showImage;
+  const showEmpty = !showSkeleton && !showImage;
 
   useEffect(() => {
     setActiveSrc(image?.src ?? '');
@@ -94,7 +94,7 @@ export const TemplateCoverThumb = ({
       ]
         .filter(Boolean)
         .join(' ')}
-      aria-busy={showSpinner || undefined}
+      aria-busy={showSkeleton || undefined}
     >
       {showImage ? (
         <img
@@ -112,10 +112,8 @@ export const TemplateCoverThumb = ({
         />
       ) : null}
 
-      {showSpinner ? (
-        <span className="template-cover-thumb__loading" aria-hidden="true">
-          <Loader2 className="template-cover-thumb__spinner" />
-        </span>
+      {showSkeleton ? (
+        <span className="template-cover-thumb__skeleton" aria-hidden="true" />
       ) : null}
 
       {showEmpty ? (

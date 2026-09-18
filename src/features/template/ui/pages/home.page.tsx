@@ -1,7 +1,7 @@
 import './home.page.scss';
 
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { LayoutTemplate, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AddTemplateButton } from '@/features/template/ui/components/add-template-button/add-template-button';
@@ -93,15 +93,19 @@ export const HomePage = () => {
               <section className="home-page__projects">
                 <h2 className="home-page__section-title">{t('home.recent')}</h2>
                 <ol className="home-page__grid">
-                  {templates.map((template, index) => (
-                    <TemplateCard
-                      key={template.id}
-                      template={template}
-                      index={index}
-                      onOpen={() => goToTemplate(template.id)}
-                      onDelete={() => deleteTemplate(template.id)}
-                    />
-                  ))}
+                  <AnimatePresence>
+                    {templates.map((template, index) => (
+                      <TemplateCard
+                        key={template.id}
+                        template={template}
+                        index={index}
+                        onOpen={() => goToTemplate(template.id)}
+                        onDelete={() => {
+                          void deleteTemplate(template.id);
+                        }}
+                      />
+                    ))}
+                  </AnimatePresence>
                   <NewProjectCard index={templates.length} />
                 </ol>
               </section>
