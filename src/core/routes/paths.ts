@@ -2,6 +2,8 @@ export const PATHS = {
     landing: '/',
     login: '/login',
     accessPending: '/access-pending',
+    privacy: '/privacy',
+    terms: '/terms',
     home: '/home',
     editor: '/editor/:templateId',
     landingDemoHome: '/landing-demo/home',

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/features/auth/ui/contexts/auth-provider';
 import { PATHS } from '@/core/routes/paths';
+import { getSupportEmail, getSupportMailto } from '@/core/config/support-email';
 import './auth-pages.scss';
 
 export function AccessPendingPage() {
@@ -11,6 +12,8 @@ export function AccessPendingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromLogin = (location.state as { fromLogin?: boolean } | null)?.fromLogin === true;
+  const supportEmail = getSupportEmail();
+  const supportMailto = getSupportMailto();
 
   useEffect(() => {
     if (!user) return;
@@ -45,6 +48,11 @@ export function AccessPendingPage() {
           <Link to={PATHS.landing} className="auth-page__link">
             {t('accessPending.backToLanding')}
           </Link>
+          {supportEmail && supportMailto && (
+            <a href={supportMailto} className="auth-page__link auth-page__link--tight">
+              {t('accessPending.contactSupport')}
+            </a>
+          )}
           <button type="button" className="auth-page__ghost-btn" onClick={() => void signOut()}>
             {t('common.signOut')}
           </button>

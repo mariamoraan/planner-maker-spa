@@ -169,13 +169,50 @@
       "title": "Prueba la demo interactiva",
       "subtitle": "Explora el editor con plantillas de ejemplo — sin registro.",
       "cta": "Abrir demo",
-      "divider": "o"
+      "divider": "o",
+      "desktopNote": "Mejor en portátil o escritorio (viewport ≥ 900×560)."
     },
+    "desktopNote": "El editor es solo para escritorio por ahora — usa un portátil o una pantalla más grande.",
     "footer": {
       "brand": "Amark — Planner Builder",
       "description": "Crea planners totalmente personalizados con tus diseños y lógica de fechas dinámica.",
       "status": "Acceso anticipado",
-      "statusDetail": "Apúntate a la lista de espera para entrar"
+      "statusDetail": "Apúntate a la lista de espera para entrar",
+      "legal": "Legal",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "support": "Soporte",
+      "copyright": "© {{year}} {{appName}}. Todos los derechos reservados."
+    }
+  },
+  "legal": {
+    "updated": "Última actualización: septiembre 2026",
+    "contactLabel": "Preguntas o solicitudes:",
+    "backToLanding": "Volver a la landing",
+    "privacyLink": "Política de privacidad",
+    "termsLink": "Términos de uso",
+    "privacy": {
+      "title": "Política de privacidad",
+      "paragraphs": [
+        "Amark (“nosotros”) ofrece un constructor de planners en acceso anticipado. Esta política breve explica qué recogemos mientras el producto está en beta.",
+        "Datos de cuenta: al iniciar sesión con Google guardamos tu ID de usuario, email, nombre visible y foto para identificar tu cuenta y gestionar el early access.",
+        "Datos de producto: plantillas de planner, metadatos de páginas, artwork subido y fuentes personalizadas se almacenan para que puedas editar y exportar. El artwork y las fuentes pueden alojarse en nuestro proveedor de archivos.",
+        "Lista de espera: si te apuntas, guardamos el email que indiques, un estado pendiente, el idioma y desde dónde te registraste.",
+        "Analítica: usamos Firebase Analytics para entender el uso del producto (por ejemplo vistas de página y acciones clave). Nos ayuda a mejorar Amark.",
+        "No vendemos tus datos personales. Usamos proveedores (como Google Firebase, Vercel y UploadThing) solo para operar y alojar el servicio.",
+        "Puedes preguntar por tus datos o pedir su eliminación contactando con soporte. Responderemos en un plazo razonable en esta fase de early access."
+      ]
+    },
+    "terms": {
+      "title": "Términos de uso",
+      "paragraphs": [
+        "Amark es un producto en acceso anticipado ofrecido tal cual. Las funciones pueden cambiar y la disponibilidad no está garantizada.",
+        "Debes tener derecho a usar los diseños, imágenes y fuentes que subas. Conservas la propiedad de tu artwork; nos concedes una licencia limitada para almacenarlo y procesarlo para que el servicio funcione.",
+        "El editor está pensado para portátil y escritorio. Móvil y viewports pequeños aún no están totalmente soportados.",
+        "Los PDF generados son para tu uso o venta bajo tu responsabilidad. Amark no es una imprenta y no garantiza resultados de impresión comercial.",
+        "No abuses del servicio, no intentes saltarte controles de acceso ni interferir con los datos de otros usuarios.",
+        "Podemos suspender o revocar el early access si hace falta proteger el producto u otros usuarios. Estos términos pueden actualizarse a medida que Amark evolucione."
+      ]
     }
   },
   "login": {
@@ -187,9 +224,10 @@
   "accessPending": {
     "title": "Acceso aún no activado",
     "loginSuccess": "Has iniciado sesión con Google correctamente. Tu cuenta está conectada, pero todavía no tienes acceso al editor.",
-    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Amark cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno.",
+    "subtitle": "Estamos dando acceso de forma gradual. Podrás usar Amark cuando tu cuenta sea aprobada. Si te apuntaste a la lista de espera, te avisaremos por email cuando sea tu turno. El editor necesita un portátil o escritorio (no móviles).",
     "signedInAs": "Sesión iniciada como",
-    "backToLanding": "Volver a la landing"
+    "backToLanding": "Volver a la landing",
+    "contactSupport": "Contactar soporte"
   },
   "home": {
     "loading": "Cargando proyectos…",

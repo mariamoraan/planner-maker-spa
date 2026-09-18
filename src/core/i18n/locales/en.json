@@ -169,13 +169,50 @@
       "title": "Try the interactive demo",
       "subtitle": "Explore the editor with sample templates — no sign-up required.",
       "cta": "Open demo",
-      "divider": "or"
+      "divider": "or",
+      "desktopNote": "Best on a laptop or desktop (viewport ≥ 900×560)."
     },
+    "desktopNote": "The editor is desktop-only for now — use a laptop or larger screen.",
     "footer": {
       "brand": "Amark — Planner Builder",
       "description": "Build fully custom planners using your own designs and dynamic date logic.",
       "status": "Early access",
-      "statusDetail": "Join the waitlist to get in"
+      "statusDetail": "Join the waitlist to get in",
+      "legal": "Legal",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "support": "Support",
+      "copyright": "© {{year}} {{appName}}. All rights reserved."
+    }
+  },
+  "legal": {
+    "updated": "Last updated: September 2026",
+    "contactLabel": "Questions or requests:",
+    "backToLanding": "Back to landing",
+    "privacyLink": "Privacy Policy",
+    "termsLink": "Terms of Use",
+    "privacy": {
+      "title": "Privacy Policy",
+      "paragraphs": [
+        "Amark (“we”) provides an early-access planner builder. This short policy explains what we collect while the product is in beta.",
+        "Account data: when you sign in with Google we store your user ID, email, display name, and photo URL so we can identify your account and manage early access.",
+        "Product data: planner templates, page metadata, uploaded artwork, and custom fonts are stored so you can edit and export your planners. Artwork and fonts may be hosted with our file-storage provider.",
+        "Waitlist: if you join the waitlist we store the email you submit, a pending status, locale, and where you signed up from.",
+        "Analytics: we use Firebase Analytics to understand product usage (for example page views and key actions). This helps us improve Amark.",
+        "We do not sell your personal data. We use providers (such as Google Firebase, Vercel, and UploadThing) only to run and host the service.",
+        "You can ask about your data or request deletion by contacting support. We will respond within a reasonable time for this early-access stage."
+      ]
+    },
+    "terms": {
+      "title": "Terms of Use",
+      "paragraphs": [
+        "Amark is an early-access product offered as-is. Features may change, and availability is not guaranteed.",
+        "You must be allowed to use the designs, images, and fonts you upload. You keep ownership of your artwork; you grant us a limited license to store and process it so the service can work.",
+        "The editor is designed for laptop and desktop screens. Mobile and small viewports are not fully supported yet.",
+        "Generated PDFs are for your own use or sale under your responsibility. Amark is not a print shop and does not guarantee commercial print results.",
+        "Do not abuse the service, attempt to bypass access controls, or interfere with other users’ data.",
+        "We may suspend or revoke early access if needed to protect the product or other users. These terms may be updated as Amark evolves."
+      ]
     }
   },
   "login": {
@@ -187,9 +224,10 @@
   "accessPending": {
     "title": "Access not enabled yet",
     "loginSuccess": "You've signed in with Google successfully. Your account is connected, but you don't have access to the editor yet.",
-    "subtitle": "We're opening access gradually. You'll be able to use Amark once your account is approved. If you joined the waitlist, we'll email you when it's your turn.",
+    "subtitle": "We're opening access gradually. You'll be able to use Amark once your account is approved. If you joined the waitlist, we'll email you when it's your turn. The editor needs a laptop or desktop (not phones).",
     "signedInAs": "Signed in as",
-    "backToLanding": "Back to landing"
+    "backToLanding": "Back to landing",
+    "contactSupport": "Contact support"
   },
   "home": {
     "loading": "Loading projects…",

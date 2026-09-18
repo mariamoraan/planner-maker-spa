@@ -516,8 +516,10 @@ waitlist/{email}
   └── source: string
 ```
 
-**Security rules:** `firestore.rules`
+**Security rules:** `firestore.rules` (versioned in git; deploy with `firebase deploy --only firestore:rules`)
 - Users can read/write only their own data (`users/{uid}/**`)
+- Profile **create** must set `isAccessGranted: false` and may only set `plan` to `'free'` (or omit it)
+- Profile **update** from the client may only touch `email`, `displayName`, `photoURL`, `lastLoginAt` — never `isAccessGranted` or `plan` (grant those via Console / Admin SDK)
 - Waitlist: create-only, deduplicated by email doc ID; no read/update/delete from clients
 
 ### UploadThing (cloud image storage)
@@ -776,6 +778,7 @@ npm run test:watch  # watch mode
 | `VITE_IMAGE_STORAGE` | No | unset ⇒ local IndexedDB | Set to `cloud` for UploadThing (as in `.env.example` / production) |
 | `VITE_UPLOADTHING_URL` | No | same-origin `/api/uploadthing` | Override upload endpoint |
 | `VITE_IMAGE_DELETE_URL` | No | same-origin `/api/images/delete` | Override delete endpoint |
+| `VITE_SUPPORT_EMAIL` | No | unset ⇒ hide mailto | Support address on Privacy / Terms / access-pending |
 
 Types defined in `src/vite-env.d.ts`. Template in `.env.example`.
 

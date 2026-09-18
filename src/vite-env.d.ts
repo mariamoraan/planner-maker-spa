@@ -11,6 +11,7 @@ interface ImportMetaEnv {
   readonly VITE_UPLOADTHING_URL?: string;
   readonly VITE_IMAGE_DELETE_URL?: string;
   readonly VITE_IMAGE_URL_API?: string;
+  readonly VITE_SUPPORT_EMAIL?: string;
 }
 
 interface ImportMeta {

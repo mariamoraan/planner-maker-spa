@@ -74,6 +74,9 @@ export function DemoVideo() {
           <h3>{t('landing.tryDemo.title')}</h3>
           <p>{t('landing.tryDemo.subtitle')}</p>
           <TryDemoCta source="landing_demo" />
+          <p className="landing-page__desktop-note landing-page__desktop-note--compact">
+            {t('landing.tryDemo.desktopNote')}
+          </p>
         </div>
       </div>
     </section>

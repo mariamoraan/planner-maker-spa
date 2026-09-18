@@ -5,6 +5,7 @@ import { PATHS } from "./paths";
 import LandingPage from "@/features/landing/ui/pages/LandingPage";
 import { DemoEditorShell } from "@/features/landing/ui/pages/demo-editor-shell";
 import { DemoHomePage } from "@/features/landing/ui/pages/demo-home-page";
+import { PrivacyPage, TermsPage } from "@/features/landing/ui/pages/legal-page";
 import { HomePage } from "@/features/template/ui/pages/home.page";
 import { LoginPage } from "@/features/auth/ui/pages/login.page";
 import { AccessPendingPage } from "@/features/auth/ui/pages/access-pending.page";
@@ -17,6 +18,8 @@ export const AppRouter = () => {
           <Route path={PATHS.landing} element={<LandingPage />} />
           <Route path={PATHS.landingDemoHome} element={<DemoHomePage />} />
           <Route path={PATHS.landingDemoEditor} element={<DemoEditorShell />} />
+          <Route path={PATHS.privacy} element={<PrivacyPage />} />
+          <Route path={PATHS.terms} element={<TermsPage />} />
           <Route path={PATHS.login} element={<LoginPage />} />
           <Route
             path={PATHS.accessPending}

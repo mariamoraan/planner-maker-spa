@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Clock, Menu, X, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,8 @@ import { HowItWorksTimeline } from '@/features/landing/ui/components/how-it-work
 import { WaitlistForm } from '@/features/landing/ui/components/waitlist-form/waitlist-form';
 import { SignInLink } from '@/features/landing/ui/components/sign-in-link/sign-in-link';
 import { trackPageView } from '@/features/template/use-case/commands/analytics.commands';
+import { PATHS } from '@/core/routes/paths';
+import { getSupportEmail, getSupportMailto } from '@/core/config/support-email';
 import './landing-page.scss';
 
 const fadeUp = {
@@ -20,6 +23,8 @@ const fadeUp = {
 export default function LandingPage() {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const supportEmail = getSupportEmail();
+  const supportMailto = getSupportMailto();
 
   useEffect(() => {
     trackPageView('landing');
@@ -93,6 +98,7 @@ export default function LandingPage() {
         <span className="landing-page__hero-badge">{t('landing.hero.badge')}</span>
         <h1 className="landing-page__hero-title">{t('landing.hero.title')}</h1>
         <p className="landing-page__hero-subtitle">{t('landing.hero.subtitle')}</p>
+        <p className="landing-page__desktop-note">{t('landing.desktopNote')}</p>
         <ul className="landing-page__hero-pills">
           {heroPills.map(pill => (
             <li key={pill}>{pill}</li>
@@ -104,6 +110,9 @@ export default function LandingPage() {
         <div className="landing-page__hero-demo">
           <p className="landing-page__hero-demo-label">{t('landing.tryDemo.heroPrompt')}</p>
           <TryDemoCta source="landing_hero" />
+          <p className="landing-page__desktop-note landing-page__desktop-note--compact">
+            {t('landing.tryDemo.desktopNote')}
+          </p>
         </div>
       </motion.section>
 
@@ -181,6 +190,9 @@ export default function LandingPage() {
               {t('landing.waitlist.title')}
             </h2>
             <p className="landing-page__waitlist-subtitle">{t('landing.waitlist.subtitle')}</p>
+            <p className="landing-page__desktop-note landing-page__desktop-note--on-dark">
+              {t('landing.desktopNote')}
+            </p>
             <WaitlistForm source="landing_footer" />
 
             <div className="landing-page__cta-divider" aria-hidden="true">
@@ -190,6 +202,9 @@ export default function LandingPage() {
             <h3 className="landing-page__try-demo-title">{t('landing.tryDemo.title')}</h3>
             <p className="landing-page__try-demo-subtitle">{t('landing.tryDemo.subtitle')}</p>
             <TryDemoCta source="landing_footer" variant="dark" />
+            <p className="landing-page__desktop-note landing-page__desktop-note--on-dark landing-page__desktop-note--compact">
+              {t('landing.tryDemo.desktopNote')}
+            </p>
           </motion.div>
         </div>
       </section>
@@ -214,13 +229,33 @@ export default function LandingPage() {
             </div>
 
             <div className="landing-page__footer-end">
-              <p className="landing-page__footer-label">{t('landing.footer.status')}</p>
-              <p className="landing-page__footer-text">{t('landing.footer.statusDetail')}</p>
+              <p className="landing-page__footer-label">{t('landing.footer.legal')}</p>
+              <ul className="landing-page__footer-links">
+                <li><Link to={PATHS.privacy}>{t('landing.footer.privacy')}</Link></li>
+                <li><Link to={PATHS.terms}>{t('landing.footer.terms')}</Link></li>
+                {supportEmail && supportMailto && (
+                  <li>
+                    <a href={supportMailto}>{t('landing.footer.support')}</a>
+                  </li>
+                )}
+              </ul>
+              <p className="landing-page__footer-text landing-page__footer-text--spaced">
+                {t('landing.footer.statusDetail')}
+              </p>
             </div>
           </div>
 
           <div className="landing-page__footer-bottom">
-            <p>© {new Date().getFullYear()} {t('common.appName')}. All rights reserved.</p>
+            <p>
+              {t('landing.footer.copyright', {
+                year: new Date().getFullYear(),
+                appName: t('common.appName'),
+              })}
+            </p>
+            <div className="landing-page__footer-legal-inline">
+              <Link to={PATHS.privacy}>{t('landing.footer.privacy')}</Link>
+              <Link to={PATHS.terms}>{t('landing.footer.terms')}</Link>
+            </div>
           </div>
         </div>
       </footer>

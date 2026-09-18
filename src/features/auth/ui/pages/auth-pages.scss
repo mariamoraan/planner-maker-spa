@@ -82,6 +82,10 @@
     flex-direction: column;
     gap: 0.75rem;
     align-items: center;
+
+    .auth-page__link {
+      margin-top: 0;
+    }
   }
 
   &__link {
@@ -93,6 +97,10 @@
 
     &:hover {
       color: #171717;
+    }
+
+    &--tight {
+      margin-top: 0;
     }
   }
 

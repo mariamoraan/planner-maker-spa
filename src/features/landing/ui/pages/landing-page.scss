@@ -210,10 +210,27 @@
     font-size: 1.125rem;
     color: #525252;
     max-width: 48rem;
-    margin: 0 auto 2.5rem;
+    margin: 0 auto 1rem;
 
     @media (min-width: 768px) {
       font-size: 1.25rem;
+    }
+  }
+
+  &__desktop-note {
+    margin: 0 auto 2rem;
+    max-width: 36rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: #737373;
+
+    &--compact {
+      margin: 0.75rem auto 0;
+    }
+
+    &--on-dark {
+      color: #a3a3a3;
+      margin-bottom: 1.5rem;
     }
   }
 
@@ -349,7 +366,7 @@
   &__waitlist-subtitle {
     color: #a3a3a3;
     line-height: 1.6;
-    margin: 0 0 2rem;
+    margin: 0 0 1rem;
   }
 
   &__cta-divider {
@@ -674,6 +691,10 @@
     color: #525252;
     line-height: 1.625;
     margin: 0;
+
+    &--spaced {
+      margin-top: 1.25rem;
+    }
   }
 
   &__footer-label {
@@ -734,6 +755,20 @@
 
     p {
       margin: 0;
+    }
+  }
+
+  &__footer-legal-inline {
+    display: flex;
+    gap: 1.25rem;
+
+    a {
+      color: #737373;
+      text-decoration: none;
+
+      &:hover {
+        color: #171717;
+      }
     }
   }
 }
