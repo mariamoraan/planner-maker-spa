@@ -38,6 +38,8 @@ export const GeneratorDialog: React.FC = () => {
   const closeGenerator = useExportStore(state => state.closeGenerator);
   const startExport = useExportStore(state => state.startExport);
   const exportStatus = useExportStore(state => state.status);
+  const includeInternalLinks = useExportStore(state => state.includeInternalLinks);
+  const setIncludeInternalLinks = useExportStore(state => state.setIncludeInternalLinks);
 
   const estimatedPages = useMemo(() => {
     if (!template) return 0;
@@ -46,9 +48,9 @@ export const GeneratorDialog: React.FC = () => {
 
   const handleDownload = useCallback(() => {
     if (!template) return;
-    startExport(template, startDate, endDate);
+    startExport(template, startDate, endDate, { includeInternalLinks });
     closeGenerator();
-  }, [template, startDate, endDate, startExport, closeGenerator]);
+  }, [template, startDate, endDate, includeInternalLinks, startExport, closeGenerator]);
 
   if (!template) return null;
 
@@ -117,6 +119,22 @@ export const GeneratorDialog: React.FC = () => {
               </div>
             </div>
           </div>
+
+          <label className="planner-generator-dialog__checkbox">
+            <input
+              type="checkbox"
+              checked={includeInternalLinks}
+              onChange={event => setIncludeInternalLinks(event.target.checked)}
+            />
+            <span>
+              <span className="planner-generator-dialog__checkbox-title">
+                {t('generator.includeInternalLinks')}
+              </span>
+              <span className="planner-generator-dialog__checkbox-hint">
+                {t('generator.includeInternalLinksHint')}
+              </span>
+            </span>
+          </label>
         </div>
 
         <DialogFooter className="dialog-footer--gap">

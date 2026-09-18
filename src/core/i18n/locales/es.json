@@ -421,6 +421,8 @@
     "pagesConfigured": "{{count}} página de plantilla configurada",
     "pagesConfigured_other": "{{count}} páginas de plantilla configuradas",
     "pagesEstimated": "páginas estimadas",
+    "includeInternalLinks": "Incluir enlaces internos (GoodNotes)",
+    "includeInternalLinksHint": "Los días del calendario saltan a daily, weekly o monthly. Usa modo lectura en GoodNotes.",
     "downloadPdf": "Descargar PDF"
   }
 }

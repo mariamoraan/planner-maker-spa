@@ -1,12 +1,17 @@
 import { PDFDocument } from 'pdf-lib';
 import { resolvePdfPageSizeForExport } from '@/features/export/domain/services/pdf-page-size';
+import { addGoToLinks } from '@/features/export/domain/services/pdf-link-annotations';
+import type { PdfPageLink } from '@/features/export/domain/entities/generated-page';
 import type { PaperSize } from '@/features/template/domain/services/paper-size';
+import type { PDFRef } from 'pdf-lib';
 
 export type PdfAssemblePage = {
   imageData: string;
   width?: number;
   height?: number;
   paperSize?: PaperSize;
+  pageNumber?: number;
+  links?: PdfPageLink[];
 };
 
 /**
@@ -19,6 +24,8 @@ export async function assemblePdfFromPages(
 ): Promise<ArrayBuffer> {
   const pdfDoc = await PDFDocument.create();
   const total = pages.length;
+  const pageRefsByNumber = new Map<number, PDFRef>();
+  const pdfPages = [];
 
   for (let i = 0; i < pages.length; i++) {
     const page = pages[i];
@@ -41,7 +48,15 @@ export async function assemblePdfFromPages(
       height: pageSize.height,
     });
 
+    const pageNumber = page.pageNumber ?? i + 1;
+    pageRefsByNumber.set(pageNumber, pdfPage.ref);
+    pdfPages.push({ pdfPage, links: page.links });
+
     onProgress?.(i + 1, total);
+  }
+
+  for (const { pdfPage, links } of pdfPages) {
+    addGoToLinks(pdfDoc, pdfPage, links, pageRefsByNumber);
   }
 
   const pdfBytes = await pdfDoc.save();

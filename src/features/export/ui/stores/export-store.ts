@@ -15,6 +15,7 @@ interface PendingExport {
   template: Template;
   startDate: Date;
   endDate: Date;
+  includeInternalLinks: boolean;
 }
 
 interface ExportState {
@@ -28,14 +29,21 @@ interface ExportState {
   cachedPages: GeneratedPage[] | null;
   pendingExport: PendingExport | null;
   isGeneratorOpen: boolean;
+  includeInternalLinks: boolean;
 
-  startExport: (template: Template, startDate: Date, endDate: Date) => void;
+  startExport: (
+    template: Template,
+    startDate: Date,
+    endDate: Date,
+    options?: { includeInternalLinks?: boolean },
+  ) => void;
   retryExport: () => void;
   dismiss: () => void;
   openPdf: () => void;
   openGenerator: () => void;
   closeGenerator: () => void;
   setIsGeneratorOpen: (isGeneratorOpen: boolean) => void;
+  setIncludeInternalLinks: (includeInternalLinks: boolean) => void;
 }
 
 function revokeBlobUrl(url: string | null) {
@@ -53,16 +61,21 @@ export const useExportStore = create<ExportState>((set, get) => ({
   cachedPages: null,
   pendingExport: null,
   isGeneratorOpen: false,
+  includeInternalLinks: true,
 
-  startExport: (template, startDate, endDate) => {
-    const { status, cachedPages, exportKey: cachedKey, pdfBlobUrl } = get();
+  startExport: (template, startDate, endDate, options) => {
+    const { status, cachedPages, exportKey: cachedKey, pdfBlobUrl, includeInternalLinks: storeLinks } =
+      get();
     if (status === 'running') return;
+
+    const includeInternalLinks = options?.includeInternalLinks ?? storeLinks;
 
     const exportKey = buildExportKey(
       template.id,
       startDate,
       endDate,
-      template.updatedAt
+      template.updatedAt,
+      includeInternalLinks,
     );
 
     const canUseCache = cachedKey === exportKey && cachedPages && cachedPages.length > 0;
@@ -76,7 +89,8 @@ export const useExportStore = create<ExportState>((set, get) => ({
       fileName: `${template.name}.pdf`,
       pdfBlobUrl: null,
       error: null,
-      pendingExport: { template, startDate, endDate },
+      includeInternalLinks,
+      pendingExport: { template, startDate, endDate, includeInternalLinks },
     });
 
     runExport({
@@ -85,6 +99,7 @@ export const useExportStore = create<ExportState>((set, get) => ({
       endDate,
       cachedPages: canUseCache ? cachedPages : null,
       cachedKey: canUseCache ? cachedKey : null,
+      includeInternalLinks,
       onProgress: (progress, phase) => {
         set({ progress: Math.min(100, Math.max(0, progress)), phase });
       },
@@ -116,9 +131,9 @@ export const useExportStore = create<ExportState>((set, get) => ({
   retryExport: () => {
     const { pendingExport } = get();
     if (!pendingExport) return;
-    const { template, startDate, endDate } = pendingExport;
+    const { template, startDate, endDate, includeInternalLinks } = pendingExport;
     set({ status: 'idle', error: null, progress: 0 });
-    get().startExport(template, startDate, endDate);
+    get().startExport(template, startDate, endDate, { includeInternalLinks });
   },
 
   dismiss: () => {
@@ -144,4 +159,5 @@ export const useExportStore = create<ExportState>((set, get) => ({
   openGenerator: () => set({ isGeneratorOpen: true }),
   closeGenerator: () => set({ isGeneratorOpen: false }),
   setIsGeneratorOpen: (isGeneratorOpen) => set({ isGeneratorOpen }),
+  setIncludeInternalLinks: (includeInternalLinks) => set({ includeInternalLinks }),
 }));

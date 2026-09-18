@@ -1,4 +1,5 @@
-import type { Template, GeneratedPage } from '@/features/template';
+import type { Template } from '@/features/template';
+import type { GeneratedPage } from '@/features/export/domain/entities/generated-page';
 import {
   inferTemplatePaperSize,
   paperSizeToPixels,
@@ -18,6 +19,10 @@ import type { WeekStartsOn } from '@/features/template';
 import PdfWorker from '@/features/export/infrastructure/workers/pdf.worker?worker';
 import type { WorkerResponse } from '@/features/export/infrastructure/workers/pdf.worker';
 import { assemblePdfFromPages } from '@/features/export/domain/services/assemble-pdf';
+import {
+  attachPdfLinks,
+  toWeekStartISO,
+} from '@/features/export/domain/services/pdf-page-links';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 
 const PAGES_WEIGHT = 0.85;
@@ -43,9 +48,10 @@ export function buildExportKey(
   templateId: string,
   startDate: Date,
   endDate: Date,
-  updatedAt: Date
+  updatedAt: Date,
+  includeInternalLinks = true,
 ): string {
-  return `${templateId}:${startDate.toISOString()}:${endDate.toISOString()}:${updatedAt.getTime()}`;
+  return `${templateId}:${startDate.toISOString()}:${endDate.toISOString()}:${updatedAt.getTime()}:links=${includeInternalLinks ? 1 : 0}`;
 }
 
 export function estimatePageCount(
@@ -186,7 +192,12 @@ export async function generatePlannerPages(
       exportPaperSize,
       weekStartsOn,
     );
-    pages.push({ ...page, pageNumber: pages.length + 1, type: 'cover' });
+    pages.push({
+      ...page,
+      pageNumber: pages.length + 1,
+      type: 'cover',
+      templatePageId: coverImage.id,
+    });
     reportProgress();
   }
 
@@ -199,7 +210,14 @@ export async function generatePlannerPages(
         days: month.days,
         ...plannerRange,
       }, plannerLocale, exportPaperSize, weekStartsOn);
-      pages.push({ ...page, pageNumber: pages.length + 1, type: 'month-cover' });
+      pages.push({
+        ...page,
+        pageNumber: pages.length + 1,
+        type: 'month-cover',
+        templatePageId: monthCover.id,
+        year: month.year,
+        month: month.month,
+      });
       reportProgress();
     }
 
@@ -211,7 +229,14 @@ export async function generatePlannerPages(
         days: month.days,
         ...plannerRange,
       }, plannerLocale, exportPaperSize, weekStartsOn);
-      pages.push({ ...page, pageNumber: pages.length + 1, type: 'monthly-calendar' });
+      pages.push({
+        ...page,
+        pageNumber: pages.length + 1,
+        type: 'monthly-calendar',
+        templatePageId: monthlyCalendar.id,
+        year: month.year,
+        month: month.month,
+      });
       reportProgress();
     }
 
@@ -231,6 +256,7 @@ export async function generatePlannerPages(
         ...page,
         pageNumber: pages.length + 1,
         type: 'daily-page',
+        templatePageId: dailyTemplate.id,
         year: date.getFullYear(),
         month: date.getMonth(),
         day: date.getDate(),
@@ -241,6 +267,7 @@ export async function generatePlannerPages(
     if (weeklyCalendars.length > 0 && dailyPageTemplates.length > 0) {
       let weekIndex = 0;
       for (const week of month.weeks) {
+        const weekStartISO = week.days[0] ? toWeekStartISO(week.days[0]) : undefined;
         for (const weeklyCalendar of weeklyCalendars) {
           const page = await generatePage(weeklyCalendar, {
             year: month.year,
@@ -252,9 +279,11 @@ export async function generatePlannerPages(
             ...page,
             pageNumber: pages.length + 1,
             type: 'weekly-calendar',
+            templatePageId: weeklyCalendar.id,
             month: month.month,
             year: month.year,
             weekNumber: weekIndex,
+            weekStartISO,
           });
           reportProgress();
         }
@@ -282,9 +311,11 @@ export async function generatePlannerPages(
             ...page,
             pageNumber: pages.length + 1,
             type: 'weekly-calendar',
+            templatePageId: weeklyCalendar.id,
             month: month.month,
             year: month.year,
             weekNumber: i,
+            weekStartISO: week.days[0] ? toWeekStartISO(week.days[0]) : undefined,
           });
           i++;
           reportProgress();
@@ -308,7 +339,12 @@ export async function generatePlannerPages(
       exportPaperSize,
       weekStartsOn,
     );
-    pages.push({ ...page, pageNumber: pages.length + 1, type: 'extra' });
+    pages.push({
+      ...page,
+      pageNumber: pages.length + 1,
+      type: 'extra',
+      templatePageId: extra.id,
+    });
     reportProgress();
   }
 
@@ -393,6 +429,7 @@ export interface RunExportOptions {
   endDate: Date;
   cachedPages?: GeneratedPage[] | null;
   cachedKey?: string | null;
+  includeInternalLinks?: boolean;
   onProgress: (progress: number, phase: 'pages' | 'pdf') => void;
 }
 
@@ -402,13 +439,21 @@ export async function runExport({
   endDate,
   cachedPages,
   cachedKey,
+  includeInternalLinks = true,
   onProgress,
 }: RunExportOptions): Promise<{ pdfBytes: ArrayBuffer; fileName: string; pages: GeneratedPage[] }> {
-  const exportKey = buildExportKey(template.id, startDate, endDate, template.updatedAt);
+  const exportKey = buildExportKey(
+    template.id,
+    startDate,
+    endDate,
+    template.updatedAt,
+    includeInternalLinks,
+  );
   const fileName = `${template.name}.pdf`;
 
   let pages: GeneratedPage[];
   const exportPaperSize = template.paperSize ?? inferTemplatePaperSize(template);
+  const weekStartsOn = resolveTemplateWeekStartsOn(template);
 
   if (cachedPages && cachedPages.length > 0 && cachedKey === exportKey) {
     pages = cachedPages;
@@ -417,6 +462,12 @@ export async function runExport({
     pages = await generatePlannerPages(template, startDate, endDate, (current, total) => {
       const phaseProgress = total > 0 ? current / total : 1;
       onProgress(clampProgress(phaseProgress * PAGES_WEIGHT * 100), 'pages');
+    });
+    pages = attachPdfLinks(template, pages, {
+      startDate,
+      endDate,
+      enabled: includeInternalLinks,
+      weekStartsOn,
     });
   }
 

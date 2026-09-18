@@ -421,6 +421,8 @@
     "pagesConfigured": "{{count}} template page configured",
     "pagesConfigured_other": "{{count}} template pages configured",
     "pagesEstimated": "pages estimated",
+    "includeInternalLinks": "Include internal links (GoodNotes)",
+    "includeInternalLinksHint": "Calendar days jump to daily, weekly, or monthly pages. Use Read-Only mode in GoodNotes.",
     "downloadPdf": "Download PDF"
   }
 }
