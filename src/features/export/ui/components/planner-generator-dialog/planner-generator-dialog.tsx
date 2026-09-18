@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Download, FileDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { startOfMonth } from 'date-fns';
 import { Button } from '@/core/components/ui/button';
 import {
   Dialog,
@@ -11,11 +12,15 @@ import {
   DialogTitle,
 } from '@/core/components/ui/dialog';
 import { Label } from '@/core/components/ui/label';
+import { DatePicker } from '@/core/components/ui/date-picker';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useExportStore } from '@/features/export/ui/stores/export-store';
 import { estimatePageCount } from '@/features/export/domain/services/planner-export';
-import { DatePicker } from '@mui/x-date-pickers';
-import dayjs from 'dayjs';
+import {
+  resolveLocale,
+  resolveWeekStartsOn,
+  DEFAULT_WEEK_STARTS_ON,
+} from '@/features/template/domain/services/locale-config';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import './planner-generator-dialog.scss';
 
@@ -25,6 +30,8 @@ export const GeneratorDialog: React.FC = () => {
   const template = useCurrentTemplate();
   const startDate: Date = template?.startDate ?? new Date();
   const endDate: Date = template?.endDate ?? new Date();
+  const locale = resolveLocale(template?.locale ?? 'es');
+  const weekStartsOn = resolveWeekStartsOn(template?.weekStartsOn ?? DEFAULT_WEEK_STARTS_ON);
 
   const isGeneratorOpen = useExportStore(state => state.isGeneratorOpen);
   const setIsGeneratorOpen = useExportStore(state => state.setIsGeneratorOpen);
@@ -67,34 +74,31 @@ export const GeneratorDialog: React.FC = () => {
             <div className="planner-generator-dialog__field">
               <Label>{t('generator.startDate')}</Label>
               <DatePicker
-                views={['month', 'year']}
-                value={dayjs(startDate)}
-                onChange={(newValue) => {
-                  if (!newValue) return;
-                  updateTemplate(template.id, { startDate: new Date(newValue.toISOString()) });
+                granularity="month"
+                value={startOfMonth(startDate)}
+                onChange={date => {
+                  updateTemplate(template.id, { startDate: startOfMonth(date) });
                 }}
-                slotProps={{
-                  popper: {
-                    disablePortal: true,
-                  },
-                }}
+                locale={locale}
+                weekStartsOn={weekStartsOn}
+                maxDate={startOfMonth(endDate)}
+                aria-label={t('generator.startDate')}
               />
             </div>
 
             <div className="planner-generator-dialog__field">
               <Label>{t('generator.endDate')}</Label>
               <DatePicker
-                views={['month', 'year']}
-                value={dayjs(endDate)}
-                onChange={(newValue) => {
-                  if (!newValue) return;
-                  updateTemplate(template.id, { endDate: new Date(newValue.toISOString()) });
+                granularity="month"
+                value={startOfMonth(endDate)}
+                onChange={date => {
+                  updateTemplate(template.id, { endDate: startOfMonth(date) });
                 }}
-                slotProps={{
-                  popper: {
-                    disablePortal: true,
-                  },
-                }}
+                locale={locale}
+                weekStartsOn={weekStartsOn}
+                minDate={startOfMonth(startDate)}
+                aria-label={t('generator.endDate')}
+                align="end"
               />
             </div>
           </div>

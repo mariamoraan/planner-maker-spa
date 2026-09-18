@@ -3,9 +3,14 @@ import './editor-preview-date-badge.scss';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarDays, ChevronDown } from 'lucide-react';
-import { format } from 'date-fns';
+import { startOfMonth } from 'date-fns';
+import { DatePicker } from '@/core/components/ui/date-picker';
 import { getEditorPreviewDateInfo, normalizePreviewPlannerRange } from '@/features/editor/domain/services/planner-utils';
-import { resolveLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
+import {
+  resolveLocale,
+  resolveWeekStartsOn,
+  DEFAULT_WEEK_STARTS_ON,
+} from '@/features/template/domain/services/locale-config';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
@@ -42,40 +47,6 @@ function pickerModeForPage(type: TemplateImage['type']): PickerMode {
   }
 }
 
-function toMonthInputValue(date: Date): string {
-  return format(date, 'yyyy-MM');
-}
-
-function toDateInputValue(date: Date): string {
-  return format(date, 'yyyy-MM-dd');
-}
-
-function parseMonthInput(value: string): Date | null {
-  const match = /^(\d{4})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  if (month < 0 || month > 11) return null;
-  return new Date(year, month, 1);
-}
-
-function parseDateInput(value: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const year = Number(match[1]);
-  const month = Number(match[2]) - 1;
-  const day = Number(match[3]);
-  const date = new Date(year, month, day);
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-  return date;
-}
-
 export function EditorPreviewDateBadge() {
   const { t } = useTranslation();
   const currentImage = useCurrentImage();
@@ -93,6 +64,7 @@ export function EditorPreviewDateBadge() {
 
   const locale = resolveLocale(template?.locale ?? 'es');
   const weekStartsOn = template?.weekStartsOn ?? DEFAULT_WEEK_STARTS_ON;
+  const weekStartsOnNumber = resolveWeekStartsOn(weekStartsOn);
   const templateStart = template?.startDate ?? new Date(new Date().getFullYear(), 0, 1);
   const templateEnd = template?.endDate ?? new Date(new Date().getFullYear(), 11, 31);
   const info = getEditorPreviewDateInfo(
@@ -113,7 +85,6 @@ export function EditorPreviewDateBadge() {
       ? t(hintKey)
       : info.label;
 
-  // Prefer session override; otherwise the real planner range for cover/extra inputs.
   const effectiveOverride = normalizePreviewPlannerRange(previewPlannerRange);
   const displayRangeStart = effectiveOverride?.start
     ?? (currentImage.type === 'cover' || currentImage.type === 'extra'
@@ -124,28 +95,22 @@ export function EditorPreviewDateBadge() {
       ? templateEnd
       : info.anchor);
 
-  const handleMonthChange = (value: string) => {
-    const parsed = parseMonthInput(value);
-    if (parsed) setPreviewAnchorDate(parsed);
+  const handleAnchorChange = (date: Date) => {
+    setPreviewAnchorDate(date);
   };
 
-  const handleDateChange = (value: string) => {
-    const parsed = parseDateInput(value);
-    if (parsed) setPreviewAnchorDate(parsed);
+  const handleRangeStartChange = (date: Date) => {
+    const end = startOfMonth(effectiveOverride?.end ?? displayRangeEnd);
+    setPreviewPlannerRange(
+      normalizePreviewPlannerRange({ start: startOfMonth(date), end }),
+    );
   };
 
-  const handleRangeStartChange = (value: string) => {
-    const parsed = parseDateInput(value);
-    if (!parsed) return;
-    const end = effectiveOverride?.end ?? displayRangeEnd;
-    setPreviewPlannerRange(normalizePreviewPlannerRange({ start: parsed, end }));
-  };
-
-  const handleRangeEndChange = (value: string) => {
-    const parsed = parseDateInput(value);
-    if (!parsed) return;
-    const start = effectiveOverride?.start ?? displayRangeStart;
-    setPreviewPlannerRange(normalizePreviewPlannerRange({ start, end: parsed }));
+  const handleRangeEndChange = (date: Date) => {
+    const start = startOfMonth(effectiveOverride?.start ?? displayRangeStart);
+    setPreviewPlannerRange(
+      normalizePreviewPlannerRange({ start, end: startOfMonth(date) }),
+    );
   };
 
   const handleReset = () => {
@@ -195,30 +160,27 @@ export function EditorPreviewDateBadge() {
         <div className="editor-preview-date-badge__popover" role="dialog">
           {mode === 'range' ? (
             <>
-              <label className="editor-preview-date-badge__field">
-                <span className="editor-preview-date-badge__popover-title">
-                  {t('editor.previewDatePickRangeStart')}
-                </span>
-                <input
-                  type="date"
-                  className="editor-preview-date-badge__input"
-                  value={toDateInputValue(displayRangeStart)}
-                  onChange={e => handleRangeStartChange(e.target.value)}
-                  aria-label={t('editor.previewDatePickRangeStart')}
-                />
-              </label>
-              <label className="editor-preview-date-badge__field">
-                <span className="editor-preview-date-badge__popover-title">
-                  {t('editor.previewDatePickRangeEnd')}
-                </span>
-                <input
-                  type="date"
-                  className="editor-preview-date-badge__input"
-                  value={toDateInputValue(displayRangeEnd)}
-                  onChange={e => handleRangeEndChange(e.target.value)}
-                  aria-label={t('editor.previewDatePickRangeEnd')}
-                />
-              </label>
+              <DatePicker
+                granularity="month"
+                value={startOfMonth(displayRangeStart)}
+                onChange={handleRangeStartChange}
+                locale={locale}
+                weekStartsOn={weekStartsOnNumber}
+                maxDate={startOfMonth(displayRangeEnd)}
+                label={t('editor.previewDatePickRangeStart')}
+                aria-label={t('editor.previewDatePickRangeStart')}
+              />
+              <DatePicker
+                granularity="month"
+                value={startOfMonth(displayRangeEnd)}
+                onChange={handleRangeEndChange}
+                locale={locale}
+                weekStartsOn={weekStartsOnNumber}
+                minDate={startOfMonth(displayRangeStart)}
+                label={t('editor.previewDatePickRangeEnd')}
+                aria-label={t('editor.previewDatePickRangeEnd')}
+                align="end"
+              />
             </>
           ) : (
             <>
@@ -229,27 +191,21 @@ export function EditorPreviewDateBadge() {
                     ? t('editor.previewDatePickWeek')
                     : t('editor.previewDatePickDay')}
               </p>
-              {mode === 'month' ? (
-                <input
-                  type="month"
-                  className="editor-preview-date-badge__input"
-                  value={toMonthInputValue(info.anchor)}
-                  onChange={e => handleMonthChange(e.target.value)}
-                  aria-label={t('editor.previewDatePickMonth')}
-                />
-              ) : (
-                <input
-                  type="date"
-                  className="editor-preview-date-badge__input"
-                  value={toDateInputValue(info.anchor)}
-                  onChange={e => handleDateChange(e.target.value)}
-                  aria-label={
-                    currentImage.type === 'weekly-calendar'
+              <DatePicker
+                inline
+                granularity={mode === 'month' ? 'month' : 'day'}
+                value={info.anchor}
+                onChange={handleAnchorChange}
+                locale={locale}
+                weekStartsOn={weekStartsOnNumber}
+                aria-label={
+                  mode === 'month'
+                    ? t('editor.previewDatePickMonth')
+                    : currentImage.type === 'weekly-calendar'
                       ? t('editor.previewDatePickWeek')
                       : t('editor.previewDatePickDay')
-                  }
-                />
-              )}
+                }
+              />
             </>
           )}
           {info.isCustom ? (

@@ -1,0 +1,316 @@
+.date-picker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+
+  &__field-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: hsl(220, 10%, 40%);
+  }
+
+  &__trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 0.65rem 0 0.75rem;
+    border: 1px solid hsl(220, 12%, 88%);
+    border-radius: 8px;
+    background: #fff;
+    color: hsl(220, 15%, 22%);
+    font: inherit;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+
+    &:hover:not(:disabled) {
+      border-color: rgba(0, 0, 0, 0.16);
+    }
+
+    &--open {
+      border-color: hsl(var(--accent));
+      box-shadow: 0 0 0 1px hsl(var(--accent));
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+  }
+
+  &__trigger-value {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  &__trigger-icon {
+    flex-shrink: 0;
+    color: hsl(220, 8%, 52%);
+  }
+
+  &__popover {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 40;
+    width: max(100%, 260px);
+    padding: 0.75rem;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    box-sizing: border-box;
+
+    &--end {
+      left: auto;
+      right: 0;
+    }
+  }
+
+  &--inline {
+    .date-picker__month-panel,
+    .date-picker__day-panel {
+      width: 100%;
+    }
+  }
+
+  &__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+    margin-bottom: 0.55rem;
+  }
+
+  &__nav-label {
+    flex: 1;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: hsl(220, 15%, 22%);
+    text-transform: capitalize;
+  }
+
+  &__nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: hsl(220, 15%, 22%);
+    cursor: pointer;
+    transition: background 120ms ease;
+
+    &:hover:not(:disabled) {
+      background: hsl(220, 16%, 95%);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
+  &__month-panel {
+    width: 100%;
+  }
+
+  &__month-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem 0.25rem;
+  }
+
+  &__month-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1.55;
+    max-height: 40px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: hsl(220, 15%, 22%);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    text-transform: capitalize;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+
+    &:hover:not(:disabled):not(&--selected) {
+      background: hsl(220, 16%, 95%);
+    }
+
+    &--selected {
+      background: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
+      font-weight: 600;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+
+  // react-day-picker overrides
+  &__rdp {
+    position: relative;
+    margin: 0;
+  }
+
+  &__rdp-months {
+    position: relative;
+    display: flex;
+  }
+
+  &__rdp-month {
+    width: 252px;
+  }
+
+  &__rdp-caption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    margin-bottom: 0.45rem;
+    padding: 0 32px;
+  }
+
+  &__rdp-caption-label {
+    font-size: 0.8125rem;
+    font-weight: 650;
+    color: hsl(220, 15%, 22%);
+    text-transform: capitalize;
+  }
+
+  &__rdp-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+    pointer-events: none;
+
+    .date-picker__nav-btn {
+      pointer-events: auto;
+    }
+  }
+
+  &__rdp-chevron {
+    fill: currentColor;
+    width: 14px;
+    height: 14px;
+  }
+
+  &__rdp-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 0.2rem;
+  }
+
+  &__rdp-weekday {
+    width: 36px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: hsl(220, 8%, 52%);
+    text-transform: uppercase;
+  }
+
+  &__rdp-week {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  &__rdp-day {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    text-align: center;
+  }
+
+  &__rdp-day-btn {
+    width: 32px;
+    height: 32px;
+    margin: 2px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: hsl(220, 15%, 22%);
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 550;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease;
+
+    &:hover:not(:disabled) {
+      background: hsl(220, 16%, 95%);
+    }
+  }
+
+  &__rdp-selected {
+    .date-picker__rdp-day-btn {
+      background: hsl(var(--accent));
+      color: hsl(var(--accent-foreground));
+      font-weight: 650;
+
+      &:hover:not(:disabled) {
+        background: hsl(var(--accent) / 0.9);
+      }
+    }
+  }
+
+  &__rdp-today:not(.date-picker__rdp-selected) {
+    .date-picker__rdp-day-btn {
+      box-shadow: inset 0 0 0 1px hsl(var(--accent) / 0.45);
+    }
+  }
+
+  &__rdp-outside {
+    .date-picker__rdp-day-btn {
+      color: hsl(220, 8%, 70%);
+    }
+  }
+
+  &__rdp-disabled {
+    .date-picker__rdp-day-btn {
+      opacity: 0.35;
+      cursor: default;
+
+      &:hover {
+        background: transparent;
+      }
+    }
+  }
+
+  &__rdp-hidden {
+    visibility: hidden;
+  }
+}
