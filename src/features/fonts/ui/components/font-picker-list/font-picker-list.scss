@@ -1,11 +1,48 @@
 .font-picker-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-width: 14rem;
   max-height: 22rem;
-  overflow-y: auto;
+  overflow: visible;
   text-align: left;
+
+  &__search {
+    position: relative;
+    flex-shrink: 0;
+    padding: 4px;
+  }
+
+  &__search-icon {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    color: #8a8f98;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  &__search-input.input {
+    height: 32px;
+    padding: 4px 8px 4px 28px;
+    font-size: 12px;
+    border-radius: 8px;
+
+    &:focus-visible {
+      box-shadow: 0 0 0 2px #fdfdfd, 0 0 0 4px hsl(var(--ring));
+    }
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: visible;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
 
   &__section {
     display: flex;

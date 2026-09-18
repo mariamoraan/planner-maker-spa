@@ -59,7 +59,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
   const [manageOpen, setManageOpen] = useState(false);
   const formatRef = useRef<HTMLButtonElement>(null);
   const colorRef = useRef<HTMLDivElement>(null);
-  const fontRef = useRef<HTMLButtonElement>(null);
+  const fontRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLButtonElement>(null);
   const customFonts = useFontLibraryStore(state => state.fonts);
 
@@ -403,18 +403,20 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
         </div>
       </div>
 
-      <button
-        ref={fontRef}
-        type="button"
-        className="area-style-controls__toolbar-trigger"
-        onClick={togglePopover('font')}
-      >
-        <FontIcon size={12} />
-        {activeFont}
+      <div ref={fontRef} className="area-style-controls__toolbar-popover-anchor">
+        <button
+          type="button"
+          className="area-style-controls__toolbar-trigger"
+          onClick={togglePopover('font')}
+        >
+          <FontIcon size={12} />
+          {activeFont}
+        </button>
         <div
           className={clsx('area-style-controls__popover', {
             'area-style-controls__popover--visible': openPopover === 'font',
           })}
+          onMouseDown={e => e.stopPropagation()}
         >
           <FontPickerList
             selectedFontId={style.fontId}
@@ -431,9 +433,10 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
               setManageOpen(true);
             }}
             compact
+            autoFocusSearch={openPopover === 'font'}
           />
         </div>
-      </button>
+      </div>
 
       <button
         ref={styleRef}

@@ -41,7 +41,9 @@
 
     &__toolbar-slot {
         position: relative;
-        z-index: 10;
+        // Above canvas chrome (selection handles at 12, grid add at 11) so
+        // toolbar popovers are not covered by rotate/move controls.
+        z-index: 20;
         height: 52px;
         flex-shrink: 0;
         width: 100%;
