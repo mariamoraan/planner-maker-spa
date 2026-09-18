@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Rectangle, TemplateImage } from '@/features/template';
 import {
+  defaultLooseBlockBindingSource,
   getBindingDisplayIndex,
   repairBindingMetadata,
   resolveEffectiveBindingSource,
@@ -42,6 +43,27 @@ function makeRect(
     ...overrides,
   };
 }
+
+describe('defaultLooseBlockBindingSource', () => {
+  it('binds day blocks to the page day sequence', () => {
+    expect(defaultLooseBlockBindingSource('monthly-calendar', 'day')).toBe('monthDays');
+    expect(defaultLooseBlockBindingSource('weekly-calendar', 'day')).toBe('weekDays');
+  });
+
+  it('keeps title and range blocks on page', () => {
+    for (const fieldType of [
+      'month',
+      'year',
+      'startDay',
+      'endDay',
+      'weekNumber',
+      'composite',
+    ] as const) {
+      expect(defaultLooseBlockBindingSource('monthly-calendar', fieldType)).toBe('page');
+      expect(defaultLooseBlockBindingSource('weekly-calendar', fieldType)).toBe('page');
+    }
+  });
+});
 
 describe('repairBindingMetadata', () => {
   it('creates a monthDays binding for a monthly grid', () => {

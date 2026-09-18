@@ -113,7 +113,7 @@ export const FieldTypeSelector = () => {
       ...(type === 'composite' ? { compositeParts: [...DEFAULT_COMPOSITE_PARTS] } : {}),
     });
 
-    const defaultSource = defaultLooseBlockBindingSource(currentImage.type);
+    const defaultSource = defaultLooseBlockBindingSource(currentImage.type, type);
     if (id && defaultSource !== 'page') {
       queueMicrotask(() => setRectangleBindingSource(id, defaultSource));
     }

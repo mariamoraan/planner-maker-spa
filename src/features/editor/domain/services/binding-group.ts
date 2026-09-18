@@ -1,6 +1,7 @@
 import type {
   BindingGroup,
   BindingSourceKind,
+  FieldType,
   GridGroup,
   Rectangle,
   TemplateImage,
@@ -25,11 +26,23 @@ export function defaultBindingSourceForPage(pageType: TemplateType): BindingSour
   }
 }
 
+/** Field types that should bind to the day sequence on calendar pages. */
+function usesDaySequenceBinding(fieldType: FieldType): boolean {
+  return fieldType === 'day';
+}
+
 /**
  * Default for a newly created loose (non-grid) block.
- * Daily → page date; monthly → month calendar; weekly → week calendar.
+ * Day cells join the month/week sequence; titles and range fields stay on page.
  */
-export function defaultLooseBlockBindingSource(pageType: TemplateType): BindingSourceKind {
+export function defaultLooseBlockBindingSource(
+  pageType: TemplateType,
+  fieldType?: FieldType,
+): BindingSourceKind {
+  if (fieldType !== undefined && !usesDaySequenceBinding(fieldType)) {
+    return 'page';
+  }
+
   switch (pageType) {
     case 'monthly-calendar':
       return 'monthDays';

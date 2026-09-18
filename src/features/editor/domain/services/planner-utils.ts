@@ -832,11 +832,24 @@ export function getFieldValue({
     ? resolveFieldColor(false, userColor)
     : userColor;
 
+  // Month/year titles use the planner month being built (day 1), not the
+  // sequence cell — which is often a leading/trailing day of another month.
+  const contextMonthDate =
+    context.year !== undefined && context.month !== undefined
+      ? new Date(context.year, context.month, 1)
+      : null;
+
   switch (fieldType) {
     case 'year':
-      return result(formatYearValue(date, formatVariant), resolvedColor);
+      return result(
+        formatYearValue(contextMonthDate ?? date, formatVariant),
+        resolvedColor,
+      );
     case 'month':
-      return result(formatMonthValue(date, formatVariant, locale), resolvedColor);
+      return result(
+        formatMonthValue(contextMonthDate ?? date, formatVariant, locale),
+        resolvedColor,
+      );
     case 'day':
       return result(formatDayValue(date, formatVariant, locale), resolvedColor);
     case 'startDay':

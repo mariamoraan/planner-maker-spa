@@ -316,3 +316,120 @@ describe('getEditorPreviewContext', () => {
     expect(context.plannerEnd?.getFullYear()).toBe(2028);
   });
 });
+
+describe('getFieldValue month title uses context month', () => {
+  const monthRect = (id: string, bindingGroupId: string, sequenceIndex = 0): Rectangle => ({
+    id,
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    fieldType: 'month',
+    order: sequenceIndex,
+    formatVariant: 'name',
+    bindingGroupId,
+    sequenceIndex,
+  });
+
+  it('shows September on monthly calendar even when grid cell 0 is August', () => {
+    const days = getMonthDatesForGrid({ year: 2026, month: 8, weekStartsOn: 'monday' });
+    expect(days[0].getMonth()).toBe(7); // leading Aug 31
+    expect(days[0].getDate()).toBe(31);
+
+    const rect = monthRect('month-title', 'bind-month');
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      id: 'monthly-sep',
+      type: 'monthly-calendar',
+      rectangles: [rect],
+      bindingGroups: {
+        'bind-month': { id: 'bind-month', source: 'monthDays' },
+      },
+    };
+
+    const { fieldValue } = getFieldValue({
+      fieldType: 'month',
+      context: { year: 2026, month: 8, days },
+      templateImage: page,
+      rectangle: rect,
+      fillIncompleteMonths: true,
+      weekStartsOn: 'monday',
+    });
+
+    expect(fieldValue).toBe('Septiembre');
+  });
+
+  it('shows September on first weekly page whose Monday is still August', () => {
+    const week = {
+      weekNumber: 36,
+      startDate: new Date(2026, 7, 31),
+      endDate: new Date(2026, 8, 6),
+      days: [
+        new Date(2026, 7, 31),
+        new Date(2026, 8, 1),
+        new Date(2026, 8, 2),
+        new Date(2026, 8, 3),
+        new Date(2026, 8, 4),
+        new Date(2026, 8, 5),
+        new Date(2026, 8, 6),
+      ],
+    };
+
+    const rect = monthRect('month-title', 'bind-week');
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      rectangles: [rect],
+      bindingGroups: {
+        'bind-week': { id: 'bind-week', source: 'weekDays' },
+      },
+    };
+
+    const { fieldValue } = getFieldValue({
+      fieldType: 'month',
+      context: { year: 2026, month: 8, week },
+      templateImage: page,
+      rectangle: rect,
+      fillIncompleteWeeks: true,
+      weekStartsOn: 'monday',
+    });
+
+    expect(fieldValue).toBe('Septiembre');
+  });
+
+  it('shows September on last weekly page that spills into October', () => {
+    const week = {
+      weekNumber: 40,
+      startDate: new Date(2026, 8, 28),
+      endDate: new Date(2026, 9, 4),
+      days: [
+        new Date(2026, 8, 28),
+        new Date(2026, 8, 29),
+        new Date(2026, 8, 30),
+        new Date(2026, 9, 1),
+        new Date(2026, 9, 2),
+        new Date(2026, 9, 3),
+        new Date(2026, 9, 4),
+      ],
+    };
+
+    const rect = monthRect('month-title', 'bind-week', 6);
+    const page: TemplateImage = {
+      ...weeklyTemplate,
+      rectangles: [rect],
+      bindingGroups: {
+        'bind-week': { id: 'bind-week', source: 'weekDays' },
+      },
+    };
+
+    const { fieldValue } = getFieldValue({
+      fieldType: 'month',
+      context: { year: 2026, month: 8, week },
+      templateImage: page,
+      rectangle: rect,
+      fillIncompleteWeeks: true,
+      weekStartsOn: 'monday',
+    });
+
+    expect(fieldValue).toBe('Septiembre');
+  });
+});
