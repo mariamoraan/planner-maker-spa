@@ -1,6 +1,6 @@
 # Amark — Planner Builder
 
-**Live demo:** [https://planner-maker-spa.vercel.app/](https://planner-maker-spa.vercel.app/)
+**Live demo:** [https://amark.es/](https://amark.es/)
 
 Amark is a design-first web app that lets creators upload their own planner artwork, mark where dates should appear, and auto-generate a full dated planner exported as a print-ready PDF.
 

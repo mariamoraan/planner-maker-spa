@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { SITE_HOST } from '@/core/config/site';
 import { LANDING_ASSETS } from '@/features/landing/domain/landing-assets';
 import { LandingScreenshot } from '@/features/landing/ui/components/landing-screenshot/landing-screenshot';
 import { useSharpDisplayWidth } from '@/features/landing/ui/hooks/use-sharp-display-width';
@@ -79,8 +80,8 @@ export function HowItWorksTimeline() {
                     alt={alt}
                     url={
                       step.key === 'upload'
-                        ? 'amark.app/home'
-                        : 'amark.app/editor'
+                        ? `${SITE_HOST}/home`
+                        : `${SITE_HOST}/editor`
                     }
                   />
                 </div>

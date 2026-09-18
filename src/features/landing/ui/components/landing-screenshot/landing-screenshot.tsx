@@ -1,3 +1,4 @@
+import { SITE_HOST } from '@/core/config/site';
 import { LANDING_IMAGE_SIZE } from '@/features/landing/domain/landing-assets';
 import './landing-screenshot.scss';
 
@@ -17,7 +18,7 @@ export function LandingScreenshot({
   src,
   srcSet,
   alt,
-  url = 'amark.app/editor',
+  url = `${SITE_HOST}/editor`,
   className,
   framed = true,
   width = LANDING_IMAGE_SIZE.width,
