@@ -27,6 +27,7 @@ import {
 import { UploadFontFamilyDialog } from '@/features/fonts/ui/components/upload-font-family-dialog/upload-font-family-dialog';
 import { ManageFontsDialog } from '@/features/fonts/ui/components/manage-fonts-dialog/manage-fonts-dialog';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
+import { usePlanLimits } from '@/core/plans';
 
 type PopoverId = 'format' | 'color' | 'font' | 'style' | null;
 
@@ -62,6 +63,12 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
   const fontRef = useRef<HTMLDivElement>(null);
   const styleRef = useRef<HTMLButtonElement>(null);
   const customFonts = useFontLibraryStore(state => state.fonts);
+  const { canUploadFont } = usePlanLimits();
+
+  const requestFontUpload = () => {
+    if (!canUploadFont) return;
+    setUploadOpen(true);
+  };
 
   useOnClickOutside(formatRef, () => setOpenPopover(prev => (prev === 'format' ? null : prev)));
   useOnClickOutside(colorRef, () => setOpenPopover(prev => (prev === 'color' ? null : prev)));
@@ -231,7 +238,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
       <FontPickerList
         selectedFontId={style.fontId}
         onSelect={fontId => updateStyle({ fontId })}
-        onUploadClick={() => setUploadOpen(true)}
+        onUploadClick={requestFontUpload}
         onManageClick={() => setManageOpen(true)}
       />
     </div>
@@ -326,7 +333,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
         <ManageFontsDialog
           open={manageOpen}
           onOpenChange={setManageOpen}
-          onRequestUpload={() => setUploadOpen(true)}
+          onRequestUpload={requestFontUpload}
         />
       </>
     );
@@ -426,7 +433,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
             }}
             onUploadClick={() => {
               setOpenPopover(null);
-              setUploadOpen(true);
+              requestFontUpload();
             }}
             onManageClick={() => {
               setOpenPopover(null);
@@ -516,7 +523,7 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
     <ManageFontsDialog
       open={manageOpen}
       onOpenChange={setManageOpen}
-      onRequestUpload={() => setUploadOpen(true)}
+      onRequestUpload={requestFontUpload}
     />
     </>
   );

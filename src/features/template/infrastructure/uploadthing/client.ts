@@ -190,3 +190,13 @@ export function extractFileKeyFromUploadthingUrl(url: string): string | null {
     return null;
   }
 }
+
+/** Prefer stored fileKey; fall back to parsing a CDN URL. */
+export function resolveUploadthingFileKey(ref: {
+  fileKey?: string;
+  url?: string;
+}): string | null {
+  if (ref.fileKey) return ref.fileKey;
+  if (ref.url) return extractFileKeyFromUploadthingUrl(ref.url);
+  return null;
+}

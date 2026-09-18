@@ -1,15 +1,21 @@
 import { getFirebaseIdToken } from '@/features/auth/infrastructure/firebase/get-id-token';
 import { isDataUrl } from '@/core/functions/image-data-url';
-import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
+import type {
+  ImageAssetPort,
+  ImageRef,
+  ImageSaveOptions,
+} from '@/features/template/domain/ports/image-asset.port';
 import { pageIdFromImageRefKey } from '@/features/template/domain/ports/image-asset.port';
 import {
-  extractFileKeyFromUploadthingUrl,
   resolveCloudImageAccess,
   resolveImageDeleteUrl,
+  resolveUploadthingFileKey,
   uploadFiles,
   type CloudImageAccess,
 } from '@/features/template/infrastructure/uploadthing/client';
 import { isDisplaySrcFresh } from '@/features/template/infrastructure/uploadthing/content-ticket';
+
+export { resolveUploadthingFileKey } from '@/features/template/infrastructure/uploadthing/client';
 
 function dataUrlToFile(dataUrl: string, filename: string): File {
   const [header, base64] = dataUrl.split(',');
@@ -52,21 +58,26 @@ export function getCloudSrcAlt(ref: ImageRef | undefined): string | undefined {
 }
 
 export class UploadthingImageAdapter implements ImageAssetPort {
-  async save(ref: ImageRef, data: string): Promise<void> {
+  async save(ref: ImageRef, data: string, options?: ImageSaveOptions): Promise<void> {
     const token = await getFirebaseIdToken(true);
     if (!token) {
       throw new Error('You must be signed in to upload images to the cloud');
     }
 
+    const templateId = options?.templateId;
+    if (!templateId) {
+      throw new Error('templateId is required to upload images to the cloud');
+    }
+
     const pageId = pageIdFromImageRefKey(ref.key);
     const mime = data.match(/^data:(.*?);/)?.[1] ?? 'image/png';
     const file = dataUrlToFile(data, `${pageId}.${extensionForMime(mime)}`);
-    const previousFileKey = ref.fileKey;
+    const previousFileKey = resolveUploadthingFileKey(ref) ?? undefined;
 
     // UploadThing drops `input` from opts types when strictNullChecks is off.
     const uploaded = await uploadFiles('plannerImage', {
       files: [file],
-      input: { pageId, idToken: token, previousFileKey },
+      input: { pageId, templateId, idToken: token, previousFileKey },
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -103,7 +114,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
   }
 
   async load(ref: ImageRef): Promise<string | null> {
-    const fileKey = ref.fileKey ?? (ref.url ? extractFileKeyFromUploadthingUrl(ref.url) : null);
+    const fileKey = resolveUploadthingFileKey(ref);
     if (!fileKey && !ref.url) return null;
 
     const cacheKey = sessionCacheKey(ref);
@@ -141,7 +152,13 @@ export class UploadthingImageAdapter implements ImageAssetPort {
   }
 
   async delete(ref: ImageRef): Promise<void> {
-    if (!ref.fileKey && !ref.key) return;
+    const fileKey = resolveUploadthingFileKey(ref);
+    if (!fileKey) {
+      if (ref.provider === 'uploadthing') {
+        console.warn('[uploadthing] image delete skipped: missing fileKey', ref.key);
+      }
+      return;
+    }
 
     const token = await getFirebaseIdToken();
     if (!token) {
@@ -157,10 +174,7 @@ export class UploadthingImageAdapter implements ImageAssetPort {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        fileKey: ref.fileKey,
-        key: ref.key,
-      }),
+      body: JSON.stringify({ fileKey }),
     });
 
     if (!response.ok) {
@@ -170,6 +184,6 @@ export class UploadthingImageAdapter implements ImageAssetPort {
   }
 
   async exists(ref: ImageRef): Promise<boolean> {
-    return Boolean(ref.fileKey || ref.url);
+    return Boolean(resolveUploadthingFileKey(ref) || ref.url);
   }
 }

@@ -35,6 +35,8 @@ import {
   useFontLibraryStore,
   type PendingFontFace,
 } from '@/features/fonts/ui/stores/font-library-store';
+import { PlanLimitError, usePlanLimits } from '@/core/plans';
+import { useTranslation } from 'react-i18next';
 
 type FaceDraft = {
   localId: string;
@@ -74,6 +76,8 @@ export function UploadFontFamilyDialog({
   editFontId = null,
   initialName = '',
 }: UploadFontFamilyDialogProps) {
+  const { t } = useTranslation();
+  const { limits, canUploadFont } = usePlanLimits();
   const createFamily = useFontLibraryStore(state => state.createFamily);
   const replaceFaces = useFontLibraryStore(state => state.replaceFaces);
   const [name, setName] = useState(initialName);
@@ -251,6 +255,10 @@ export function UploadFontFamilyDialog({
   const handleSubmit = async () => {
     if (busyRef.current) return;
     setError(null);
+    if (!isEdit && !canUploadFont) {
+      setError(t('limits.fontsLimitReached', { max: limits.maxFontFamilies }));
+      return;
+    }
     if (!name.trim()) {
       setError('Pon un nombre a la tipografía');
       return;
@@ -293,7 +301,11 @@ export function UploadFontFamilyDialog({
       handleOpenChange(false);
     } catch (err) {
       console.error('[upload-font] save failed:', err);
-      setError(err instanceof Error ? err.message : 'No se pudo guardar la tipografía');
+      if (err instanceof PlanLimitError && err.code === 'fonts') {
+        setError(t('limits.fontsLimitReached', { max: limits.maxFontFamilies }));
+      } else {
+        setError(err instanceof Error ? err.message : 'No se pudo guardar la tipografía');
+      }
     } finally {
       busyRef.current = false;
       setBusy(false);
@@ -316,7 +328,11 @@ export function UploadFontFamilyDialog({
             {isEdit ? 'Editar tipografía' : 'Subir tipografía'}
           </DialogTitle>
           <DialogDescription>
-            Sube archivos .ttf, .otf, .woff o .woff2 y asígnalos a Regular, Italic, Bold o Bold Italic.
+            {isEdit
+              ? 'Sube archivos .ttf, .otf, .woff o .woff2 y asígnalos a Regular, Italic, Bold o Bold Italic.'
+              : canUploadFont
+                ? 'Sube archivos .ttf, .otf, .woff o .woff2 y asígnalos a Regular, Italic, Bold o Bold Italic.'
+                : t('limits.fontsLimitReached', { max: limits.maxFontFamilies })}
           </DialogDescription>
         </DialogHeader>
 
@@ -356,7 +372,7 @@ export function UploadFontFamilyDialog({
               onDragLeave={onDragLeave}
               onDragOver={onDragOver}
               onDrop={onDrop}
-              disabled={busy}
+              disabled={busy || (!isEdit && !canUploadFont)}
             >
               <Upload size={22} aria-hidden="true" />
               <span className="upload-font-dialog__dropzone-title">
@@ -419,7 +435,7 @@ export function UploadFontFamilyDialog({
           <Button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={busy || faces.length === 0}
+            disabled={busy || faces.length === 0 || (!isEdit && !canUploadFont)}
           >
             {busy ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Añadir tipografía'}
           </Button>

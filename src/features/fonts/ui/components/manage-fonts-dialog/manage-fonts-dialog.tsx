@@ -2,6 +2,7 @@ import './manage-fonts-dialog.scss';
 
 import { useState } from 'react';
 import { Pencil, Trash2, Upload } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/core/components/ui/button';
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
   DialogTitle,
 } from '@/core/components/ui/dialog';
 import { Input } from '@/core/components/ui/input';
+import { usePlanLimits } from '@/core/plans';
 import { cssFamilyNameForCustomFont } from '@/features/fonts/domain/entities/custom-font-family';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
@@ -27,11 +29,13 @@ export function ManageFontsDialog({
   onOpenChange,
   onRequestUpload,
 }: ManageFontsDialogProps) {
+  const { t } = useTranslation();
   const fonts = useFontLibraryStore(state => state.fonts);
   const syncError = useFontLibraryStore(state => state.syncError);
   const renameFamily = useFontLibraryStore(state => state.renameFamily);
   const deleteFamily = useFontLibraryStore(state => state.deleteFamily);
   const templates = useTemplateStore(state => state.templates);
+  const { limits, canUploadFont, fontCount } = usePlanLimits();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -64,7 +68,13 @@ export function ManageFontsDialog({
     try {
       await deleteFamily(fontId, templates);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo eliminar');
+      const message =
+        err instanceof Error && /cloud|storage|uploadthing|fileKey/i.test(err.message)
+          ? t('limits.deleteCloudFailed')
+          : err instanceof Error
+            ? err.message
+            : 'No se pudo eliminar';
+      setError(message);
     } finally {
       setBusyId(null);
     }
@@ -86,7 +96,14 @@ export function ManageFontsDialog({
           <div className="manage-fonts-dialog__toolbar">
             <Button
               type="button"
+              disabled={!canUploadFont}
+              title={
+                canUploadFont
+                  ? undefined
+                  : t('limits.fontsLimitReached', { max: limits.maxFontFamilies })
+              }
               onClick={() => {
+                if (!canUploadFont) return;
                 onOpenChange(false);
                 onRequestUpload?.();
               }}
@@ -94,7 +111,19 @@ export function ManageFontsDialog({
               <Upload size={16} />
               Subir tipografía
             </Button>
+            <p className="manage-fonts-dialog__usage">
+              {t('limits.fontsUsage', {
+                used: fontCount,
+                max: limits.maxFontFamilies,
+              })}
+            </p>
           </div>
+
+          {!canUploadFont ? (
+            <p className="manage-fonts-dialog__limit">
+              {t('limits.fontsLimitReached', { max: limits.maxFontFamilies })}
+            </p>
+          ) : null}
 
           {syncError ? <p className="manage-fonts-dialog__error">{syncError}</p> : null}
 

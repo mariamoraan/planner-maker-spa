@@ -116,9 +116,7 @@ export async function handleImageDeleteApi(req: IncomingMessage, res: ServerResp
 
     if (fileKey) {
       await utapi.deleteFiles(fileKey);
-    }
-
-    if (key) {
+    } else if (key) {
       await utapi.deleteFiles(key, { keyType: 'customId' });
     }
 

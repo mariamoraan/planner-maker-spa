@@ -39,9 +39,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (fileKey) {
       await utapi.deleteFiles(fileKey);
-    }
-
-    if (key) {
+    } else if (key) {
+      // Legacy fallback — prefer fileKey; customId is timestamped and usually won't match.
       await utapi.deleteFiles(key, { keyType: 'customId' });
     }
 

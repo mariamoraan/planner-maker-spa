@@ -1,8 +1,22 @@
 .manage-fonts-dialog {
   &__toolbar {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 12px;
+  }
+
+  &__usage {
+    margin: 0;
+    font-size: 12px;
+    color: #8a8f98;
+  }
+
+  &__limit {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #b42318;
   }
 
   &__empty {

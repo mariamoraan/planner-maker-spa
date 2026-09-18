@@ -1,4 +1,8 @@
-import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
+import type {
+  ImageAssetPort,
+  ImageRef,
+  ImageSaveOptions,
+} from '@/features/template/domain/ports/image-asset.port';
 import { fetchAsDataUrl, isDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
 
 function isSameOriginContentUrl(src: string): boolean {
@@ -11,9 +15,9 @@ export class CachingImageAdapter implements ImageAssetPort {
     private readonly cache: ImageAssetPort
   ) {}
 
-  async save(ref: ImageRef, data: string): Promise<void> {
+  async save(ref: ImageRef, data: string, options?: ImageSaveOptions): Promise<void> {
     await this.cache.delete(ref).catch(() => undefined);
-    await this.primary.save(ref, data);
+    await this.primary.save(ref, data, options);
     // Persist original upload bytes locally for instant reload / offline.
     if (isDataUrl(data)) {
       await this.cache.save(ref, data);
@@ -58,7 +62,14 @@ export class CachingImageAdapter implements ImageAssetPort {
   }
 
   async delete(ref: ImageRef): Promise<void> {
-    await Promise.allSettled([this.primary.delete(ref), this.cache.delete(ref)]);
+    let primaryError: unknown;
+    try {
+      await this.primary.delete(ref);
+    } catch (error) {
+      primaryError = error;
+    }
+    await this.cache.delete(ref).catch(() => undefined);
+    if (primaryError) throw primaryError;
   }
 
   async exists(ref: ImageRef): Promise<boolean> {

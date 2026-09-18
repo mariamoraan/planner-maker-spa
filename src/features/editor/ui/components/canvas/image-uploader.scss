@@ -46,4 +46,27 @@
       height: 1.25rem;
     }
   }
+
+  &--disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+
+    .image-uploader__input {
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+  }
+
+  &__limit-message,
+  &__limit-usage {
+    margin: 0.35rem 0 0;
+    font-size: 0.75rem;
+    line-height: 1.35;
+    color: hsl(var(--muted-foreground));
+    max-width: 16rem;
+  }
+
+  &__limit-message {
+    color: hsl(var(--destructive));
+  }
 }

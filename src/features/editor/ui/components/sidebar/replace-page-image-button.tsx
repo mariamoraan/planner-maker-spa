@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { ImagePlus, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
+import { PlanLimitError, usePlanLimits } from '@/core/plans';
 import { fileToBase64 } from '@/features/editor/domain/services/planner-utils';
 import { useManageImages } from '@/features/editor/ui/hooks/use-manage-images';
 
@@ -12,7 +13,9 @@ interface ReplacePageImageButtonProps {
 export const ReplacePageImageButton: React.FC<ReplacePageImageButtonProps> = ({ pageId }) => {
   const { t } = useTranslation();
   const { replaceImage } = useManageImages();
+  const { limits, maxImageLabel } = usePlanLimits();
   const [isReplacing, setIsReplacing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -20,22 +23,33 @@ export const ReplacePageImageButton: React.FC<ReplacePageImageButtonProps> = ({ 
       if (!file || isReplacing) return;
 
       if (!file.type.startsWith('image/')) {
-        console.error('Please upload an image file');
+        setError('Please upload an image file');
+        return;
+      }
+
+      if (file.size > limits.maxImageBytes) {
+        setError(t('limits.imageTooLarge', { max: maxImageLabel }));
         return;
       }
 
       setIsReplacing(true);
+      setError(null);
       try {
         const imageData = await fileToBase64(file);
         await replaceImage(pageId, imageData);
-      } catch (error) {
-        console.error('Error replacing image:', error);
+      } catch (err) {
+        console.error('Error replacing image:', err);
+        if (err instanceof PlanLimitError && err.code === 'imageSize') {
+          setError(t('limits.imageTooLarge', { max: maxImageLabel }));
+        } else {
+          setError(err instanceof Error ? err.message : 'Error replacing image');
+        }
       } finally {
         setIsReplacing(false);
         e.target.value = '';
       }
     },
-    [pageId, replaceImage, isReplacing],
+    [pageId, replaceImage, isReplacing, limits.maxImageBytes, maxImageLabel, t],
   );
 
   return (
@@ -72,6 +86,7 @@ export const ReplacePageImageButton: React.FC<ReplacePageImageButtonProps> = ({ 
           disabled={isReplacing}
         />
       </label>
+      {error ? <p className="editor-sidebar__replace-image-error">{error}</p> : null}
     </div>
   );
 };

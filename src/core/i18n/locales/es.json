@@ -202,7 +202,9 @@
     "renameProject": "Renombrar",
     "deleteProject": "Eliminar proyecto",
     "deleteConfirm": "¿Eliminar este proyecto?",
-    "exploreBrand": "Explorar Amark"
+    "exploreBrand": "Explorar Amark",
+    "plannerUsage": "{{used}} / {{max}} planners",
+    "plannerLimitReached": "Plan gratis: hasta {{max}} planners. Elimina uno para crear otro."
   },
   "template": {
     "createTitle": "Nuevo proyecto",
@@ -210,6 +212,7 @@
     "createNameLabel": "Nombre del proyecto",
     "createNamePlaceholder": "Mi planner 2026",
     "createSubmit": "Crear proyecto",
+    "createDisabled": "Límite de planners alcanzado",
     "paperSize": {
       "label": "Formato de página",
       "a4Portrait": "A4",
@@ -217,6 +220,19 @@
       "a5Portrait": "A5",
       "a5Landscape": "A5 horizontal"
     }
+  },
+  "limits": {
+    "pagesUsage": "{{used}} / {{max}} páginas",
+    "pagesUsageCompact": "{{used}}/{{max}}",
+    "pagesLimitReached": "Plan gratis: hasta {{max}} páginas por planner. Elimina una para añadir otra.",
+    "pagesFreePlanTooltip": "Límite del plan gratis: hasta {{max}} páginas por planner. Elimina una para poder añadir otra.",
+    "pagesAdd": "Añadir página",
+    "pagesAddDisabled": "Límite de páginas alcanzado",
+    "pagesLimitInfo": "Sobre el límite de páginas",
+    "imageTooLarge": "Las imágenes deben pesar {{max}} o menos en el plan gratis. Prueba JPEG o WebP.",
+    "fontsUsage": "{{used}} / {{max}} tipografías",
+    "fontsLimitReached": "Plan gratis: hasta {{max}} tipografías. Elimina una para subir otra.",
+    "deleteCloudFailed": "No se pudo liberar el almacenamiento en la nube. Inténtalo de nuevo para que tu cuota sea correcta."
   },
   "editor": {
     "editType": "Tipo",

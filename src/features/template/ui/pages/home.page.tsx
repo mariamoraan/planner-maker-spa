@@ -12,6 +12,7 @@ import { AddTemplateButton } from '@/features/template/ui/components/add-templat
 import { HomeRail } from '@/features/template/ui/components/home-rail/home-rail';
 import { NewProjectCard } from '@/features/template/ui/components/new-project-card/new-project-card';
 import { TemplateCard } from '@/features/template/ui/components/template-card/template-card';
+import { usePlanLimits } from '@/core/plans';
 import { useHomeTemplates } from '@/features/template/ui/hooks/use-home-templates';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
@@ -27,6 +28,7 @@ export const HomePage = () => {
   const { templates, isLoading } = useHomeTemplates();
   const setCurrentImage = useTemplateStore(state => state.setCurrentImage);
   const deleteTemplate = useTemplateStore(state => state.deleteTemplate);
+  const { limits, plannerCount } = usePlanLimits();
 
   const hasProjects = templates.length > 0;
 
@@ -35,11 +37,6 @@ export const HomePage = () => {
     setCurrentImage(template?.images[0]?.id ?? null);
     navigate(getEditorPath(templateId));
   };
-
-  const projectCountLabel =
-    templates.length === 1
-      ? `1 planner`
-      : `${templates.length} planners`;
 
   const handleSignOut = async () => {
     await signOut();
@@ -86,7 +83,10 @@ export const HomePage = () => {
                 <div>
                   <h1 className="home-page__title">{t('home.projects')}</h1>
                   <p className="home-page__subtitle">
-                    {projectCountLabel}
+                    {t('home.plannerUsage', {
+                      used: plannerCount,
+                      max: limits.maxPlanners,
+                    })}
                   </p>
                 </div>
               </header>

@@ -496,8 +496,13 @@
     color: #6b7280;
     cursor: pointer;
 
-    &:hover {
+    &:hover:not(:disabled) {
         color: #1f2a3d;
         background: #f4f5f6;
+    }
+
+    &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
     }
 }

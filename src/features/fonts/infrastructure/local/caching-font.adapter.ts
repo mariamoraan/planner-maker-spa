@@ -53,7 +53,14 @@ export class CachingFontAdapter implements FontAssetPort {
   }
 
   async delete(ref: FontAssetRef): Promise<void> {
-    await Promise.allSettled([this.primary.delete(ref), this.cache.delete(ref)]);
+    let primaryError: unknown;
+    try {
+      await this.primary.delete(ref);
+    } catch (error) {
+      primaryError = error;
+    }
+    await this.cache.delete(ref).catch(() => undefined);
+    if (primaryError) throw primaryError;
   }
 
   async exists(ref: FontAssetRef): Promise<boolean> {

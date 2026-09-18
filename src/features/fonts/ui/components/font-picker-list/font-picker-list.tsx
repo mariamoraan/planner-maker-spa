@@ -3,12 +3,14 @@ import './font-picker-list.scss';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { Plus, Search, Settings2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Input } from '@/core/components/ui/input';
+import { usePlanLimits } from '@/core/plans';
 import type { FontId } from '@/features/template';
 import { toCustomFontId } from '@/features/template';
 import { FONT_REGISTRY, resolveFontFamily } from '@/features/editor/domain/services/field-style-config';
 import { cssFamilyNameForCustomFont } from '@/features/fonts/domain/entities/custom-font-family';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
-import { Input } from '@/core/components/ui/input';
 
 interface FontPickerListProps {
   selectedFontId: FontId;
@@ -36,8 +38,10 @@ export function FontPickerList({
   compact = false,
   autoFocusSearch = false,
 }: FontPickerListProps) {
+  const { t } = useTranslation();
   const customFonts = useFontLibraryStore(state => state.fonts);
   const syncError = useFontLibraryStore(state => state.syncError);
+  const { limits, canUploadFont, fontCount } = usePlanLimits();
   const [query, setQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -63,6 +67,7 @@ export function FontPickerList({
 
   const isSearching = normalizedQuery.length > 0;
   const noMatches = filteredCustomFonts.length === 0 && filteredSystemFonts.length === 0;
+  const fontsLimitHint = t('limits.fontsLimitReached', { max: limits.maxFontFamilies });
 
   return (
     <div className={clsx('font-picker-list', { 'font-picker-list--compact': compact })}>
@@ -108,12 +113,25 @@ export function FontPickerList({
                 type="button"
                 className="font-picker-list__upload-btn"
                 onClick={onUploadClick}
+                disabled={!canUploadFont}
+                title={canUploadFont ? undefined : fontsLimitHint}
               >
                 <Plus size={14} />
                 Subir
               </button>
             </div>
           </div>
+
+          <p className="font-picker-list__usage">
+            {t('limits.fontsUsage', {
+              used: fontCount,
+              max: limits.maxFontFamilies,
+            })}
+          </p>
+
+          {!canUploadFont ? (
+            <p className="font-picker-list__limit">{fontsLimitHint}</p>
+          ) : null}
 
           {customFonts.length === 0 && !isSearching ? (
             <p className="font-picker-list__empty">

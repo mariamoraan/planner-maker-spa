@@ -131,7 +131,7 @@ export async function migrateLocalTemplatesToFirebase(uid: string): Promise<bool
 
       const legacyData = await loadLegacyImageData(image.id);
       if (legacyData) {
-        await images.save(page.imageRef, legacyData);
+        await images.save(page.imageRef, legacyData, { templateId: template.id });
         if (page.imageRef.url) {
           await repo.updatePage(uid, template.id, image.id, { imageRef: page.imageRef });
         }
@@ -182,7 +182,7 @@ export async function migrateLocalImagesToCloud(uid: string): Promise<boolean> {
       if (!localData) continue;
 
       const cloudRef = buildUploadthingImageRef(uid, pageId);
-      await images.save(cloudRef, localData);
+      await images.save(cloudRef, localData, { templateId });
 
       if (!cloudRef.url) continue;
 

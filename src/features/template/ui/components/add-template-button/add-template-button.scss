@@ -27,4 +27,31 @@
       }
     }
   }
+
+  &__limit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 100%;
+  }
+
+  &__limit-message {
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &__limit-usage {
+    margin: 0;
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+  }
+
+  &__disabled-wrap {
+    display: block;
+    width: 100%;
+    opacity: 0.55;
+    pointer-events: none;
+  }
 }

@@ -1,6 +1,8 @@
 import { cert, getApps, initializeApp, type App, type ServiceAccount } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 import { applyServerSecrets, loadServerSecrets, validateServerSecrets } from './load-env.js';
+import { resolvePlanLimits, resolveUserPlan, type PlanLimits } from './plan-limits.js';
 
 let adminApp: App | null = null;
 let secretsLoaded = false;
@@ -113,4 +115,54 @@ export function tryPreloadFirebaseAdmin(cwd = process.cwd()): string | null {
   } catch (error) {
     return error instanceof Error ? error.message : 'Server is misconfigured';
   }
+}
+
+export function getAdminFirestore(): Firestore {
+  ensureAdminApp();
+  return getFirestore();
+}
+
+/**
+ * Resolve plan limits for a uid. Reads optional `users/{uid}.plan` when present.
+ */
+export async function getUserPlanLimits(uid: string): Promise<PlanLimits> {
+  try {
+    const snap = await getAdminFirestore().doc(`users/${uid}`).get();
+    const plan = snap.exists ? snap.data()?.plan : undefined;
+    return resolvePlanLimits(resolveUserPlan(plan));
+  } catch {
+    return resolvePlanLimits(resolveUserPlan());
+  }
+}
+
+export async function countTemplatePages(
+  uid: string,
+  templateId: string,
+): Promise<number> {
+  const snap = await getAdminFirestore()
+    .collection(`users/${uid}/templates/${templateId}/pages`)
+    .count()
+    .get();
+  return snap.data().count;
+}
+
+export async function templatePageExists(
+  uid: string,
+  templateId: string,
+  pageId: string,
+): Promise<boolean> {
+  const snap = await getAdminFirestore()
+    .doc(`users/${uid}/templates/${templateId}/pages/${pageId}`)
+    .get();
+  return snap.exists;
+}
+
+export async function countUserFonts(uid: string): Promise<number> {
+  const snap = await getAdminFirestore().collection(`users/${uid}/fonts`).count().get();
+  return snap.data().count;
+}
+
+export async function userFontExists(uid: string, fontId: string): Promise<boolean> {
+  const snap = await getAdminFirestore().doc(`users/${uid}/fonts/${fontId}`).get();
+  return snap.exists;
 }

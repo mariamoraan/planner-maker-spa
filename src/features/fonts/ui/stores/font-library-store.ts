@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import { getInfra } from '@/core/bootstrap/infra';
+import {
+  PlanLimitError,
+  resolvePlanLimits,
+  resolveUserPlan,
+} from '@/core/plans';
 import { generateId } from '@/features/template';
 import {
   hasRegularFace,
@@ -8,10 +13,6 @@ import {
   type FontFaceStyle,
   type FontFaceWeight,
 } from '@/features/fonts/domain/entities/custom-font-family';
-import {
-  MAX_FACES_PER_FAMILY,
-  MAX_FONT_FAMILIES_PER_ACCOUNT,
-} from '@/features/fonts/domain/constants/font-limits';
 import {
   buildLocalFontAssetRef,
   buildUploadthingFontAssetRef,
@@ -56,6 +57,10 @@ type FontLibraryState = {
   deleteFamily: (fontId: string, templates: Template[]) => Promise<void>;
 };
 
+function currentPlanLimits() {
+  return resolvePlanLimits(resolveUserPlan());
+}
+
 function resolveUid(syncUid: string | null): string {
   if (syncUid) return syncUid;
   const current = getInfra().auth.getCurrentUser();
@@ -64,9 +69,13 @@ function resolveUid(syncUid: string | null): string {
 }
 
 function formatFontSaveError(error: unknown): Error {
+  if (error instanceof PlanLimitError) return error;
   const message =
     error instanceof Error ? error.message : typeof error === 'string' ? error : 'Error desconocido';
   const lower = message.toLowerCase();
+  if (isCloudQuotaOrPlanError(error)) {
+    return new PlanLimitError('fonts', message);
+  }
   if (lower.includes('permission') || lower.includes('insufficient')) {
     return new Error(
       'No hay permiso para guardar tipografías en Firestore. Despliega las reglas (colección users/{uid}/fonts) e inténtalo de nuevo.',
@@ -78,13 +87,31 @@ function formatFontSaveError(error: unknown): Error {
   return error instanceof Error ? error : new Error(message);
 }
 
+function isCloudQuotaOrPlanError(error: unknown): boolean {
+  if (error instanceof PlanLimitError) return true;
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  return (
+    message.includes('free plan') ||
+    message.includes('plan allows') ||
+    message.includes('plan limit') ||
+    message.includes('quota') ||
+    (message.includes('up to') && message.includes('font')) ||
+    (message.includes('allows up to') && message.includes('page'))
+  );
+}
+
 async function persistFaces(
   uid: string,
   fontId: string,
   pending: PendingFontFace[],
+  existingFaces: FontFaceAsset[] = [],
 ): Promise<FontFaceAsset[]> {
-  if (pending.length > MAX_FACES_PER_FAMILY) {
-    throw new Error(`Máximo ${MAX_FACES_PER_FAMILY} estilos por familia`);
+  const limits = currentPlanLimits();
+  if (pending.length > limits.maxFacesPerFamily) {
+    throw new PlanLimitError(
+      'faces',
+      `Máximo ${limits.maxFacesPerFamily} estilos por familia`,
+    );
   }
   if (pending.length === 0) {
     throw new Error('Añade al menos un archivo de tipografía');
@@ -99,9 +126,13 @@ async function persistFaces(
   const localOnly = new IndexedDBFontAdapter();
   const cloud = isCloudFontStorageEnabled();
   const faces: FontFaceAsset[] = [];
+  const existingByKey = new Map(
+    existingFaces.map(face => [fontFaceKey(face.weight, face.style), face] as const),
+  );
 
   for (const face of pending) {
     const key = fontFaceKey(face.weight, face.style);
+    const previous = existingByKey.get(key);
     const localRef = buildLocalFontAssetRef(uid, fontId, key);
 
     await localOnly.save(localRef, face.dataUrl);
@@ -109,11 +140,26 @@ async function persistFaces(
     let assetRef = { ...localRef };
 
     if (cloud) {
-      const cloudRef = buildUploadthingFontAssetRef(uid, fontId, key);
+      const cloudRef = buildUploadthingFontAssetRef(
+        uid,
+        fontId,
+        key,
+        previous?.assetRef.url,
+        previous?.assetRef.fileKey,
+      );
       try {
         await assets.save(cloudRef, face.dataUrl);
         assetRef = { ...cloudRef };
       } catch (error) {
+        // Plan/quota rejections must not fall back to local — that bypasses free-tier caps.
+        if (isCloudQuotaOrPlanError(error)) {
+          await localOnly.delete(localRef).catch(() => undefined);
+          if (error instanceof PlanLimitError) throw error;
+          throw new PlanLimitError(
+            'fonts',
+            error instanceof Error ? error.message : 'Font plan limit reached',
+          );
+        }
         console.warn(
           '[font-library] Cloud font upload failed; keeping local IndexedDB copy:',
           error,
@@ -138,7 +184,16 @@ async function persistFaces(
 
 async function deleteFaceAssets(faces: FontFaceAsset[]): Promise<void> {
   const assets = getInfra().fontAssets;
-  await Promise.allSettled(faces.map(face => assets.delete(face.assetRef)));
+  const results = await Promise.allSettled(faces.map(face => assets.delete(face.assetRef)));
+  const failures = results.filter(result => result.status === 'rejected');
+  if (failures.length > 0) {
+    const first = failures[0] as PromiseRejectedResult;
+    const message =
+      first.reason instanceof Error
+        ? first.reason.message
+        : 'Failed to delete font from cloud storage';
+    throw new Error(message);
+  }
 }
 
 function upsertFontInState(fonts: CustomFontFamily[], family: CustomFontFamily): CustomFontFamily[] {
@@ -217,8 +272,12 @@ export const useFontLibraryStore = create<FontLibraryState>((set, get) => ({
     const uid = resolveUid(get().syncUid);
     if (!get().syncUid) set({ syncUid: uid });
 
-    if (get().fonts.length >= MAX_FONT_FAMILIES_PER_ACCOUNT) {
-      throw new Error(`Máximo ${MAX_FONT_FAMILIES_PER_ACCOUNT} tipografías por cuenta`);
+    const limits = currentPlanLimits();
+    if (get().fonts.length >= limits.maxFontFamilies) {
+      throw new PlanLimitError(
+        'fonts',
+        `Free plan allows up to ${limits.maxFontFamilies} custom fonts. Delete one to upload another.`,
+      );
     }
 
     set(state => ({ mutationDepth: state.mutationDepth + 1 }));
@@ -310,7 +369,7 @@ export const useFontLibraryStore = create<FontLibraryState>((set, get) => ({
     try {
       let faces: FontFaceAsset[];
       try {
-        faces = await persistFaces(uid, fontId, pendingFaces);
+        faces = await persistFaces(uid, fontId, pendingFaces, existing.faces);
       } catch (error) {
         throw formatFontSaveError(error);
       }
@@ -358,16 +417,18 @@ export const useFontLibraryStore = create<FontLibraryState>((set, get) => ({
       );
     }
 
+    const existing = get().fonts.find(font => font.id === fontId);
+    if (!existing) return;
+
     set(state => ({ mutationDepth: state.mutationDepth + 1 }));
     try {
-      const existing = get().fonts.find(font => font.id === fontId);
+      // Delete cloud assets first so a UT failure does not fake-free quota.
+      await deleteFaceAssets(existing.faces);
+
       const nextFonts = get().fonts.filter(font => font.id !== fontId);
       set({ fonts: nextFonts });
       await persistLibraryMeta(uid, nextFonts);
       fontFaceRegistry.unregisterFamily(fontId);
-      if (existing) {
-        await deleteFaceAssets(existing.faces);
-      }
 
       try {
         await getInfra().fonts.deleteFont(uid, fontId);
@@ -375,6 +436,8 @@ export const useFontLibraryStore = create<FontLibraryState>((set, get) => ({
         console.warn('[font-library] Firestore delete failed:', error);
         set({ syncError: formatFontSaveError(error).message });
       }
+    } catch (error) {
+      throw formatFontSaveError(error);
     } finally {
       set(state => ({ mutationDepth: Math.max(0, state.mutationDepth - 1) }));
     }

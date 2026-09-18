@@ -202,7 +202,9 @@
     "renameProject": "Rename",
     "deleteProject": "Delete project",
     "deleteConfirm": "Delete this project?",
-    "exploreBrand": "Explore Amark"
+    "exploreBrand": "Explore Amark",
+    "plannerUsage": "{{used}} / {{max}} planners",
+    "plannerLimitReached": "Free plan: up to {{max}} planners. Delete one to create another."
   },
   "template": {
     "createTitle": "New project",
@@ -210,6 +212,7 @@
     "createNameLabel": "Project name",
     "createNamePlaceholder": "My planner 2026",
     "createSubmit": "Create project",
+    "createDisabled": "Planner limit reached",
     "paperSize": {
       "label": "Page format",
       "a4Portrait": "A4",
@@ -217,6 +220,19 @@
       "a5Portrait": "A5",
       "a5Landscape": "A5 landscape"
     }
+  },
+  "limits": {
+    "pagesUsage": "{{used}} / {{max}} pages",
+    "pagesUsageCompact": "{{used}}/{{max}}",
+    "pagesLimitReached": "Free plan: up to {{max}} pages per planner. Delete one to add another.",
+    "pagesFreePlanTooltip": "Free plan limit: up to {{max}} pages per planner. Delete a page to add another.",
+    "pagesAdd": "Add page",
+    "pagesAddDisabled": "Page limit reached",
+    "pagesLimitInfo": "About page limits",
+    "imageTooLarge": "Images must be {{max}} or smaller on the free plan. Try JPEG or WebP.",
+    "fontsUsage": "{{used}} / {{max}} fonts",
+    "fontsLimitReached": "Free plan: up to {{max}} custom fonts. Delete one to upload another.",
+    "deleteCloudFailed": "Couldn’t free cloud storage. Try again so your quota stays accurate."
   },
   "editor": {
     "editType": "Type",

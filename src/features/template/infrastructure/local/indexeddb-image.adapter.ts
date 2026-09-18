@@ -1,8 +1,12 @@
 import { get, set, del } from 'idb-keyval';
-import type { ImageAssetPort, ImageRef } from '@/features/template/domain/ports/image-asset.port';
+import type {
+  ImageAssetPort,
+  ImageRef,
+  ImageSaveOptions,
+} from '@/features/template/domain/ports/image-asset.port';
 
 export class IndexedDBImageAdapter implements ImageAssetPort {
-  async save(ref: ImageRef, data: string): Promise<void> {
+  async save(ref: ImageRef, data: string, _options?: ImageSaveOptions): Promise<void> {
     await set(ref.key, data);
   }
 

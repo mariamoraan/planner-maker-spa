@@ -1,9 +1,9 @@
 import type { FontFaceStyle, FontFaceWeight } from '../entities/custom-font-family';
 import {
   ALLOWED_FONT_EXTENSIONS,
-  MAX_FONT_FILE_BYTES,
   type AllowedFontExtension,
 } from '../constants/font-limits';
+import { formatBytesLimit, resolvePlanLimits, resolveUserPlan } from '@/core/plans';
 
 export function detectFontFaceRole(fileName: string): {
   weight: FontFaceWeight;
@@ -29,8 +29,12 @@ export function getFontExtension(fileName: string): AllowedFontExtension | null 
 }
 
 export function isAllowedFontFile(file: File): { ok: true } | { ok: false; reason: string } {
-  if (file.size > MAX_FONT_FILE_BYTES) {
-    return { ok: false, reason: 'El archivo supera el límite de 8 MB' };
+  const limits = resolvePlanLimits(resolveUserPlan());
+  if (file.size > limits.maxFontBytes) {
+    return {
+      ok: false,
+      reason: `El archivo supera el límite de ${formatBytesLimit(limits.maxFontBytes)}`,
+    };
   }
   if (!getFontExtension(file.name)) {
     return { ok: false, reason: 'Formato no válido. Usa .ttf, .otf, .woff o .woff2' };

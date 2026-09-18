@@ -5,6 +5,12 @@ import {
   buildUploadthingImageRef,
   isCloudImageStorageEnabled,
 } from '@/core/bootstrap/infra';
+import {
+  PlanLimitError,
+  formatBytesLimit,
+  resolvePlanLimits,
+  resolveUserPlan,
+} from '@/core/plans';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
@@ -22,8 +28,25 @@ export function resolvePageImageRef(
 export async function persistPageImageAsset(
   imageRef: ImageRef,
   imageData: string,
+  options?: { templateId?: string },
 ): Promise<string> {
-  await getInfra().images.save(imageRef, imageData);
+  const limits = resolvePlanLimits(resolveUserPlan());
+  if (imageData.startsWith('data:')) {
+    const comma = imageData.indexOf(',');
+    const base64 = comma >= 0 ? imageData.slice(comma + 1) : imageData;
+    const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+    const bytes = Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+    if (bytes > limits.maxImageBytes) {
+      throw new PlanLimitError(
+        'imageSize',
+        `Images must be ${formatBytesLimit(limits.maxImageBytes)} or smaller on the free plan.`,
+      );
+    }
+  }
+
+  await getInfra().images.save(imageRef, imageData, {
+    templateId: options?.templateId,
+  });
   if (imageData.startsWith('data:')) {
     return imageData;
   }
@@ -53,7 +76,7 @@ export async function applyPageImageData(
 
   const uid = store.syncUid;
   const imageRef = resolvePageImageRef(uid, pageId, page.imageRef);
-  const resolvedSrc = await persistPageImageAsset(imageRef, imageData);
+  const resolvedSrc = await persistPageImageAsset(imageRef, imageData, { templateId });
 
   store.updateImage(templateId, pageId, {
     src: resolvedSrc,

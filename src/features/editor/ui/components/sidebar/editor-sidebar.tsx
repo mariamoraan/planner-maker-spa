@@ -43,6 +43,7 @@ import { ManageFontsDialog } from '@/features/fonts/ui/components/manage-fonts-d
 import { resolveFontLabel } from '@/features/fonts/ui/components/font-picker-list/font-picker-list';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 import { cssFamilyNameForCustomFont } from '@/features/fonts/domain/entities/custom-font-family';
+import { usePlanLimits } from '@/core/plans';
 import { Plus, Settings2 } from 'lucide-react';
 
 type SidebarSectionId = 'page' | 'plannerSettings';
@@ -68,6 +69,8 @@ export const EditorSidebar: React.FC = () => {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const customFonts = useFontLibraryStore(state => state.fonts);
+  const { canUploadFont, limits } = usePlanLimits();
+  const fontsLimitHint = t('limits.fontsLimitReached', { max: limits.maxFontFamilies });
 
   const isDemo = pathname.includes('landing-demo');
   const paperSizeLabel = template ? getTemplatePaperSizeLabel(template) : null;
@@ -262,7 +265,8 @@ export const EditorSidebar: React.FC = () => {
                 <button
                   type="button"
                   className="editor-sidebar__font-action"
-                  title="Subir tipografía"
+                  title={canUploadFont ? 'Subir tipografía' : fontsLimitHint}
+                  disabled={!canUploadFont}
                   onClick={() => setUploadOpen(true)}
                 >
                   <Plus size={16} />
@@ -291,7 +295,10 @@ export const EditorSidebar: React.FC = () => {
       <ManageFontsDialog
         open={manageOpen}
         onOpenChange={setManageOpen}
-        onRequestUpload={() => setUploadOpen(true)}
+        onRequestUpload={() => {
+          if (!canUploadFont) return;
+          setUploadOpen(true);
+        }}
       />
     </aside>
   );

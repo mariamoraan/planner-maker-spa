@@ -17,6 +17,12 @@ import {
 } from '@/features/template/domain/services/template-image-order';
 import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImageRef, isCloudImageStorageEnabled } from '@/core/bootstrap/infra';
 import { isDataUrl } from '@/core/functions/image-data-url';
+import {
+  PlanLimitError,
+  formatBytesLimit,
+  resolvePlanLimits,
+  resolveUserPlan,
+} from '@/core/plans';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { getCloudSrcAlt } from '@/features/template/infrastructure/uploadthing/image.adapter';
 import { isDisplaySrcFresh } from '@/features/template/infrastructure/uploadthing/content-ticket';
@@ -25,6 +31,19 @@ import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/can
 import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/domain/services/grid-group';
 import { withRepairedBindingMetadata } from '@/features/editor/domain/services/binding-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
+
+function currentPlanLimits() {
+  return resolvePlanLimits(resolveUserPlan());
+}
+
+/** Approximate decoded size of a data URL (base64 → bytes). */
+function approximateDataUrlBytes(dataUrl: string): number {
+  if (!dataUrl.startsWith('data:')) return dataUrl.length;
+  const comma = dataUrl.indexOf(',');
+  const base64 = comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
+  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0;
+  return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
+}
 
 const RECTANGLE_SYNC_DELAY_MS = 500;
 const IMAGE_LOAD_CONCURRENCY = 3;
@@ -381,6 +400,14 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
   },
 
   createTemplate: (name, paperSize, description) => {
+    const limits = currentPlanLimits();
+    if (get().templates.length >= limits.maxPlanners) {
+      throw new PlanLimitError(
+        'planners',
+        `Free plan allows up to ${limits.maxPlanners} planners. Delete one to create another.`,
+      );
+    }
+
     const id = generateId();
     const now = new Date();
     const template: Template = {
@@ -534,6 +561,22 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
   addImage: async ({ templateId, imageData, name, type }) => {
     const uid = get().syncUid;
     const template = get().templates.find(t => t.id === templateId);
+    const limits = currentPlanLimits();
+    if ((template?.images.length ?? 0) >= limits.maxImagesPerPlanner) {
+      throw new PlanLimitError(
+        'images',
+        `Free plan allows up to ${limits.maxImagesPerPlanner} pages per planner. Delete one to add another.`,
+      );
+    }
+
+    const approxBytes = approximateDataUrlBytes(imageData);
+    if (approxBytes > limits.maxImageBytes) {
+      throw new PlanLimitError(
+        'imageSize',
+        `Images must be ${formatBytesLimit(limits.maxImageBytes)} or smaller on the free plan.`,
+      );
+    }
+
     const paperSize = template?.paperSize ?? inferTemplatePaperSize(template ?? {
       id: templateId,
       name: '',
@@ -571,7 +614,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     }));
     useEditorStore.getState().setCurrentImageId(id);
 
-    await getInfra().images.save(imageRef, imageData);
+    await getInfra().images.save(imageRef, imageData, { templateId });
     // Keep the original data URL for display — never swap it for a CDN/proxy HTTPS
     // that may fail on networks that cannot reach UploadThing.
     const resolvedSrc = isDataUrl(imageData)
@@ -717,6 +760,15 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
 
   insertImage: async (templateId, image, imageData, index) => {
     const uid = get().syncUid;
+    const template = get().templates.find(t => t.id === templateId);
+    const limits = currentPlanLimits();
+    if ((template?.images.length ?? 0) >= limits.maxImagesPerPlanner) {
+      throw new PlanLimitError(
+        'images',
+        `Free plan allows up to ${limits.maxImagesPerPlanner} pages per planner. Delete one to add another.`,
+      );
+    }
+
     const imageRef = resolveImageRef(uid, image.id, image.imageRef);
     const imageWithSrc: TemplateImage = {
       ...image,
@@ -735,7 +787,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     }));
     useEditorStore.getState().setCurrentImageId(image.id);
 
-    await getInfra().images.save(imageRef, imageData);
+    await getInfra().images.save(imageRef, imageData, { templateId });
     // Keep the original data URL for display — never swap it for a CDN/proxy HTTPS
     // that may fail on networks that cannot reach UploadThing.
     const resolvedSrc = isDataUrl(imageData)

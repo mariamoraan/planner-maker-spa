@@ -175,7 +175,9 @@ export const useManageImages = () => {
         if (beforeImageData === imageData) return;
 
         const imageRef = resolvePageImageRef(syncUid, pageId, page.imageRef);
-        const resolvedSrc = await persistPageImageAsset(imageRef, imageData);
+        const resolvedSrc = await persistPageImageAsset(imageRef, imageData, {
+          templateId,
+        });
 
         pushHistory(templateId, {
           type: 'replacePageImage',

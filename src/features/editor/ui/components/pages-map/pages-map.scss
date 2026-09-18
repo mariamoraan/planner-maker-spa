@@ -20,11 +20,18 @@
     }
 
     &__add {
+        position: relative;
         display: flex;
         flex-direction: column;
         align-items: center;
         gap: 6px;
         flex-shrink: 0;
+        z-index: 1;
+
+        &:hover,
+        &:focus-within {
+            z-index: 5;
+        }
 
         .image-uploader {
             height: var(--pages-map-thumbnail-height);
@@ -34,10 +41,102 @@
         }
     }
 
-    &__add-spacer {
-        display: block;
+    &__add-meta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
         height: var(--pages-map-label-height);
+    }
+
+    &__add-label {
+        margin: 0;
+        line-height: var(--pages-map-label-height);
+        font-size: 10px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.04em;
+        color: hsl(0, 0%, 55%);
+        white-space: nowrap;
+        text-align: center;
+        user-select: none;
+
+        &--capped {
+            color: hsl(25, 70%, 42%);
+        }
+
+        &--error {
+            color: hsl(var(--destructive));
+        }
+    }
+
+    &__add-info {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        margin: 0;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        background: transparent;
+        color: hsl(0, 0%, 62%);
+        cursor: help;
         flex-shrink: 0;
+
+        &:hover,
+        &:focus-visible {
+            color: hsl(0, 0%, 38%);
+            outline: none;
+        }
+
+        &:focus-visible {
+            box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 3.5px hsl(var(--accent) / 0.55);
+        }
+    }
+
+    &__add-tooltip {
+        position: absolute;
+        left: calc(100% + 8px);
+        top: calc(var(--pages-map-label-height) + 6px + var(--pages-map-thumbnail-height) / 2);
+        transform: translateY(-50%);
+        width: max-content;
+        max-width: 11.5rem;
+        padding: 0.45rem 0.55rem;
+        border-radius: 6px;
+        background: hsl(0, 0%, 18%);
+        color: hsl(0, 0%, 98%);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        line-height: 1.35;
+        text-align: left;
+        white-space: normal;
+        box-shadow: 0 6px 18px hsl(0, 0%, 0% / 0.18);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition:
+            opacity 0.12s ease,
+            visibility 0.12s ease;
+        z-index: 30;
+
+        &::before {
+            content: '';
+            position: absolute;
+            right: 100%;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 5px solid transparent;
+            border-right-color: hsl(0, 0%, 18%);
+        }
+    }
+
+    &__add:has(.pages-map__add-info:hover) .pages-map__add-tooltip,
+    &__add:has(.pages-map__add-info:focus-visible) .pages-map__add-tooltip {
+        opacity: 1;
+        visibility: visible;
     }
 
     &__add-page-button {
@@ -46,17 +145,43 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px dashed hsl(0, 0%, 80%);
+        border: 1px dashed hsl(0, 0%, 78%);
         border-radius: 4px;
-        background: transparent;
+        background: hsl(0, 0%, 99%);
         cursor: pointer;
-        color: hsl(0, 0%, 50%);
+        color: hsl(0, 0%, 48%);
         padding: 0;
+        transition:
+            border-color 0.15s ease,
+            color 0.15s ease,
+            background 0.15s ease,
+            opacity 0.15s ease;
 
-        &:hover {
+        &:hover:not(:disabled) {
             border-color: hsl(var(--accent));
             color: hsl(var(--accent));
+            background: hsl(var(--accent) / 0.06);
         }
+
+        &:disabled {
+            border-style: solid;
+            border-color: hsl(0, 0%, 88%);
+            background: hsl(0, 0%, 96%);
+            color: hsl(0, 0%, 72%);
+            cursor: not-allowed;
+            opacity: 1;
+        }
+    }
+
+    &__add--capped .pages-map__add-page-button:disabled {
+        border-color: hsl(25, 35%, 82%);
+        background: hsl(25, 40%, 97%);
+        color: hsl(25, 25%, 68%);
+    }
+
+    &__add--error .pages-map__add-page-button {
+        border-color: hsl(var(--destructive) / 0.45);
+        color: hsl(var(--destructive));
     }
 
     &__groups {

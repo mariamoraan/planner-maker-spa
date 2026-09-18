@@ -1,14 +1,41 @@
 import { createUploadthing, type FileRouter, UploadThingError, UTFiles, UTApi } from 'uploadthing/server';
 import { z } from 'zod';
-import { assertKeyBelongsToUser, verifyFirebaseIdToken, verifyFirebaseToken } from '../firebase-admin.js';
+import {
+  assertKeyBelongsToUser,
+  countTemplatePages,
+  countUserFonts,
+  getUserPlanLimits,
+  templatePageExists,
+  userFontExists,
+  verifyFirebaseIdToken,
+  verifyFirebaseToken,
+} from '../firebase-admin.js';
+import { maxFileSizeLabel } from '../plan-limits.js';
 
 const f = createUploadthing();
+
+// Route max sizes follow free-tier defaults; middleware still enforces per-plan bytes.
+const DEFAULT_IMAGE_MAX = maxFileSizeLabel(8 * 1024 * 1024);
+const DEFAULT_FONT_MAX = maxFileSizeLabel(8 * 1024 * 1024);
+
+async function resolveUid(req: Request, idToken: string): Promise<string> {
+  try {
+    return await verifyFirebaseIdToken(idToken);
+  } catch (primaryError) {
+    try {
+      return await verifyFirebaseToken(req.headers.get('Authorization'));
+    } catch {
+      const message = primaryError instanceof Error ? primaryError.message : 'Unauthorized';
+      throw new UploadThingError(message);
+    }
+  }
+}
 
 export const uploadRouter = {
   plannerImage: f(
     {
       image: {
-        maxFileSize: '16MB',
+        maxFileSize: DEFAULT_IMAGE_MAX,
         maxFileCount: 1,
       },
     },
@@ -17,6 +44,7 @@ export const uploadRouter = {
     .input(
       z.object({
         pageId: z.string().min(1),
+        templateId: z.string().min(1),
         idToken: z.string().min(1),
         previousFileKey: z.string().optional(),
       })
@@ -24,22 +52,37 @@ export const uploadRouter = {
     .middleware(async ({ req, input, files }) => {
       let uid: string;
       try {
-        uid = await verifyFirebaseIdToken(input.idToken);
-      } catch (primaryError) {
-        try {
-          uid = await verifyFirebaseToken(req.headers.get('Authorization'));
-        } catch {
-          const message =
-            primaryError instanceof Error ? primaryError.message : 'Unauthorized';
-          console.error('[uploadthing] auth failed:', message);
-          throw new UploadThingError(message);
-        }
+        uid = await resolveUid(req, input.idToken);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unauthorized';
+        console.error('[uploadthing] auth failed:', message);
+        throw new UploadThingError(message);
       }
 
       const pageKey = `${uid}/${input.pageId}`;
       assertKeyBelongsToUser(pageKey, uid);
 
-      // Unique customId avoids Uploadthing 409 when replacing an existing page image.
+      const limits = await getUserPlanLimits(uid);
+      const file = files[0];
+      if (file && file.size > limits.maxImageBytes) {
+        throw new UploadThingError(
+          `Image exceeds the ${Math.round(limits.maxImageBytes / (1024 * 1024))} MB plan limit`,
+        );
+      }
+
+      const isReplace =
+        Boolean(input.previousFileKey) ||
+        (await templatePageExists(uid, input.templateId, input.pageId));
+
+      if (!isReplace) {
+        const pageCount = await countTemplatePages(uid, input.templateId);
+        if (pageCount >= limits.maxImagesPerPlanner) {
+          throw new UploadThingError(
+            `Free plan allows up to ${limits.maxImagesPerPlanner} pages per planner`,
+          );
+        }
+      }
+
       const customId = `${pageKey}/${Date.now()}`;
 
       if (input.previousFileKey) {
@@ -51,21 +94,21 @@ export const uploadRouter = {
         }
       }
 
-      const fileOverrides = files.map(file => ({
-        ...file,
+      const fileOverrides = files.map(entry => ({
+        ...entry,
         customId,
       }));
 
       return {
         uid,
         pageId: input.pageId,
+        templateId: input.templateId,
         pageKey,
         customId,
         [UTFiles]: fileOverrides,
       };
     })
     .onUploadComplete(async ({ metadata, file }) => {
-      // Prefer file.ufsUrl (https://<appId>.ufs.sh/...). Avoid legacy utfs.io.
       const url =
         file.ufsUrl && !file.ufsUrl.includes('utfs.io')
           ? file.ufsUrl
@@ -82,7 +125,7 @@ export const uploadRouter = {
   plannerFont: f(
     {
       blob: {
-        maxFileSize: '8MB',
+        maxFileSize: DEFAULT_FONT_MAX,
         maxFileCount: 1,
       },
     },
@@ -99,20 +142,35 @@ export const uploadRouter = {
     .middleware(async ({ req, input, files }) => {
       let uid: string;
       try {
-        uid = await verifyFirebaseIdToken(input.idToken);
-      } catch (primaryError) {
-        try {
-          uid = await verifyFirebaseToken(req.headers.get('Authorization'));
-        } catch {
-          const message =
-            primaryError instanceof Error ? primaryError.message : 'Unauthorized';
-          console.error('[uploadthing] font auth failed:', message);
-          throw new UploadThingError(message);
-        }
+        uid = await resolveUid(req, input.idToken);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unauthorized';
+        console.error('[uploadthing] font auth failed:', message);
+        throw new UploadThingError(message);
       }
 
       const fontKey = `${uid}/fonts/${input.fontId}/${input.faceKey}`;
       assertKeyBelongsToUser(fontKey, uid);
+
+      const limits = await getUserPlanLimits(uid);
+      const file = files[0];
+      if (file && file.size > limits.maxFontBytes) {
+        throw new UploadThingError(
+          `Font exceeds the ${Math.round(limits.maxFontBytes / (1024 * 1024))} MB plan limit`,
+        );
+      }
+
+      const fontExists = await userFontExists(uid, input.fontId);
+      const isReplace = Boolean(input.previousFileKey) || fontExists;
+
+      if (!isReplace) {
+        const fontCount = await countUserFonts(uid);
+        if (fontCount >= limits.maxFontFamilies) {
+          throw new UploadThingError(
+            `Free plan allows up to ${limits.maxFontFamilies} custom fonts`,
+          );
+        }
+      }
 
       const customId = `${fontKey}/${Date.now()}`;
 
@@ -125,8 +183,8 @@ export const uploadRouter = {
         }
       }
 
-      const fileOverrides = files.map(file => ({
-        ...file,
+      const fileOverrides = files.map(entry => ({
+        ...entry,
         customId,
       }));
 

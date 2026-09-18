@@ -2,9 +2,9 @@ import { getFirebaseIdToken } from '@/features/auth/infrastructure/firebase/get-
 import type { FontAssetPort, FontAssetRef } from '@/features/fonts/domain/ports/font-asset.port';
 import { parseFontAssetKey } from '@/features/fonts/domain/ports/font-asset.port';
 import {
-  extractFileKeyFromUploadthingUrl,
   resolveCloudImageAccess,
   resolveImageDeleteUrl,
+  resolveUploadthingFileKey,
   uploadFiles,
 } from '@/features/template/infrastructure/uploadthing/client';
 
@@ -53,7 +53,7 @@ export class UploadthingFontAdapter implements FontAssetPort {
     const mime = data.match(/^data:(.*?);/)?.[1] ?? 'application/octet-stream';
     const extension = extensionFromFileName(undefined, mime);
     const file = dataUrlToFile(data, `${parsed.faceKey}.${extension}`);
-    const previousFileKey = ref.fileKey;
+    const previousFileKey = resolveUploadthingFileKey(ref) ?? undefined;
 
     let uploaded;
     try {
@@ -103,7 +103,7 @@ export class UploadthingFontAdapter implements FontAssetPort {
   }
 
   async load(ref: FontAssetRef): Promise<string | null> {
-    const fileKey = ref.fileKey ?? (ref.url ? extractFileKeyFromUploadthingUrl(ref.url) : null);
+    const fileKey = resolveUploadthingFileKey(ref);
     if (!fileKey && !ref.url) return null;
 
     const cacheKey = sessionCacheKey(ref);
@@ -125,7 +125,13 @@ export class UploadthingFontAdapter implements FontAssetPort {
   }
 
   async delete(ref: FontAssetRef): Promise<void> {
-    if (!ref.fileKey && !ref.key) return;
+    const fileKey = resolveUploadthingFileKey(ref);
+    if (!fileKey) {
+      if (ref.provider === 'uploadthing') {
+        console.warn('[uploadthing] font delete skipped: missing fileKey', ref.key);
+      }
+      return;
+    }
 
     const token = await getFirebaseIdToken();
     if (!token) {
@@ -140,10 +146,7 @@ export class UploadthingFontAdapter implements FontAssetPort {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        fileKey: ref.fileKey,
-        key: ref.key,
-      }),
+      body: JSON.stringify({ fileKey }),
     });
 
     if (!response.ok) {
@@ -153,6 +156,6 @@ export class UploadthingFontAdapter implements FontAssetPort {
   }
 
   async exists(ref: FontAssetRef): Promise<boolean> {
-    return Boolean(ref.fileKey || ref.url);
+    return Boolean(resolveUploadthingFileKey(ref) || ref.url);
   }
 }

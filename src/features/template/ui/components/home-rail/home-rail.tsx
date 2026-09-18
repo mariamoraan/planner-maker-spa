@@ -18,6 +18,7 @@ import type { Template } from '@/features/template';
 import { getTemplatePaperSizeLabel } from '@/features/template';
 import { ManageFontsDialog } from '@/features/fonts/ui/components/manage-fonts-dialog/manage-fonts-dialog';
 import { UploadFontFamilyDialog } from '@/features/fonts/ui/components/upload-font-family-dialog/upload-font-family-dialog';
+import { usePlanLimits } from '@/core/plans';
 
 const ONBOARDING_STEPS = [
   { icon: ImageIcon, label: 'Sube tu diseño' },
@@ -38,6 +39,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
   const hasProjects = templates.length > 0;
   const [manageFontsOpen, setManageFontsOpen] = useState(false);
   const [uploadFontsOpen, setUploadFontsOpen] = useState(false);
+  const { canUploadFont } = usePlanLimits();
 
   const recentTemplates = useMemo(
     () =>
@@ -130,7 +132,10 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
       <ManageFontsDialog
         open={manageFontsOpen}
         onOpenChange={setManageFontsOpen}
-        onRequestUpload={() => setUploadFontsOpen(true)}
+        onRequestUpload={() => {
+          if (!canUploadFont) return;
+          setUploadFontsOpen(true);
+        }}
       />
       <UploadFontFamilyDialog
         open={uploadFontsOpen}
