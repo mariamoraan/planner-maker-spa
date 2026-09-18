@@ -1,6 +1,25 @@
 import { useEffect } from 'react';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
-import { useTemplateStore } from '@/features/template/ui/stores/template-store';
+import { isInsideBlockSelectionZone } from '@/features/editor/domain/services/block-selection';
+
+/** Portaled UI (Radix Dialog/Select/Popover) mounts under body, outside the selection zone. */
+function isInsidePortaledUi(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      [
+        '[role="dialog"]',
+        '[data-radix-dialog-content]',
+        '[data-radix-dialog-overlay]',
+        '[data-radix-popper-content-wrapper]',
+        '[data-radix-select-content]',
+        '[data-radix-select-viewport]',
+        '.dialog-overlay',
+        '.dialog-content',
+      ].join(', '),
+    ),
+  );
+}
 
 export const useClearBlockSelectionOnOutsideClick = () => {
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
@@ -9,7 +28,8 @@ export const useClearBlockSelectionOnOutsideClick = () => {
   useEffect(() => {
     const handleMouseDown = (event: MouseEvent) => {
       if (selectedRectangleIds.length === 0) return;
-      if ((event.target as Element).closest('[data-block-selection-zone]')) return;
+      if (isInsideBlockSelectionZone(event.target)) return;
+      if (isInsidePortaledUi(event.target)) return;
       clearSelection();
     };
 

@@ -9,14 +9,27 @@ import {
 } from '@/features/template/infrastructure/uploadthing/client';
 
 function dataUrlToFile(dataUrl: string, filename: string): File {
-  const [header, base64] = dataUrl.split(',');
-  const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
+  const [header, base64 = ''] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)?.[1] || 'application/octet-stream';
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) {
     bytes[i] = binary.charCodeAt(i);
   }
-  return new File([bytes], filename, { type: mime });
+  // UploadThing blob route accepts any type; empty MIME from some browsers breaks uploads.
+  const safeMime = mime && mime !== 'null' ? mime : 'application/octet-stream';
+  return new File([bytes], filename, { type: safeMime });
+}
+
+function extensionFromFileName(fileName: string | undefined, mime: string): string {
+  const fromName = fileName?.toLowerCase().match(/\.([a-z0-9]+)$/)?.[1];
+  if (fromName === 'ttf' || fromName === 'otf' || fromName === 'woff' || fromName === 'woff2') {
+    return fromName;
+  }
+  if (mime.includes('woff2')) return 'woff2';
+  if (mime.includes('woff')) return 'woff';
+  if (mime.includes('otf')) return 'otf';
+  return 'ttf';
 }
 
 const sessionSrcCache = new Map<string, string>();
@@ -38,29 +51,28 @@ export class UploadthingFontAdapter implements FontAssetPort {
     }
 
     const mime = data.match(/^data:(.*?);/)?.[1] ?? 'application/octet-stream';
-    const extension = mime.includes('woff2')
-      ? 'woff2'
-      : mime.includes('woff')
-        ? 'woff'
-        : mime.includes('otf')
-          ? 'otf'
-          : 'ttf';
+    const extension = extensionFromFileName(undefined, mime);
     const file = dataUrlToFile(data, `${parsed.faceKey}.${extension}`);
     const previousFileKey = ref.fileKey;
 
-    const uploaded = await uploadFiles('plannerFont', {
-      files: [file],
-      input: {
-        fontId: parsed.fontId,
-        faceKey: parsed.faceKey,
-        idToken: token,
-        previousFileKey,
-      },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    } as Parameters<typeof uploadFiles>[1]);
-
+    let uploaded;
+    try {
+      uploaded = await uploadFiles('plannerFont', {
+        files: [file],
+        input: {
+          fontId: parsed.fontId,
+          faceKey: parsed.faceKey,
+          idToken: token,
+          previousFileKey,
+        },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      } as Parameters<typeof uploadFiles>[1]);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'UploadThing error';
+      throw new Error(`UploadThing plannerFont failed: ${message}`);
+    }
     const result = uploaded[0];
     if (!result) {
       throw new Error('Font upload failed');

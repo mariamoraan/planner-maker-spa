@@ -83,6 +83,7 @@ export function UploadFontFamilyDialog({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pickingFileRef = useRef(false);
+  const busyRef = useRef(false);
   const dragDepthRef = useRef(0);
 
   const isEdit = Boolean(editFontId);
@@ -92,23 +93,36 @@ export function UploadFontFamilyDialog({
     setFaces([]);
     setError(null);
     setBusy(false);
+    busyRef.current = false;
     setIsDragging(false);
     dragDepthRef.current = 0;
     pickingFileRef.current = false;
   };
 
+  const preventDismissWhileBlocked = (event: Event) => {
+    const target = event.target;
+    const element = target instanceof Element ? target : null;
+    // Radix Select / Popover content is portaled; treating it as "outside" was
+    // closing this dialog instantly (often right when confirming styles / submit).
+    if (
+      element?.closest(
+        '[data-radix-select-content], [data-radix-popper-content-wrapper], [data-radix-select-viewport]',
+      )
+    ) {
+      event.preventDefault();
+      return;
+    }
+    if (pickingFileRef.current || busyRef.current) {
+      event.preventDefault();
+    }
+  };
+
   const handleOpenChange = (next: boolean) => {
-    // Native file picker steals focus; Radix may try to dismiss the dialog.
     if (!next && pickingFileRef.current) return;
+    if (!next && busyRef.current) return;
     if (!next) reset();
     else if (initialName) setName(initialName);
     onOpenChange(next);
-  };
-
-  const preventDismissWhilePicking = (event: Event) => {
-    if (pickingFileRef.current) {
-      event.preventDefault();
-    }
   };
 
   const usedRoles = useMemo(
@@ -235,9 +249,14 @@ export function UploadFontFamilyDialog({
   };
 
   const handleSubmit = async () => {
+    if (busyRef.current) return;
     setError(null);
     if (!name.trim()) {
       setError('Pon un nombre a la tipografía');
+      return;
+    }
+    if (faces.length === 0) {
+      setError('Añade al menos un archivo de tipografía');
       return;
     }
     if (!faces.some(face => face.weight === 400 && face.style === 'normal')) {
@@ -252,7 +271,13 @@ export function UploadFontFamilyDialog({
       dataUrl: face.dataUrl,
     }));
 
+    if (pending.some(face => !face.dataUrl)) {
+      setError('Algunos archivos no se leyeron bien. Vuelve a añadirlos.');
+      return;
+    }
+
     setBusy(true);
+    busyRef.current = true;
     try {
       if (isEdit && editFontId) {
         await replaceFaces(editFontId, pending);
@@ -264,10 +289,13 @@ export function UploadFontFamilyDialog({
         const family = await createFamily(name.trim(), pending);
         onCreated?.(family.id);
       }
+      busyRef.current = false;
       handleOpenChange(false);
     } catch (err) {
+      console.error('[upload-font] save failed:', err);
       setError(err instanceof Error ? err.message : 'No se pudo guardar la tipografía');
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
@@ -276,9 +304,12 @@ export function UploadFontFamilyDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="dialog-content--wide upload-font-dialog"
-        onInteractOutside={preventDismissWhilePicking}
-        onPointerDownOutside={preventDismissWhilePicking}
-        onFocusOutside={preventDismissWhilePicking}
+        onInteractOutside={preventDismissWhileBlocked}
+        onPointerDownOutside={preventDismissWhileBlocked}
+        onFocusOutside={preventDismissWhileBlocked}
+        onEscapeKeyDown={event => {
+          if (busyRef.current || pickingFileRef.current) event.preventDefault();
+        }}
       >
         <DialogHeader>
           <DialogTitle>
@@ -351,7 +382,11 @@ export function UploadFontFamilyDialog({
                     <SelectTrigger className="upload-font-dialog__role-select">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent
+                      position="popper"
+                      onCloseAutoFocus={event => event.preventDefault()}
+                      onPointerDownOutside={event => event.stopPropagation()}
+                    >
                       {FONT_FACE_ROLES.map(role => (
                         <SelectItem
                           key={roleValue(role.weight, role.style)}
@@ -381,7 +416,11 @@ export function UploadFontFamilyDialog({
           <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={busy}>
             Cancelar
           </Button>
-          <Button type="button" onClick={() => void handleSubmit()} disabled={busy || faces.length === 0}>
+          <Button
+            type="button"
+            onClick={() => void handleSubmit()}
+            disabled={busy || faces.length === 0}
+          >
             {busy ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Añadir tipografía'}
           </Button>
         </DialogFooter>

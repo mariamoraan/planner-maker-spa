@@ -24,6 +24,7 @@ export function FontPickerList({
   compact = false,
 }: FontPickerListProps) {
   const customFonts = useFontLibraryStore(state => state.fonts);
+  const syncError = useFontLibraryStore(state => state.syncError);
 
   return (
     <div className={clsx('font-picker-list', { 'font-picker-list--compact': compact })}>
@@ -53,7 +54,9 @@ export function FontPickerList({
         </div>
 
         {customFonts.length === 0 ? (
-          <p className="font-picker-list__empty">Aún no has subido tipografías</p>
+          <p className="font-picker-list__empty">
+            {syncError ?? 'Aún no has subido tipografías'}
+          </p>
         ) : (
           <div className="font-picker-list__options">
             {customFonts.map(font => {

@@ -28,6 +28,7 @@ export function ManageFontsDialog({
   onRequestUpload,
 }: ManageFontsDialogProps) {
   const fonts = useFontLibraryStore(state => state.fonts);
+  const syncError = useFontLibraryStore(state => state.syncError);
   const renameFamily = useFontLibraryStore(state => state.renameFamily);
   const deleteFamily = useFontLibraryStore(state => state.deleteFamily);
   const templates = useTemplateStore(state => state.templates);
@@ -94,6 +95,8 @@ export function ManageFontsDialog({
               Subir tipografía
             </Button>
           </div>
+
+          {syncError ? <p className="manage-fonts-dialog__error">{syncError}</p> : null}
 
           {fonts.length === 0 ? (
             <p className="manage-fonts-dialog__empty">Todavía no has subido tipografías.</p>
