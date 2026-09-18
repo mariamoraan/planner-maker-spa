@@ -7,12 +7,12 @@ import {
   Calendar,
   Image as ImageIcon,
   Layers,
-  LayoutTemplate,
 } from 'lucide-react';
+import { AmarkLogo } from '@/core/components/ui/amark-logo';
+import { PATHS } from '@/core/routes/paths';
 import { AddTemplateButton } from '@/features/template/ui/components/add-template-button/add-template-button';
 import { getCoverImage } from '@/features/template/ui/components/template-card/template-card';
 import { TemplateCoverThumb } from '@/features/template/ui/components/template-cover-thumb/template-cover-thumb';
-import { PATHS } from '@/core/routes/paths';
 import type { Template } from '@/features/template';
 import { getTemplatePaperSizeLabel } from '@/features/template';
 
@@ -47,7 +47,7 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
       <div className="home-rail__inner">
         <header className="home-rail__header">
           <Link to={PATHS.landing} className="home-rail__logo">
-            <LayoutTemplate className="home-rail__logo-icon" aria-hidden="true" />
+            <AmarkLogo className="home-rail__logo-icon" />
             {t('common.appName')}
           </Link>
           <p className="home-rail__tagline">Planners dinámicos</p>

@@ -2,15 +2,16 @@ import './home.page.scss';
 
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LayoutTemplate, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { AddTemplateButton } from '@/features/template/ui/components/add-template-button/add-template-button';
+import { AmarkLogo } from '@/core/components/ui/amark-logo';
+import { getEditorPath, PATHS } from '@/core/routes/paths';
+import { useAuth } from '@/features/auth/ui/contexts/auth-provider';
 import { AnimatedTagline } from '@/features/landing/ui/components/animated-tagline/animated-tagline';
+import { AddTemplateButton } from '@/features/template/ui/components/add-template-button/add-template-button';
 import { HomeRail } from '@/features/template/ui/components/home-rail/home-rail';
 import { NewProjectCard } from '@/features/template/ui/components/new-project-card/new-project-card';
 import { TemplateCard } from '@/features/template/ui/components/template-card/template-card';
-import { useAuth } from '@/features/auth/ui/contexts/auth-provider';
-import { getEditorPath, PATHS } from '@/core/routes/paths';
 import { useHomeTemplates } from '@/features/template/ui/hooks/use-home-templates';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
@@ -113,7 +114,7 @@ export const HomePage = () => {
           ) : (
             <div className="home-page__empty">
               <div className="home-page__empty-icon-wrapper">
-                <LayoutTemplate className="home-page__empty-icon" />
+                <AmarkLogo className="home-page__empty-icon" />
               </div>
               <AnimatedTagline words={['diseño', 'fechas', 'planner']} prefix="Tu" />
               <h1 className="home-page__empty-title">{t('home.emptyTitle')}</h1>
