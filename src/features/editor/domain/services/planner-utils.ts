@@ -18,7 +18,7 @@ import type {
   CompositeDateSource,
   FormatVariant,
 } from '@/features/template';
-import { DEFAULT_COMPOSITE_PARTS } from '@/features/template';
+import { DEFAULT_COMPOSITE_PARTS, isCustomFontId, parseCustomFontId } from '@/features/template';
 import { ensureDataUrl, isHttpUrl } from '@/core/functions/image-data-url';
 import {
   SECONDARY_COLOR,
@@ -33,6 +33,7 @@ import {
   isDayFormatVariant,
   normalizeStartEndFormatVariant,
 } from '@/features/editor/domain/services/field-style-config';
+import { fontFaceRegistry } from '@/features/fonts/domain/services/font-face-registry';
 import {
   DEFAULT_LOCALE,
   DEFAULT_WEEK_STARTS_ON,
@@ -906,6 +907,9 @@ export async function renderFieldOnCanvas(
   const availableHeight = (rectangle.height - paddingY * 2) * scaleY;
   const fontSize = (availableHeight / lineCount) * 0.9;
   const style = resolveFieldStyle(rectangle);
+  if (isCustomFontId(style.fontId)) {
+    await fontFaceRegistry.ensureLoaded(parseCustomFontId(style.fontId));
+  }
   const fontString = buildCanvasFont(style, fontSize);
   const lineHeight = availableHeight / lineCount;
 

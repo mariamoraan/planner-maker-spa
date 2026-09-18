@@ -16,6 +16,7 @@ import {
   type PlannerLocale,
   type WeekStartsOn,
   getTemplatePaperSizeLabel,
+  toCustomFontId,
 } from '@/features/template';
 import { DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import {
@@ -37,6 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/core/components/ui/select';
+import { UploadFontFamilyDialog } from '@/features/fonts/ui/components/upload-font-family-dialog/upload-font-family-dialog';
+import { ManageFontsDialog } from '@/features/fonts/ui/components/manage-fonts-dialog/manage-fonts-dialog';
+import { resolveFontLabel } from '@/features/fonts/ui/components/font-picker-list/font-picker-list';
+import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
+import { cssFamilyNameForCustomFont } from '@/features/fonts/domain/entities/custom-font-family';
+import { Plus, Settings2 } from 'lucide-react';
 
 type SidebarSectionId = 'page' | 'plannerSettings';
 
@@ -58,6 +65,9 @@ export const EditorSidebar: React.FC = () => {
     ...DEFAULT_SECTION_STATE,
     plannerSettings: !currentImage,
   });
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const customFonts = useFontLibraryStore(state => state.fonts);
 
   const isDemo = pathname.includes('landing-demo');
   const paperSizeLabel = template ? getTemplatePaperSizeLabel(template) : null;
@@ -216,21 +226,56 @@ export const EditorSidebar: React.FC = () => {
                 {t('editor.plannerDefaultFont')}
               </Label>
               <p className="editor-sidebar__locale-hint">{t('editor.plannerDefaultFontHint')}</p>
-              <Select
-                value={plannerFontId}
-                onValueChange={(value) => handleDefaultFontChange(value as FontId)}
-              >
-                <SelectTrigger id="planner-default-font" className="editor-sidebar__locale-select">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FONT_REGISTRY.map(font => (
-                    <SelectItem key={font.id} value={font.id}>
-                      <span style={{ fontFamily: font.family }}>{font.label}</span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="editor-sidebar__font-row">
+                <Select
+                  value={plannerFontId}
+                  onValueChange={(value) => handleDefaultFontChange(value as FontId)}
+                >
+                  <SelectTrigger id="planner-default-font" className="editor-sidebar__locale-select">
+                    <SelectValue>
+                      {resolveFontLabel(plannerFontId, customFonts)}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customFonts.length > 0 ? (
+                      <>
+                        {customFonts.map(font => {
+                          const fontId = toCustomFontId(font.id);
+                          const family = cssFamilyNameForCustomFont(font.id);
+                          return (
+                            <SelectItem key={font.id} value={fontId}>
+                              <span style={{ fontFamily: `"${family}", system-ui, sans-serif` }}>
+                                {font.name}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </>
+                    ) : null}
+                    {FONT_REGISTRY.map(font => (
+                      <SelectItem key={font.id} value={font.id}>
+                        <span style={{ fontFamily: font.family }}>{font.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <button
+                  type="button"
+                  className="editor-sidebar__font-action"
+                  title="Subir tipografía"
+                  onClick={() => setUploadOpen(true)}
+                >
+                  <Plus size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="editor-sidebar__font-action"
+                  title="Gestionar tipografías"
+                  onClick={() => setManageOpen(true)}
+                >
+                  <Settings2 size={16} />
+                </button>
+              </div>
             </div>
           </EditorSidebarSection>
         ) : null}
@@ -238,6 +283,16 @@ export const EditorSidebar: React.FC = () => {
       <div className="editor-sidebar__footer">
         <EditorPlannerActions variant="sidebar" />
       </div>
+      <UploadFontFamilyDialog
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onCreated={fontId => handleDefaultFontChange(toCustomFontId(fontId))}
+      />
+      <ManageFontsDialog
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        onRequestUpload={() => setUploadOpen(true)}
+      />
     </aside>
   );
 };

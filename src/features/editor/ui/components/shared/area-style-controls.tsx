@@ -7,7 +7,6 @@ import useOnClickOutside from '@/core/hooks/use-on-click-outside';
 import { useAreaStyleEditing, type AreaStyleEditing } from '@/features/editor/ui/hooks/use-area-style-editing';
 import {
   COLOR_PRESET_REGISTRY,
-  FONT_REGISTRY,
   START_END_DATE_PART_OPTIONS,
   TEXT_ALIGN_REGISTRY,
   TEXT_CASE_REGISTRY,
@@ -19,7 +18,15 @@ import {
   type StartEndDatePart,
 } from '@/features/editor/domain/services/field-style-config';
 import type { FontId, FormatVariant, Rectangle, TextAlign, TextCase } from '@/features/template';
+import { toCustomFontId } from '@/features/template';
 import { AlignCenterIcon, AlignLeftIcon, AlignRightIcon, CaseSensitiveIcon, FontIcon } from '@/core/icons';
+import {
+  FontPickerList,
+  resolveFontLabel,
+} from '@/features/fonts/ui/components/font-picker-list/font-picker-list';
+import { UploadFontFamilyDialog } from '@/features/fonts/ui/components/upload-font-family-dialog/upload-font-family-dialog';
+import { ManageFontsDialog } from '@/features/fonts/ui/components/manage-fonts-dialog/manage-fonts-dialog';
+import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 
 type PopoverId = 'format' | 'color' | 'font' | 'style' | null;
 
@@ -48,10 +55,13 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
   const internalEditing = useAreaStyleEditing(editingOverride === undefined ? rectangle : null);
   const editing = editingOverride === undefined ? internalEditing : editingOverride;
   const [openPopover, setOpenPopover] = useState<PopoverId>(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const formatRef = useRef<HTMLButtonElement>(null);
   const colorRef = useRef<HTMLDivElement>(null);
   const fontRef = useRef<HTMLButtonElement>(null);
   const styleRef = useRef<HTMLButtonElement>(null);
+  const customFonts = useFontLibraryStore(state => state.fonts);
 
   useOnClickOutside(formatRef, () => setOpenPopover(prev => (prev === 'format' ? null : prev)));
   useOnClickOutside(colorRef, () => setOpenPopover(prev => (prev === 'color' ? null : prev)));
@@ -218,21 +228,12 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
   const fontGroup = (
     <div className="area-style-controls__group">
       <p className="area-style-controls__label">Tipografía</p>
-      <div className="area-style-controls__options area-style-controls__options--fonts">
-        {FONT_REGISTRY.map(font => (
-          <button
-            key={font.id}
-            type="button"
-            className={clsx('area-style-controls__font-option', {
-              'area-style-controls__font-option--active': style.fontId === font.id,
-            })}
-            style={{ fontFamily: font.family }}
-            onClick={() => updateStyle({ fontId: font.id as FontId })}
-          >
-            {font.label}
-          </button>
-        ))}
-      </div>
+      <FontPickerList
+        selectedFontId={style.fontId}
+        onSelect={fontId => updateStyle({ fontId })}
+        onUploadClick={() => setUploadOpen(true)}
+        onManageClick={() => setManageOpen(true)}
+      />
     </div>
   );
 
@@ -310,21 +311,34 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
 
   if (variant === 'sidebar') {
     return (
-      <div className="area-style-controls area-style-controls--sidebar">
-        {hasFormatOptions ? formatGroup : null}
-        {colorGroup}
-        {fontGroup}
-        {styleGroup}
-      </div>
+      <>
+        <div className="area-style-controls area-style-controls--sidebar">
+          {hasFormatOptions ? formatGroup : null}
+          {colorGroup}
+          {fontGroup}
+          {styleGroup}
+        </div>
+        <UploadFontFamilyDialog
+          open={uploadOpen}
+          onOpenChange={setUploadOpen}
+          onCreated={fontId => updateStyle({ fontId: toCustomFontId(fontId) })}
+        />
+        <ManageFontsDialog
+          open={manageOpen}
+          onOpenChange={setManageOpen}
+          onRequestUpload={() => setUploadOpen(true)}
+        />
+      </>
     );
   }
 
   const activeFormat = isStartEndField && startEndPart !== null
     ? getStartEndPartLabel(startEndPart)
     : (formatOptions.find(o => o.id === formatVariant)?.label ?? 'Formato');
-  const activeFont = FONT_REGISTRY.find(f => f.id === style.fontId)?.label ?? 'Tipografía';
+  const activeFont = resolveFontLabel(style.fontId, customFonts);
 
   return (
+    <>
     <div className="area-style-controls area-style-controls--toolbar">
       {hasFormatOptions ? (
       <button
@@ -402,21 +416,22 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
             'area-style-controls__popover--visible': openPopover === 'font',
           })}
         >
-          <div className="area-style-controls__options area-style-controls__options--fonts">
-            {FONT_REGISTRY.map(font => (
-              <button
-                key={font.id}
-                type="button"
-                className={clsx('area-style-controls__font-option', {
-                  'area-style-controls__font-option--active': style.fontId === font.id,
-                })}
-                style={{ fontFamily: font.family }}
-                onClick={() => updateStyle({ fontId: font.id as FontId })}
-              >
-                {font.label}
-              </button>
-            ))}
-          </div>
+          <FontPickerList
+            selectedFontId={style.fontId}
+            onSelect={fontId => {
+              updateStyle({ fontId });
+              setOpenPopover(null);
+            }}
+            onUploadClick={() => {
+              setOpenPopover(null);
+              setUploadOpen(true);
+            }}
+            onManageClick={() => {
+              setOpenPopover(null);
+              setManageOpen(true);
+            }}
+            compact
+          />
         </div>
       </button>
 
@@ -490,5 +505,16 @@ export const AreaStyleControls = ({ rectangle, variant, editing: editingOverride
         </div>
       </button>
     </div>
+    <UploadFontFamilyDialog
+      open={uploadOpen}
+      onOpenChange={setUploadOpen}
+      onCreated={fontId => updateStyle({ fontId: toCustomFontId(fontId) })}
+    />
+    <ManageFontsDialog
+      open={manageOpen}
+      onOpenChange={setManageOpen}
+      onRequestUpload={() => setUploadOpen(true)}
+    />
+    </>
   );
 };

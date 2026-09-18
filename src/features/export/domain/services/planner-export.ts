@@ -18,9 +18,18 @@ import type { WeekStartsOn } from '@/features/template';
 import PdfWorker from '@/features/export/infrastructure/workers/pdf.worker?worker';
 import type { WorkerResponse } from '@/features/export/infrastructure/workers/pdf.worker';
 import { assemblePdfFromPages } from '@/features/export/domain/services/assemble-pdf';
+import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 
 const PAGES_WEIGHT = 0.85;
 const PDF_WEIGHT = 0.15;
+
+async function waitForCustomFontsReady(timeoutMs = 15000): Promise<void> {
+  const started = Date.now();
+  while (useFontLibraryStore.getState().isRegistering) {
+    if (Date.now() - started > timeoutMs) break;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+}
 
 function clampProgress(value: number): number {
   return Math.min(100, Math.max(0, value));
@@ -149,6 +158,8 @@ export async function generatePlannerPages(
   endDate: Date,
   onProgress?: (current: number, total: number) => void
 ): Promise<GeneratedPage[]> {
+  await waitForCustomFontsReady();
+
   const pages: GeneratedPage[] = [];
   const plannerLocale = template.locale ?? 'es';
   const weekStartsOn = resolveTemplateWeekStartsOn(template);

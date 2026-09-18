@@ -15,6 +15,8 @@ export type {
   FormatVariant,
   FieldStyle,
   FontId,
+  BuiltInFontId,
+  CustomFontId,
   TextCase,
   TextAlign,
   YearFormatVariant,
@@ -27,6 +29,9 @@ export type {
 export {
   DEFAULT_PLANNER_FONT_ID,
   LEGACY_DEFAULT_FONT_ID,
+  isCustomFontId,
+  toCustomFontId,
+  parseCustomFontId,
 } from './domain/value-objects/field-style';
 export type {
   PlannerLocale,

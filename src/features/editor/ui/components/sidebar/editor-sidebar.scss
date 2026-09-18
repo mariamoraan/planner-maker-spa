@@ -471,3 +471,33 @@
         background: #fee2e2;
     }
 }
+
+.editor-sidebar__font-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.editor-sidebar__font-row .editor-sidebar__locale-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.editor-sidebar__font-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border: 1px solid hsl(var(--border));
+    border-radius: 8px;
+    background: hsl(var(--card));
+    color: #6b7280;
+    cursor: pointer;
+
+    &:hover {
+        color: #1f2a3d;
+        background: #f4f5f6;
+    }
+}

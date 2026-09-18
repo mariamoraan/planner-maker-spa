@@ -1,12 +1,13 @@
 import './home-rail.scss';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Calendar,
   Image as ImageIcon,
   Layers,
+  Type,
 } from 'lucide-react';
 import { AmarkLogo } from '@/core/components/ui/amark-logo';
 import { PATHS } from '@/core/routes/paths';
@@ -15,6 +16,8 @@ import { getCoverImage } from '@/features/template/ui/components/template-card/t
 import { TemplateCoverThumb } from '@/features/template/ui/components/template-cover-thumb/template-cover-thumb';
 import type { Template } from '@/features/template';
 import { getTemplatePaperSizeLabel } from '@/features/template';
+import { ManageFontsDialog } from '@/features/fonts/ui/components/manage-fonts-dialog/manage-fonts-dialog';
+import { UploadFontFamilyDialog } from '@/features/fonts/ui/components/upload-font-family-dialog/upload-font-family-dialog';
 
 const ONBOARDING_STEPS = [
   { icon: ImageIcon, label: 'Sube tu diseño' },
@@ -33,6 +36,8 @@ interface HomeRailProps {
 export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps) => {
   const { t } = useTranslation();
   const hasProjects = templates.length > 0;
+  const [manageFontsOpen, setManageFontsOpen] = useState(false);
+  const [uploadFontsOpen, setUploadFontsOpen] = useState(false);
 
   const recentTemplates = useMemo(
     () =>
@@ -99,6 +104,18 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
                 </ol>
               </section>
             )}
+
+            <section className="home-rail__section">
+              <h2 className="home-rail__section-title">Biblioteca</h2>
+              <button
+                type="button"
+                className="home-rail__library-btn"
+                onClick={() => setManageFontsOpen(true)}
+              >
+                <Type size={16} aria-hidden="true" />
+                Tipografías
+              </button>
+            </section>
           </div>
         )}
 
@@ -109,6 +126,16 @@ export const HomeRail = ({ templates, isLoading, onOpenTemplate }: HomeRailProps
           <AddTemplateButton label="Nuevo proyecto" />
         </div>
       </div>
+
+      <ManageFontsDialog
+        open={manageFontsOpen}
+        onOpenChange={setManageFontsOpen}
+        onRequestUpload={() => setUploadFontsOpen(true)}
+      />
+      <UploadFontFamilyDialog
+        open={uploadFontsOpen}
+        onOpenChange={setUploadFontsOpen}
+      />
     </aside>
   );
 };

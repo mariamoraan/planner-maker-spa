@@ -39,7 +39,7 @@ export type CompositePart =
   | { kind: 'linebreak'; id?: string }
   | { kind: 'literal'; value: string; id?: string };
 
-export type FontId =
+export type BuiltInFontId =
   | 'montserrat'
   | 'poppins'
   | 'lato'
@@ -60,11 +60,30 @@ export type FontId =
   | 'gloria'
   | 'great-vibes';
 
+export type CustomFontId = `custom:${string}`;
+
+export type FontId = BuiltInFontId | CustomFontId;
+
+const CUSTOM_FONT_ID_PREFIX = 'custom:' as const;
+
+export function isCustomFontId(fontId: string): fontId is CustomFontId {
+  return fontId.startsWith(CUSTOM_FONT_ID_PREFIX) && fontId.length > CUSTOM_FONT_ID_PREFIX.length;
+}
+
+export function toCustomFontId(familyId: string): CustomFontId {
+  if (isCustomFontId(familyId)) return familyId;
+  return `${CUSTOM_FONT_ID_PREFIX}${familyId}`;
+}
+
+export function parseCustomFontId(fontId: CustomFontId): string {
+  return fontId.slice(CUSTOM_FONT_ID_PREFIX.length);
+}
+
 /** Default for new planners and new blocks. */
-export const DEFAULT_PLANNER_FONT_ID: FontId = 'montserrat';
+export const DEFAULT_PLANNER_FONT_ID: BuiltInFontId = 'montserrat';
 
 /** Pre-brand default stamped on older blocks without `defaultFontId`. */
-export const LEGACY_DEFAULT_FONT_ID: FontId = 'gloria';
+export const LEGACY_DEFAULT_FONT_ID: BuiltInFontId = 'gloria';
 
 export type TextCase = 'default' | 'uppercase' | 'lowercase' | 'capitalize';
 

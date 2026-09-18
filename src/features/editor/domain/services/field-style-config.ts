@@ -14,7 +14,10 @@ import type {
 import {
   DEFAULT_PLANNER_FONT_ID,
   LEGACY_DEFAULT_FONT_ID,
+  isCustomFontId,
+  parseCustomFontId,
 } from '@/features/template'
+import { cssFamilyNameForCustomFont } from '@/features/fonts/domain/entities/custom-font-family';
 
 export const MAIN_COLOR = '#1f2a3d';
 export const SECONDARY_COLOR = '#929599';
@@ -245,6 +248,9 @@ export function resolveFieldStyle(
 }
 
 export function resolveFontFamily(fontId: FontId): string {
+  if (isCustomFontId(fontId)) {
+    return cssFamilyNameForCustomFont(parseCustomFontId(fontId));
+  }
   const font = FONT_REGISTRY.find(f => f.id === fontId);
   return font?.family ?? FONT_REGISTRY[0].family;
 }

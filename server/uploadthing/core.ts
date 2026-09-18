@@ -78,6 +78,80 @@ export const uploadRouter = {
         fileKey: file.key,
       };
     }),
+
+  plannerFont: f(
+    {
+      blob: {
+        maxFileSize: '8MB',
+        maxFileCount: 1,
+      },
+    },
+    { awaitServerData: true }
+  )
+    .input(
+      z.object({
+        fontId: z.string().min(1),
+        faceKey: z.string().min(1),
+        idToken: z.string().min(1),
+        previousFileKey: z.string().optional(),
+      })
+    )
+    .middleware(async ({ req, input, files }) => {
+      let uid: string;
+      try {
+        uid = await verifyFirebaseIdToken(input.idToken);
+      } catch (primaryError) {
+        try {
+          uid = await verifyFirebaseToken(req.headers.get('Authorization'));
+        } catch {
+          const message =
+            primaryError instanceof Error ? primaryError.message : 'Unauthorized';
+          console.error('[uploadthing] font auth failed:', message);
+          throw new UploadThingError(message);
+        }
+      }
+
+      const fontKey = `${uid}/fonts/${input.fontId}/${input.faceKey}`;
+      assertKeyBelongsToUser(fontKey, uid);
+
+      const customId = `${fontKey}/${Date.now()}`;
+
+      if (input.previousFileKey) {
+        try {
+          const utapi = new UTApi();
+          await utapi.deleteFiles(input.previousFileKey);
+        } catch (error) {
+          console.warn('[uploadthing] Failed to delete previous font file:', error);
+        }
+      }
+
+      const fileOverrides = files.map(file => ({
+        ...file,
+        customId,
+      }));
+
+      return {
+        uid,
+        fontId: input.fontId,
+        faceKey: input.faceKey,
+        fontKey,
+        customId,
+        [UTFiles]: fileOverrides,
+      };
+    })
+    .onUploadComplete(async ({ metadata, file }) => {
+      const url =
+        file.ufsUrl && !file.ufsUrl.includes('utfs.io')
+          ? file.ufsUrl
+          : file.url && !file.url.includes('utfs.io')
+            ? file.url
+            : file.ufsUrl ?? file.url;
+      return {
+        url,
+        key: metadata.fontKey,
+        fileKey: file.key,
+      };
+    }),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof uploadRouter;
