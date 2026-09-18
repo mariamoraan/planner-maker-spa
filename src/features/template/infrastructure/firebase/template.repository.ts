@@ -315,9 +315,15 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     const pageOrder = dedupePageOrder((tSnap.data()?.pageOrder as string[]) ?? []);
     const pageExists = pageOrder.includes(page.id);
 
+    const writeData = buildPageWriteData(page);
+    // Never clobber rectangles on an existing page via create/merge retries.
+    if (pageExists) {
+      delete writeData.rectangles;
+    }
+
     const batch = writeBatch(getFirebaseDb());
     batch.set(pageRef(uid, templateId, page.id), {
-      ...buildPageWriteData(page),
+      ...writeData,
       createdAt: serverTimestamp(),
     }, { merge: true });
 

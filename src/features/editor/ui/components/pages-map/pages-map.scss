@@ -28,8 +28,8 @@
 
         .image-uploader {
             height: var(--pages-map-thumbnail-height);
+            width: calc(var(--pages-map-thumbnail-height) * 3 / 4);
             aspect-ratio: var(--pages-map-add-aspect-ratio);
-            width: auto;
             flex-shrink: 0;
         }
     }

@@ -245,6 +245,60 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     return repairGridMetadata(rectangles, image?.gridGroups);
   };
 
+  const rectangleSyncKey = (templateId: string, imageId: string) => `${templateId}-${imageId}`;
+
+  const cancelRectangleSync = (templateId: string, imageId: string) => {
+    const key = rectangleSyncKey(templateId, imageId);
+    const existing = rectangleSyncTimers.get(key);
+    if (!existing) return;
+    clearTimeout(existing);
+    rectangleSyncTimers.delete(key);
+  };
+
+  const flushRectangleSync = (templateId: string, imageId: string) => {
+    const uid = get().syncUid;
+    if (!uid) return;
+    const image = get().templates
+      .find(t => t.id === templateId)
+      ?.images.find(img => img.id === imageId);
+    if (!image) return;
+    void getInfra().templates.updatePageRectangles(
+      uid,
+      templateId,
+      imageId,
+      syncRectanglesWithGridMetadata(templateId, imageId, image.rectangles),
+    );
+  };
+
+  const scheduleRectangleSync = (templateId: string, imageId: string) => {
+    if (!get().syncUid) return;
+    cancelRectangleSync(templateId, imageId);
+    const key = rectangleSyncKey(templateId, imageId);
+    rectangleSyncTimers.set(
+      key,
+      setTimeout(() => {
+        rectangleSyncTimers.delete(key);
+        flushRectangleSync(templateId, imageId);
+      }, RECTANGLE_SYNC_DELAY_MS),
+    );
+  };
+
+  const syncRectanglesNow = (
+    templateId: string,
+    imageId: string,
+    rectangles: Rectangle[],
+  ) => {
+    cancelRectangleSync(templateId, imageId);
+    const uid = get().syncUid;
+    if (!uid) return;
+    void getInfra().templates.updatePageRectangles(
+      uid,
+      templateId,
+      imageId,
+      syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
+    );
+  };
+
   return {
   templates: [],
   syncUid: null,
@@ -523,9 +577,18 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     }));
 
     if (uid) {
-      const page = toPageRecord(uid, { ...image, src: resolvedSrc, imageRef });
+      const liveImage =
+        get().templates.find(t => t.id === templateId)?.images.find(img => img.id === id) ?? image;
+      const page = toPageRecord(uid, { ...liveImage, src: resolvedSrc, imageRef });
       await getInfra().templates.createPage(uid, templateId, page, insertIndex);
       await persistCloudImageRef(uid, templateId, id, imageRef);
+      // Rectangle writes during upload can miss the doc; flush live rects after create.
+      const afterCreate = get().templates
+        .find(t => t.id === templateId)
+        ?.images.find(img => img.id === id);
+      if (afterCreate && afterCreate.rectangles.length > 0) {
+        syncRectanglesNow(templateId, id, afterCreate.rectangles);
+      }
     }
 
     return id;
@@ -670,15 +733,29 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
         if (t.id !== templateId) return t;
         return {
           ...t,
-          images: t.images.map(img => (img.id === image.id ? savedImage : img)),
+          images: t.images.map(img =>
+            img.id === image.id
+              ? { ...img, src: resolvedSrc, imageRef, missingLocalAsset: false }
+              : img
+          ),
           updatedAt: new Date(),
         };
       }),
     }));
 
     if (uid) {
-      await getInfra().templates.createPage(uid, templateId, toPageRecord(uid, savedImage), index);
+      const liveImage =
+        get().templates.find(t => t.id === templateId)?.images.find(img => img.id === image.id) ??
+        savedImage;
+      const page = toPageRecord(uid, { ...liveImage, src: resolvedSrc, imageRef });
+      await getInfra().templates.createPage(uid, templateId, page, index);
       await persistCloudImageRef(uid, templateId, image.id, imageRef);
+      const afterCreate = get().templates
+        .find(t => t.id === templateId)
+        ?.images.find(img => img.id === image.id);
+      if (afterCreate && afterCreate.rectangles.length > 0) {
+        syncRectanglesNow(templateId, image.id, afterCreate.rectangles);
+      }
     }
   },
 
@@ -778,15 +855,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
 
     trackEvent('block_added', { fieldType: rectangleData.fieldType });
 
-    const uid = get().syncUid;
-    if (uid) {
-      void getInfra().templates.updatePageRectangles(
-        uid,
-        templateId,
-        imageId,
-        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
-      );
-    }
+    syncRectanglesNow(templateId, imageId, rectangles);
 
     return id;
   },
@@ -812,20 +881,10 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       ),
     }));
 
-    const uid = get().syncUid;
-    if (uid) {
-      void getInfra().templates.updatePageRectangles(
-        uid,
-        templateId,
-        imageId,
-        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
-      );
-    }
+    syncRectanglesNow(templateId, imageId, rectangles);
   },
 
   updateRectangle: (templateId, imageId, rectangleId, updates) => {
-    let rectangles: Rectangle[] = [];
-
     set(state => ({
       templates: state.templates.map(t =>
         t.id === templateId
@@ -833,7 +892,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
               ...t,
               images: t.images.map(img => {
                 if (img.id !== imageId) return img;
-                rectangles = img.rectangles.map(r =>
+                const rectangles = img.rectangles.map(r =>
                   r.id === rectangleId
                     ? { ...r, ...sanitizeRectangleGeometry(updates) }
                     : r
@@ -846,31 +905,11 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       ),
     }));
 
-    const uid = get().syncUid;
-    if (!uid) return;
-
-    const key = `${templateId}-${imageId}`;
-    const existing = rectangleSyncTimers.get(key);
-    if (existing) clearTimeout(existing);
-
-    rectangleSyncTimers.set(
-      key,
-      setTimeout(() => {
-        rectangleSyncTimers.delete(key);
-        void getInfra().templates.updatePageRectangles(
-          uid,
-          templateId,
-          imageId,
-          syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
-        );
-      }, RECTANGLE_SYNC_DELAY_MS)
-    );
+    scheduleRectangleSync(templateId, imageId);
   },
 
   updateRectangles: (templateId, imageId, updates) => {
     if (updates.length === 0) return;
-
-    let rectangles: Rectangle[] = [];
 
     set(state => ({
       templates: state.templates.map(t =>
@@ -882,7 +921,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
                 const changesById = new Map(
                   updates.map(update => [update.rectangleId, update.changes]),
                 );
-                rectangles = img.rectangles.map(rect => {
+                const rectangles = img.rectangles.map(rect => {
                   const changes = changesById.get(rect.id);
                   return changes ? { ...rect, ...sanitizeRectangleGeometry(changes) } : rect;
                 });
@@ -894,25 +933,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       ),
     }));
 
-    const uid = get().syncUid;
-    if (!uid) return;
-
-    const key = `${templateId}-${imageId}`;
-    const existing = rectangleSyncTimers.get(key);
-    if (existing) clearTimeout(existing);
-
-    rectangleSyncTimers.set(
-      key,
-      setTimeout(() => {
-        rectangleSyncTimers.delete(key);
-        void getInfra().templates.updatePageRectangles(
-          uid,
-          templateId,
-          imageId,
-          syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
-        );
-      }, RECTANGLE_SYNC_DELAY_MS)
-    );
+    scheduleRectangleSync(templateId, imageId);
   },
 
   deleteRectangle: (templateId, imageId, rectangleId) => {
@@ -934,15 +955,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       ),
     }));
 
-    const uid = get().syncUid;
-    if (uid) {
-      void getInfra().templates.updatePageRectangles(
-        uid,
-        templateId,
-        imageId,
-        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
-      );
-    }
+    syncRectanglesNow(templateId, imageId, rectangles);
   },
 
   reorderRectangles: (templateId, imageId, orderedIds) => {
@@ -967,15 +980,7 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       ),
     }));
 
-    const uid = get().syncUid;
-    if (uid) {
-      void getInfra().templates.updatePageRectangles(
-        uid,
-        templateId,
-        imageId,
-        syncRectanglesWithGridMetadata(templateId, imageId, rectangles),
-      );
-    }
+    syncRectanglesNow(templateId, imageId, rectangles);
   },
 };
 });
