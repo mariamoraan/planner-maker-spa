@@ -121,17 +121,17 @@
       "title": "See it in action",
       "subtitle": "Upload your design, mark dynamic zones, pick a date range, and download a complete planner.",
       "videoLabel": "Amark editor workflow demo",
-      "posterAlt": "Amark editor with dynamic date zones on a weekly planner layout"
+      "posterAlt": "Amark editor with the planner cover and year zone selected"
     },
     "how": {
       "title": "How it works",
       "subtitle": "Four steps. One complete PDF."
     },
     "screenshots": {
-      "upload": "Dashboard with planner projects ready to edit",
+      "upload": "Dialog to upload a design and assign it as a template page",
       "zones": "Editor canvas with dynamic month and day zones marked",
-      "range": "Date range picker for generating a full-year planner",
-      "generate": "Editor pages map showing multiple template pages ready to export"
+      "range": "Export dialog with date range and estimated page count",
+      "generate": "Generated PDF with weekly planner pages ready to print"
     },
     "steps": {
       "upload": {

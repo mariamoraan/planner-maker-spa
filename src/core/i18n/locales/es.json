@@ -121,17 +121,17 @@
       "title": "Míralo en acción",
       "subtitle": "Sube tu diseño, marca zonas dinámicas, elige un rango de fechas y descarga un planner completo.",
       "videoLabel": "Demo del flujo del editor Amark",
-      "posterAlt": "Editor Amark con zonas dinámicas de fechas en un layout semanal"
+      "posterAlt": "Editor Amark con la portada del planner y la zona del año marcada"
     },
     "how": {
       "title": "Cómo funciona",
       "subtitle": "Cuatro pasos. Un PDF completo."
     },
     "screenshots": {
-      "upload": "Dashboard con proyectos de planner listos para editar",
+      "upload": "Diálogo para subir un diseño y asignarlo como página de plantilla",
       "zones": "Canvas del editor con zonas dinámicas de mes y día marcadas",
-      "range": "Selector de rango de fechas para generar un planner anual",
-      "generate": "Mapa de páginas del editor con múltiples plantillas listas para exportar"
+      "range": "Diálogo de exportación con rango de fechas y páginas estimadas",
+      "generate": "PDF generado con páginas semanales del planner listas para imprimir"
     },
     "steps": {
       "upload": {

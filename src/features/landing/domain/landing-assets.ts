@@ -5,12 +5,13 @@ export const LANDING_ASSETS = {
   stepRange: '/landing/step-range.png',
   stepGenerate: '/landing/step-generate.png',
   demoPoster: '/landing/hero-editor.png',
+  demoVideo: '/landing/demo.mp4',
   ogImage: '/landing/og-image.png',
 } as const;
 
 export const LANDING_IMAGE_SIZE = {
-  width: 1024,
-  height: 590,
+  width: 1600,
+  height: 960,
 } as const;
 
 export const DEMO_SLIDES = [
