@@ -11,7 +11,7 @@ import { HomeIcon, PencilIcon } from '@/core/icons';
 import { PATHS } from '@/core/routes/paths';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import {
-  TEMPLATE_TYPE_CONFIG,
+  pageTypeLabelKey,
   type FontId,
   type PlannerLocale,
   type WeekStartsOn,
@@ -178,7 +178,7 @@ export const EditorSidebar: React.FC = () => {
           onOpenChange={(open) => setSectionOpenState('page', open)}
         >
           <p className="editor-sidebar__main__section__content__title">
-            {currentImage ? TEMPLATE_TYPE_CONFIG[currentImage.type].label : '—'}
+            {currentImage ? t(pageTypeLabelKey(currentImage.type)) : '—'}
           </p>
           {currentImage ? <ReplacePageImageButton pageId={currentImage.id} /> : null}
         </EditorSidebarSection>

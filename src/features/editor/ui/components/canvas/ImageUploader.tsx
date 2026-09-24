@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { cloneElement, isValidElement, useCallback, useRef, useState } from 'react';
 import { Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/core/components/ui/button';
@@ -14,52 +14,61 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/core/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/core/components/ui/select';
-import { Label } from '@/core/components/ui/label';
+import { PageTypePicker } from '@/features/editor/ui/components/shared/page-type-picker/page-type-picker';
 import { useManageImages } from '@/features/editor/ui/hooks/use-manage-images';
 import { useTemplateId } from '@/features/editor/ui/hooks/use-template-id';
-import { TEMPLATE_TYPE_CONFIG, TemplateType } from '@/features/template';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
+import { suggestedTemplateType, type TemplateType } from '@/features/template';
 import './image-uploader.scss';
+
+type UploadStep = 'choose-type' | 'confirm';
+
+interface PendingImage {
+  data: string;
+  width: number;
+  height: number;
+  name: string;
+}
 
 interface ImageUploaderProps {
   className?: string;
   customButton?: React.ReactElement;
   onUploadComplete?: () => void;
+  /** Called with the new page id after a successful add. */
+  onPageAdded?: (pageId: string) => void;
   disabled?: boolean;
   /** When false, only disable the control (parent shows copy). Default: !customButton */
   showLimitHints?: boolean;
   /** Notified when a limit/upload error occurs (useful when hints are hidden). */
   onError?: (message: string | null) => void;
+  /** Override the suggested default page type. */
+  initialType?: TemplateType;
 }
 
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
   className,
   customButton,
   onUploadComplete,
+  onPageAdded,
   disabled = false,
   showLimitHints,
   onError,
+  initialType,
 }) => {
   const { t } = useTranslation();
   const templateId = useTemplateId();
+  const template = useCurrentTemplate();
   const { limits, canAddPage, pageCountFor, maxImageLabel } = usePlanLimits();
   const atPageLimit = disabled || !canAddPage(templateId);
   const hintsVisible = showLimitHints ?? !customButton;
 
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [pendingImage, setPendingImage] = useState<{
-    data: string;
-    width: number;
-    height: number;
-    name: string;
-  } | null>(null);
-  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>('monthly-calendar');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [step, setStep] = useState<UploadStep>('choose-type');
+  const [pendingImage, setPendingImage] = useState<PendingImage | null>(null);
+  const [selectedTemplateType, setSelectedTemplateType] = useState<TemplateType>(
+    initialType ?? 'monthly-calendar',
+  );
   const [error, setError] = useState<string | null>(null);
 
   const reportError = useCallback(
@@ -72,11 +81,48 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
   const { addImage } = useManageImages();
 
-  const handleImageUpload = useCallback((data: string, width: number, height: number, name: string) => {
-    setPendingImage({ data, width, height, name });
-    setUploadDialogOpen(true);
+  const resetDialog = useCallback(() => {
+    setStep('choose-type');
+    setPendingImage(null);
+  }, []);
+
+  const openDialog = useCallback(() => {
+    if (atPageLimit) {
+      reportError(t('limits.pagesLimitReached', { max: limits.maxImagesPerPlanner }));
+      return;
+    }
+    const suggested =
+      initialType ?? suggestedTemplateType(template?.images ?? []);
+    setSelectedTemplateType(suggested);
+    resetDialog();
     reportError(null);
-  }, [reportError]);
+    setDialogOpen(true);
+  }, [
+    atPageLimit,
+    initialType,
+    limits.maxImagesPerPlanner,
+    reportError,
+    resetDialog,
+    t,
+    template?.images,
+  ]);
+
+  const handleDialogOpenChange = useCallback(
+    (open: boolean) => {
+      setDialogOpen(open);
+      if (!open) resetDialog();
+    },
+    [resetDialog],
+  );
+
+  const handleContinueToUpload = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleBackToTypes = useCallback(() => {
+    setPendingImage(null);
+    setStep('choose-type');
+  }, []);
 
   const handleConfirmUpload = useCallback(() => {
     if (!pendingImage) return;
@@ -86,11 +132,12 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
 
     onUploadComplete?.();
     setPendingImage(null);
-    setUploadDialogOpen(false);
+    setDialogOpen(false);
+    resetDialog();
 
     void (async () => {
       try {
-        await addImage(
+        const pageId = await addImage(
           image.data,
           image.width,
           image.height,
@@ -98,6 +145,7 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           templateType,
         );
         reportError(null);
+        if (pageId) onPageAdded?.(pageId);
       } catch (err) {
         console.error('Error adding page:', err);
         if (err instanceof PlanLimitError && err.code === 'images') {
@@ -109,61 +157,132 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         }
       }
     })();
-  }, [pendingImage, selectedTemplateType, addImage, onUploadComplete, t, limits.maxImagesPerPlanner, maxImageLabel, reportError]);
+  }, [
+    pendingImage,
+    selectedTemplateType,
+    addImage,
+    onUploadComplete,
+    onPageAdded,
+    resetDialog,
+    t,
+    limits.maxImagesPerPlanner,
+    maxImageLabel,
+    reportError,
+  ]);
 
-  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
+  const handleFileChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = '';
+      if (!file) return;
 
-    if (atPageLimit) {
-      reportError(t('limits.pagesLimitReached', { max: limits.maxImagesPerPlanner }));
-      return;
-    }
+      if (atPageLimit) {
+        reportError(t('limits.pagesLimitReached', { max: limits.maxImagesPerPlanner }));
+        return;
+      }
 
-    if (!file.type.startsWith('image/')) {
-      reportError('Please upload an image file');
-      return;
-    }
+      if (!file.type.startsWith('image/')) {
+        reportError('Please upload an image file');
+        return;
+      }
 
-    if (file.size > limits.maxImageBytes) {
-      reportError(t('limits.imageTooLarge', { max: maxImageLabel }));
-      return;
-    }
+      if (file.size > limits.maxImageBytes) {
+        reportError(t('limits.imageTooLarge', { max: maxImageLabel }));
+        return;
+      }
 
-    try {
-      const imageData = await fileToBase64(file);
-      const img = new Image();
-      img.onload = () => {
-        handleImageUpload(imageData, img.width, img.height, file.name);
-      };
-      img.src = imageData;
-    } catch (err) {
-      console.error('Error loading image:', err);
-      reportError(err instanceof Error ? err.message : 'Error loading image');
-    }
-  }, [atPageLimit, handleImageUpload, limits.maxImageBytes, limits.maxImagesPerPlanner, maxImageLabel, t, reportError]);
+      try {
+        const imageData = await fileToBase64(file);
+        const img = new Image();
+        img.onload = () => {
+          setPendingImage({
+            data: imageData,
+            width: img.width,
+            height: img.height,
+            name: file.name,
+          });
+          setStep('confirm');
+          setDialogOpen(true);
+          reportError(null);
+        };
+        img.onerror = () => {
+          reportError('Error loading image');
+        };
+        img.src = imageData;
+      } catch (err) {
+        console.error('Error loading image:', err);
+        reportError(err instanceof Error ? err.message : 'Error loading image');
+      }
+    },
+    [
+      atPageLimit,
+      limits.maxImageBytes,
+      limits.maxImagesPerPlanner,
+      maxImageLabel,
+      t,
+      reportError,
+    ],
+  );
 
   const usageLabel = t('limits.pagesUsage', {
     used: pageCountFor(templateId),
     max: limits.maxImagesPerPlanner,
   });
 
+  const trigger = customButton && isValidElement(customButton) ? (
+    cloneElement(customButton as React.ReactElement<Record<string, unknown>>, {
+      onClick: (event: React.MouseEvent) => {
+        const existing = (customButton.props as { onClick?: (e: React.MouseEvent) => void })
+          .onClick;
+        existing?.(event);
+        if (!event.defaultPrevented) openDialog();
+      },
+      ...(typeof (customButton.type) === 'string' && customButton.type !== 'button'
+        ? {}
+        : {
+            disabled:
+              atPageLimit ||
+              Boolean((customButton.props as { disabled?: boolean }).disabled),
+          }),
+      ...(typeof customButton.type === 'string' && customButton.type === 'div'
+        ? {
+            role: 'button',
+            tabIndex: atPageLimit ? -1 : 0,
+            onKeyDown: (event: React.KeyboardEvent) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                openDialog();
+              }
+            },
+          }
+        : {}),
+    })
+  ) : (
+    <Button
+      variant="outline"
+      className="image-uploader__button"
+      disabled={atPageLimit}
+      onClick={openDialog}
+    >
+      <Upload className="image-uploader__icon" />
+      {t('limits.pagesAdd')}
+    </Button>
+  );
+
+  const isChooseStep = step === 'choose-type';
+
   return (
     <div className={cn('image-uploader', className, atPageLimit && 'image-uploader--disabled')}>
-      {customButton ?? (
-        <Button variant="outline" className="image-uploader__button" disabled={atPageLimit}>
-          <Upload className="image-uploader__icon" />
-          Upload Image
-        </Button>
-      )}
+      {trigger}
       <input
+        ref={fileInputRef}
         type="file"
         accept="image/png,image/jpeg,image/webp"
         onChange={handleFileChange}
         className="image-uploader__input"
         disabled={atPageLimit}
-        title={atPageLimit ? t('limits.pagesLimitReached', { max: limits.maxImagesPerPlanner }) : undefined}
+        tabIndex={-1}
+        aria-hidden
       />
       {hintsVisible ? (
         atPageLimit ? (
@@ -175,55 +294,59 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
         )
       ) : null}
       {hintsVisible && error ? <p className="image-uploader__limit-message">{error}</p> : null}
-      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-        <DialogContent>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogOpenChange}>
+        <DialogContent className="dialog-content--wide image-uploader__dialog">
           <DialogHeader>
-            <DialogTitle>Add Template Page</DialogTitle>
+            <DialogTitle>
+              {isChooseStep
+                ? t('editor.addPage.titleChoose')
+                : t('editor.addPage.titleConfirm')}
+            </DialogTitle>
             <DialogDescription>
-              Select the type of page this image represents.
+              {isChooseStep
+                ? t('editor.addPage.descriptionChoose')
+                : t('editor.addPage.descriptionConfirm')}
             </DialogDescription>
           </DialogHeader>
-          <div className="image-uploader__dialog-body">
-            {pendingImage && (
+          <div
+            key={step}
+            className="image-uploader__dialog-body image-uploader__dialog-body--animated"
+          >
+            {step === 'confirm' && pendingImage ? (
               <div className="image-uploader__preview">
                 <img
                   src={pendingImage.data}
-                  alt="Preview"
+                  alt=""
                   className="image-uploader__preview-image"
                 />
               </div>
-            )}
-            <div>
-              <Label>Page Type</Label>
-              <Select
-                value={selectedTemplateType}
-                onValueChange={(v) => setSelectedTemplateType(v as TemplateType)}
-              >
-                <SelectTrigger className="select-trigger--spaced-top">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(Object.keys(TEMPLATE_TYPE_CONFIG) as TemplateType[]).map(type => (
-                    <SelectItem key={type} value={type}>
-                      <div>
-                        <div>{TEMPLATE_TYPE_CONFIG[type].label}</div>
-                        <div className="select-item-description">
-                          {TEMPLATE_TYPE_CONFIG[type].description}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            ) : null}
+            <PageTypePicker
+              value={selectedTemplateType}
+              onChange={setSelectedTemplateType}
+              showHint={isChooseStep}
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmUpload}>
-              Add Page
-            </Button>
+            {isChooseStep ? (
+              <>
+                <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
+                  {t('common.cancel')}
+                </Button>
+                <Button onClick={handleContinueToUpload}>
+                  {t('editor.addPage.uploadImage')}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleBackToTypes}>
+                  {t('editor.addPage.backToTypes')}
+                </Button>
+                <Button onClick={handleConfirmUpload} disabled={!pendingImage}>
+                  {t('editor.addPage.addPage')}
+                </Button>
+              </>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -456,13 +456,56 @@
     "replacePageImage": "Replace image",
     "replacePageImageHint": "Upload a new background image. The page type, order, and configured blocks are preserved.",
     "replacePageImageInProgress": "Replacing image…",
+    "addPage": {
+      "titleChoose": "What kind of page is this?",
+      "descriptionChoose": "Pick a type so dated blocks and page order work as expected.",
+      "titleConfirm": "Confirm new page",
+      "descriptionConfirm": "Check the preview and type, then add it to your planner.",
+      "uploadImage": "Upload image",
+      "addPage": "Add page",
+      "backToTypes": "Change type",
+      "categoryStructure": "Structure",
+      "categoryPlanning": "Planning",
+      "hintStructure": "Section pages — great for covers, dividers, and notes without a calendar grid.",
+      "hintPlanning": "Dated pages — unlock dynamic date blocks that fill in when you export."
+    },
+    "pageTypes": {
+      "cover": {
+        "label": "Cover",
+        "description": "Main planner cover page"
+      },
+      "yearly-calendar": {
+        "label": "Yearly calendar",
+        "description": "Year overview with months"
+      },
+      "month-cover": {
+        "label": "Month cover",
+        "description": "Monthly section divider"
+      },
+      "monthly-calendar": {
+        "label": "Monthly calendar",
+        "description": "Full month calendar view"
+      },
+      "weekly-calendar": {
+        "label": "Weekly calendar",
+        "description": "Week-by-week planning pages"
+      },
+      "daily-page": {
+        "label": "Daily page",
+        "description": "Single-day planning pages"
+      },
+      "extra": {
+        "label": "Extra page",
+        "description": "Notes, goals, or custom pages"
+      }
+    },
     "setup": {
       "stepIndicator": "Step {{current}} of {{total}}",
       "preferencesTitle": "Set up your planner",
       "preferencesDescription": "Choose the language and week start for dated pages. You can change these later in settings.",
-      "uploadTitle": "Upload your first page",
-      "uploadDescription": "Add a PNG, JPEG, or WebP of your design to start placing dynamic blocks.",
-      "uploadCta": "Upload first page",
+      "uploadTitle": "Add your first page",
+      "uploadDescription": "Choose the page type, then upload a PNG, JPEG, or WebP of your design.",
+      "uploadCta": "Choose page type",
       "uploadFormats": "PNG, JPEG or WebP",
       "backToPreferences": "Back to preferences",
       "addBlocksHint": "Available after you upload your first page."

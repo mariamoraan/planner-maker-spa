@@ -42,7 +42,15 @@ export type {
 export type { ImageRef } from './domain/value-objects/image-ref';
 
 // Constants
-export { FIELD_TYPE_CONFIG, TEMPLATE_TYPE_CONFIG } from './domain/constants/field-type-config';
+export {
+  FIELD_TYPE_CONFIG,
+  TEMPLATE_TYPE_CONFIG,
+  TEMPLATE_TYPE_PICKER_GROUPS,
+  pageTypeLabelKey,
+  pageTypeDescriptionKey,
+  suggestedTemplateType,
+} from './domain/constants/field-type-config';
+export type { TemplateTypeCategory } from './domain/constants/field-type-config';
 export { TEMPLATE_FIELD_TYPES } from './domain/constants/template-field-types';
 export {
   COMPOSITE_PRESETS,

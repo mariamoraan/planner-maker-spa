@@ -77,3 +77,44 @@
   line-height: 1.35;
   color: #666;
 }
+
+.dev-tools-panel__hint code {
+  font-size: 0.65rem;
+}
+
+.dev-tools-panel__section {
+  margin-top: 0.9rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgb(0 0 0 / 10%);
+}
+
+.dev-tools-panel__section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.dev-tools-panel__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dev-tools-panel__action {
+  width: 100%;
+  justify-content: center;
+}
+
+.dev-tools-panel__status {
+  margin: 0.45rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #166534;
+}
+
+.dev-tools-panel__status--error {
+  color: #991b1b;
+}

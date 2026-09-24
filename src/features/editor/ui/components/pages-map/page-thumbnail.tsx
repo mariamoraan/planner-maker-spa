@@ -2,7 +2,7 @@ import { useTemplateStore } from "@/features/template/ui/stores/template-store";
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { TemplateImage } from "@/features/template";
 import clsx from "clsx";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import useOnClickOutside from "@/core/hooks/use-on-click-outside";
 import './page-thumbnail.scss'
@@ -11,11 +11,12 @@ import { Trash } from "lucide-react";
 
 const EXIT_MS = 200;
 
-interface Props {
+interface PageThumbnailProps {
     image: TemplateImage;
+    spotlight?: boolean;
 }
 
-export const PageThumbnail = ({image}: Props) => {
+export const PageThumbnail = ({image, spotlight = false}: PageThumbnailProps) => {
     const [isContextMenuOpen, setIsContextMenuOpen] = useState(false);
     const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
     const [isExiting, setIsExiting] = useState(false);
@@ -66,12 +67,22 @@ export const PageThumbnail = ({image}: Props) => {
         }, EXIT_MS);
     };
 
+    useEffect(() => {
+        if (!spotlight) return;
+        thumbnailRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            inline: 'nearest',
+            block: 'nearest',
+        });
+    }, [spotlight]);
+
     return (
         <div
             ref={thumbnailRef}
             className={clsx('page-thumbnail', {
                 'page-thumbnail--menu-open': isContextMenuOpen,
                 'page-thumbnail--exiting': isExiting,
+                'page-thumbnail--spotlight': spotlight,
             })}
         >
             <button 

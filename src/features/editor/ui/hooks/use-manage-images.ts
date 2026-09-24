@@ -119,7 +119,7 @@ export const useManageImages = () => {
         height: number,
         name: string,
         type: TemplateType
-      ) => {
+      ): Promise<string | undefined> => {
         if (!templateId) return;
 
         const template = getTemplate(templateId);
@@ -128,7 +128,7 @@ export const useManageImages = () => {
 
         const updated = getTemplate(templateId);
         const image = updated?.images.find(img => img.id === id);
-        if (!image) return;
+        if (!image) return id;
 
         pushHistory(templateId, {
           type: 'addImage',
@@ -136,6 +136,8 @@ export const useManageImages = () => {
           imageData,
           index,
         });
+
+        return id;
       }, [templateId, addImageToStore, getTemplate, pushHistory]);
 
     const uploadImageToEmptyCanvas = useCallback(async (

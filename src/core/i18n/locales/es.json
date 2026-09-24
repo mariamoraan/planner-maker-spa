@@ -456,13 +456,56 @@
     "replacePageImage": "Reemplazar imagen",
     "replacePageImageHint": "Sube una nueva imagen de fondo. Se mantienen el tipo, el orden y los bloques configurados.",
     "replacePageImageInProgress": "Reemplazando imagen…",
+    "addPage": {
+      "titleChoose": "¿Qué tipo de página es?",
+      "descriptionChoose": "Elige el tipo para que los bloques datados y el orden de páginas funcionen bien.",
+      "titleConfirm": "Confirmar página nueva",
+      "descriptionConfirm": "Revisa la vista previa y el tipo, y añádela a tu planner.",
+      "uploadImage": "Subir imagen",
+      "addPage": "Añadir página",
+      "backToTypes": "Cambiar tipo",
+      "categoryStructure": "Estructura",
+      "categoryPlanning": "Planificación",
+      "hintStructure": "Páginas de sección — ideales para portadas, separadores y notas sin rejilla de calendario.",
+      "hintPlanning": "Páginas datadas — activan bloques dinámicos de fecha que se rellenan al exportar."
+    },
+    "pageTypes": {
+      "cover": {
+        "label": "Portada",
+        "description": "Portada principal del planner"
+      },
+      "yearly-calendar": {
+        "label": "Calendario anual",
+        "description": "Vista del año con los meses"
+      },
+      "month-cover": {
+        "label": "Portada de mes",
+        "description": "Separador de sección mensual"
+      },
+      "monthly-calendar": {
+        "label": "Calendario mensual",
+        "description": "Vista completa del mes"
+      },
+      "weekly-calendar": {
+        "label": "Calendario semanal",
+        "description": "Páginas de planificación por semana"
+      },
+      "daily-page": {
+        "label": "Página diaria",
+        "description": "Páginas de un solo día"
+      },
+      "extra": {
+        "label": "Página extra",
+        "description": "Notas, objetivos u otras páginas"
+      }
+    },
     "setup": {
       "stepIndicator": "Paso {{current}} de {{total}}",
       "preferencesTitle": "Configura tu planner",
       "preferencesDescription": "Elige el idioma y el inicio de semana para las páginas datadas. Podrás cambiarlo después en ajustes.",
-      "uploadTitle": "Sube tu primera página",
-      "uploadDescription": "Añade un PNG, JPEG o WebP de tu diseño para empezar a colocar bloques dinámicos.",
-      "uploadCta": "Subir primera página",
+      "uploadTitle": "Añade tu primera página",
+      "uploadDescription": "Elige el tipo de página y sube un PNG, JPEG o WebP de tu diseño.",
+      "uploadCta": "Elegir tipo de página",
       "uploadFormats": "PNG, JPEG o WebP",
       "backToPreferences": "Volver a preferencias",
       "addBlocksHint": "Disponible cuando subas tu primera página."

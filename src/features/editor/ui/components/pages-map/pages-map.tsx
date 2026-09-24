@@ -1,5 +1,5 @@
 import './pages-map.scss';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   DndContext,
@@ -19,6 +19,8 @@ import { groupImagesByType, TEMPLATE_TYPE_ORDER } from '@/features/template/doma
 import { PagesMapGroup } from './pages-map-group';
 import { markPendingControlsTour } from '@/features/editor/ui/components/editor-controls-tour/controls-tour-storage';
 
+const SPOTLIGHT_MS = 700;
+
 export const PagesMap = () => {
   const { t } = useTranslation();
   const template = useCurrentTemplate();
@@ -28,6 +30,8 @@ export const PagesMap = () => {
   const pageCount = pageCountFor(template?.id);
   const atPageLimit = !canAddPage(template?.id);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [spotlightPageId, setSpotlightPageId] = useState<string | null>(null);
+  const spotlightTimerRef = useRef<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -51,6 +55,17 @@ export const PagesMap = () => {
 
     reorderImages(String(active.id), String(over.id));
   };
+
+  const handlePageAdded = useCallback((pageId: string) => {
+    if (spotlightTimerRef.current != null) {
+      window.clearTimeout(spotlightTimerRef.current);
+    }
+    setSpotlightPageId(pageId);
+    spotlightTimerRef.current = window.setTimeout(() => {
+      setSpotlightPageId(null);
+      spotlightTimerRef.current = null;
+    }, SPOTLIGHT_MS);
+  }, []);
 
   const usageCompact = t('limits.pagesUsageCompact', {
     used: pageCount,
@@ -105,6 +120,7 @@ export const PagesMap = () => {
       </div>
       <ImageUploader
         onUploadComplete={!images?.length ? markPendingControlsTour : undefined}
+        onPageAdded={handlePageAdded}
         showLimitHints={false}
         onError={setUploadError}
         customButton={
@@ -150,6 +166,7 @@ export const PagesMap = () => {
               type={type}
               images={groupedImages[type]!}
               showSeparator={index > 0}
+              spotlightPageId={spotlightPageId}
             />
           ))}
         </div>

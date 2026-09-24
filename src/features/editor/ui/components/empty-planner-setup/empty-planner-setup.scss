@@ -148,7 +148,7 @@
     border-radius: 8px;
     background: hsl(var(--muted) / 0.25);
     color: hsl(var(--muted-foreground));
-    pointer-events: none;
+    cursor: pointer;
     transition:
       border-color 150ms ease,
       color 150ms ease,

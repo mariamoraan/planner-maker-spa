@@ -10,9 +10,10 @@ const PAGES_MAP_THUMBNAIL_HEIGHT = 72;
 
 interface Props {
   unit: PageUnit;
+  spotlightPageId?: string | null;
 }
 
-export const SortablePageThumbnail = ({ unit }: Props) => {
+export const SortablePageThumbnail = ({ unit, spotlightPageId = null }: Props) => {
   const unitId = getUnitId(unit);
   const primary = getUnitPrimaryPage(unit);
   const {
@@ -36,6 +37,11 @@ export const SortablePageThumbnail = ({ unit }: Props) => {
     width,
   };
 
+  const isSpotlight =
+    unit.kind === 'spread'
+      ? unit.left.id === spotlightPageId || unit.right.id === spotlightPageId
+      : unit.page.id === spotlightPageId;
+
   return (
     <li
       ref={setNodeRef}
@@ -43,17 +49,18 @@ export const SortablePageThumbnail = ({ unit }: Props) => {
       className={clsx('pages-map__li', {
         'pages-map__li--dragging': isDragging,
         'pages-map__li--spread': unit.kind === 'spread',
+        'pages-map__li--spotlight': isSpotlight,
       })}
       {...attributes}
       {...listeners}
     >
       {unit.kind === 'spread' ? (
         <div className="pages-map__spread-thumbs">
-          <PageThumbnail image={unit.left} />
-          <PageThumbnail image={unit.right} />
+          <PageThumbnail image={unit.left} spotlight={unit.left.id === spotlightPageId} />
+          <PageThumbnail image={unit.right} spotlight={unit.right.id === spotlightPageId} />
         </div>
       ) : (
-        <PageThumbnail image={unit.page} />
+        <PageThumbnail image={unit.page} spotlight={isSpotlight} />
       )}
     </li>
   );

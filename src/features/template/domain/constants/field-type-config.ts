@@ -55,39 +55,77 @@ export const FIELD_TYPE_CONFIG: Record<
   },
 };
 
+export type TemplateTypeCategory = 'structure' | 'planning';
+
 export const TEMPLATE_TYPE_CONFIG: Record<
   TemplateType,
   {
     label: string;
     description: string;
+    category: TemplateTypeCategory;
   }
 > = {
   cover: {
     label: 'Cover',
     description: 'Main planner cover page',
+    category: 'structure',
   },
   'yearly-calendar': {
     label: 'Yearly Calendar',
     description: 'Year overview with months',
+    category: 'planning',
   },
   'month-cover': {
     label: 'Month Cover',
     description: 'Monthly section divider',
+    category: 'structure',
   },
   'monthly-calendar': {
     label: 'Monthly Calendar',
     description: 'Full month calendar view',
+    category: 'planning',
   },
   'weekly-calendar': {
     label: 'Weekly Calendar',
     description: 'Week-by-week planning pages',
+    category: 'planning',
   },
   'daily-page': {
     label: 'Daily Page',
     description: 'Single-day planning pages',
+    category: 'planning',
   },
   extra: {
     label: 'Extra Page',
     description: 'Notes, goals, or custom pages',
+    category: 'structure',
   },
 };
+
+/** Display order within add-page picker groups (not insert order). */
+export const TEMPLATE_TYPE_PICKER_GROUPS: ReadonlyArray<{
+  category: TemplateTypeCategory;
+  types: readonly TemplateType[];
+}> = [
+  { category: 'structure', types: ['cover', 'month-cover', 'extra'] },
+  {
+    category: 'planning',
+    types: ['yearly-calendar', 'monthly-calendar', 'weekly-calendar', 'daily-page'],
+  },
+];
+
+export function pageTypeLabelKey(type: TemplateType): string {
+  return `editor.pageTypes.${type}.label`;
+}
+
+export function pageTypeDescriptionKey(type: TemplateType): string {
+  return `editor.pageTypes.${type}.description`;
+}
+
+/** Prefer cover when the planner has none yet; otherwise monthly calendar. */
+export function suggestedTemplateType(
+  images: ReadonlyArray<{ type: TemplateType }>,
+): TemplateType {
+  if (!images.some(img => img.type === 'cover')) return 'cover';
+  return 'monthly-calendar';
+}
