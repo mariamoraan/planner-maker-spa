@@ -68,6 +68,37 @@
     font-size: 0.75rem;
     color: hsl(var(--muted-foreground));
     line-height: 1.4;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem;
+    min-height: 1.05rem;
+  }
+
+  &__phase {
+    flex-shrink: 0;
+  }
+
+  &__separator {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+
+  &__detail {
+    position: relative;
+    display: inline-flex;
+    min-height: 1.05rem;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__detail-text {
+    display: inline-block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    font-variant-numeric: tabular-nums;
   }
 
   &__percent {

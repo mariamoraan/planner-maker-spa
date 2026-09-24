@@ -1,15 +1,18 @@
 import { create } from 'zustand';
 import type { Template } from '@/features/template';
-import type { GeneratedPage } from '@/features/export/domain/entities/generated-page';
 import {
   buildExportKey,
   runExport,
   triggerPdfDownload,
+  type ExportPageType,
+  type ExportPhase,
+  type ExportPdfStep,
+  type ExportProgressDetail,
 } from '@/features/export/domain/services/planner-export';
 import { trackEvent } from '@/features/template/use-case/commands/analytics.commands';
 
 export type ExportStatus = 'idle' | 'running' | 'complete' | 'error';
-export type ExportPhase = 'pages' | 'pdf' | null;
+export type { ExportPhase, ExportPageType, ExportPdfStep, ExportProgressDetail };
 
 interface PendingExport {
   template: Template;
@@ -21,12 +24,12 @@ interface PendingExport {
 interface ExportState {
   status: ExportStatus;
   progress: number;
-  phase: ExportPhase;
+  phase: ExportPhase | null;
+  progressDetail: ExportProgressDetail | null;
   fileName: string | null;
   pdfBlobUrl: string | null;
   error: string | null;
   exportKey: string | null;
-  cachedPages: GeneratedPage[] | null;
   pendingExport: PendingExport | null;
   isGeneratorOpen: boolean;
   includeInternalLinks: boolean;
@@ -54,18 +57,17 @@ export const useExportStore = create<ExportState>((set, get) => ({
   status: 'idle',
   progress: 0,
   phase: null,
+  progressDetail: null,
   fileName: null,
   pdfBlobUrl: null,
   error: null,
   exportKey: null,
-  cachedPages: null,
   pendingExport: null,
   isGeneratorOpen: false,
   includeInternalLinks: true,
 
   startExport: (template, startDate, endDate, options) => {
-    const { status, cachedPages, exportKey: cachedKey, pdfBlobUrl, includeInternalLinks: storeLinks } =
-      get();
+    const { status, pdfBlobUrl, includeInternalLinks: storeLinks } = get();
     if (status === 'running') return;
 
     const includeInternalLinks = options?.includeInternalLinks ?? storeLinks;
@@ -78,14 +80,13 @@ export const useExportStore = create<ExportState>((set, get) => ({
       includeInternalLinks,
     );
 
-    const canUseCache = cachedKey === exportKey && cachedPages && cachedPages.length > 0;
-
     revokeBlobUrl(pdfBlobUrl);
 
     set({
       status: 'running',
       progress: 0,
-      phase: 'pages',
+      phase: 'preparing',
+      progressDetail: { current: 0, total: 1 },
       fileName: `${template.name}.pdf`,
       pdfBlobUrl: null,
       error: null,
@@ -97,25 +98,27 @@ export const useExportStore = create<ExportState>((set, get) => ({
       template,
       startDate,
       endDate,
-      cachedPages: canUseCache ? cachedPages : null,
-      cachedKey: canUseCache ? cachedKey : null,
       includeInternalLinks,
-      onProgress: (progress, phase) => {
-        set({ progress: Math.min(100, Math.max(0, progress)), phase });
+      onProgress: (progress, phase, detail) => {
+        set({
+          progress: Math.min(100, Math.max(0, progress)),
+          phase,
+          progressDetail: detail ?? null,
+        });
       },
     })
-      .then(({ pdfBytes, fileName, pages }) => {
+      .then(({ pdfBytes, fileName, pageCount }) => {
         const blobUrl = triggerPdfDownload(pdfBytes, fileName);
         trackEvent('planner_downloaded', { templateId: template.id });
-        trackEvent('planner_generated', { templateId: template.id, pageCount: pages.length });
+        trackEvent('planner_generated', { templateId: template.id, pageCount });
         set({
           status: 'complete',
           progress: 100,
           phase: null,
+          progressDetail: null,
           fileName,
           pdfBlobUrl: blobUrl,
           exportKey,
-          cachedPages: pages,
           pendingExport: null,
         });
       })
@@ -123,6 +126,7 @@ export const useExportStore = create<ExportState>((set, get) => ({
         set({
           status: 'error',
           phase: null,
+          progressDetail: null,
           error: err instanceof Error ? err.message : 'Export failed',
         });
       });
@@ -132,7 +136,7 @@ export const useExportStore = create<ExportState>((set, get) => ({
     const { pendingExport } = get();
     if (!pendingExport) return;
     const { template, startDate, endDate, includeInternalLinks } = pendingExport;
-    set({ status: 'idle', error: null, progress: 0 });
+    set({ status: 'idle', error: null, progress: 0, progressDetail: null });
     get().startExport(template, startDate, endDate, { includeInternalLinks });
   },
 
@@ -142,6 +146,7 @@ export const useExportStore = create<ExportState>((set, get) => ({
       status: 'idle',
       progress: 0,
       phase: null,
+      progressDetail: null,
       fileName: null,
       pdfBlobUrl: null,
       error: null,

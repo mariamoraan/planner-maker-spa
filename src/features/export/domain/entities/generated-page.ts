@@ -11,8 +11,11 @@ export type PdfPageLink = {
   destPageNumber: number;
 };
 
+/** PNG payload: Uint8Array preferred; data-URL string kept for tests / legacy. */
+export type PageImageData = string | Uint8Array;
+
 export interface GeneratedPage {
-  imageData: string;
+  imageData: PageImageData;
   width: number;
   height: number;
   paperSize?: PaperSize;

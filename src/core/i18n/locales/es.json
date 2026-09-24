@@ -553,5 +553,33 @@
     "includeInternalLinks": "Incluir enlaces internos (GoodNotes)",
     "includeInternalLinksHint": "Los días del calendario saltan a daily, weekly o monthly. Usa modo lectura en GoodNotes.",
     "downloadPdf": "Descargar PDF"
+  },
+  "exportProgress": {
+    "title": "Exportando planner",
+    "dismiss": "Cerrar",
+    "detailSeparator": "·",
+    "pagesOf": "{{current}} / {{total}}",
+    "pagesCount": "{{phase}} · {{pages}}",
+    "pagesDetail": "{{phase}} · {{pages}} · {{pageType}}",
+    "readyTitle": "Tu planner está listo",
+    "readySubtitle": "La descarga ha empezado automáticamente",
+    "openPdf": "Abrir PDF",
+    "failedTitle": "Error al exportar",
+    "failedFallback": "Algo salió mal durante la exportación.",
+    "retry": "Reintentar",
+    "phases": {
+      "preparing": "Preparando fuentes e imágenes…",
+      "pages": "Generando páginas…",
+      "linking": "Añadiendo enlaces de navegación…",
+      "pdf": "Creando PDF…"
+    },
+    "pdfSteps": {
+      "packaging": "Preparando PDF…",
+      "embedding": "Creando PDF…",
+      "finalizing": "Finalizando PDF…"
+    },
+    "pageTypes": {
+      "blank": "Página en blanco"
+    }
   }
 }

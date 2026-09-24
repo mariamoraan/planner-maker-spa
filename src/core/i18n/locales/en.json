@@ -553,5 +553,33 @@
     "includeInternalLinks": "Include internal links (GoodNotes)",
     "includeInternalLinksHint": "Calendar days jump to daily, weekly, or monthly pages. Use Read-Only mode in GoodNotes.",
     "downloadPdf": "Download PDF"
+  },
+  "exportProgress": {
+    "title": "Exporting planner",
+    "dismiss": "Dismiss",
+    "detailSeparator": "·",
+    "pagesOf": "{{current}} / {{total}}",
+    "pagesCount": "{{phase}} · {{pages}}",
+    "pagesDetail": "{{phase}} · {{pages}} · {{pageType}}",
+    "readyTitle": "Your planner is ready",
+    "readySubtitle": "Download started automatically",
+    "openPdf": "Open PDF",
+    "failedTitle": "Export failed",
+    "failedFallback": "Something went wrong while exporting.",
+    "retry": "Retry",
+    "phases": {
+      "preparing": "Preparing fonts and images…",
+      "pages": "Generating pages…",
+      "linking": "Adding navigation links…",
+      "pdf": "Building PDF…"
+    },
+    "pdfSteps": {
+      "packaging": "Preparing PDF…",
+      "embedding": "Building PDF…",
+      "finalizing": "Finalizing PDF…"
+    },
+    "pageTypes": {
+      "blank": "Blank page"
+    }
   }
 }

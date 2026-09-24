@@ -6,6 +6,7 @@ import {
 import type { PaperSize } from '@/features/template/domain/services/paper-size';
 import { paperSizeToPixels } from '@/features/template/domain/services/paper-size';
 import type { GeneratedPage } from '@/features/export/domain/entities/generated-page';
+import { canvasToPngBytes } from '@/features/export/domain/services/canvas-png';
 
 /** Faces a content unit contributes to the PDF (before parity blanks). */
 export function unitFaceCount(unit: PageUnit): number {
@@ -36,11 +37,11 @@ export function unitsForType(images: TemplateImage[], type: TemplateType): PageU
   return groupImagesOfTypeAsUnits(images, type);
 }
 
-export function createBlankGeneratedPage(
+export async function createBlankGeneratedPage(
   pagesLength: number,
   paperSize: PaperSize | undefined,
   fallbackSize: { width: number; height: number }
-): GeneratedPage {
+): Promise<GeneratedPage> {
   const size = paperSize ? paperSizeToPixels(paperSize) : fallbackSize;
   const canvas = document.createElement('canvas');
   canvas.width = size.width;
@@ -52,7 +53,7 @@ export function createBlankGeneratedPage(
   }
 
   return {
-    imageData: canvas.toDataURL('image/png'),
+    imageData: await canvasToPngBytes(canvas),
     width: size.width,
     height: size.height,
     paperSize,
