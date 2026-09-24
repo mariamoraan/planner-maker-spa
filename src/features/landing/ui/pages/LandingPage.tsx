@@ -5,9 +5,11 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { AudienceSection } from '@/features/landing/ui/components/audience-section/audience-section';
 import { BenefitsSection } from '@/features/landing/ui/components/benefits-section/benefits-section';
+import { EditorShowcaseMockup } from '@/features/landing/ui/components/editor-showcase-mockup/editor-showcase-mockup';
 import { TryDemoCta } from '@/features/landing/ui/components/try-demo-cta/try-demo-cta';
 import { DemoVideo } from '@/features/landing/ui/components/demo-video/demo-video';
 import { HowItWorksTimeline } from '@/features/landing/ui/components/how-it-works-timeline/how-it-works-timeline';
+import { ValueStrip } from '@/features/landing/ui/components/value-strip/value-strip';
 import { WaitlistForm } from '@/features/landing/ui/components/waitlist-form/waitlist-form';
 import { SignInLink } from '@/features/landing/ui/components/sign-in-link/sign-in-link';
 import { trackPageView } from '@/features/template/use-case/commands/analytics.commands';
@@ -69,10 +71,10 @@ export default function LandingPage() {
           </button>
 
           <nav id="landing-nav" className="landing-page__nav">
-            <a href="#compare" onClick={closeMenu}>{t('landing.nav.compare')}</a>
-            <a href="#benefits" onClick={closeMenu}>{t('landing.nav.benefits')}</a>
-            <a href="#demo" onClick={closeMenu}>{t('landing.nav.demo')}</a>
             <a href="#how" onClick={closeMenu}>{t('landing.nav.how')}</a>
+            <a href="#benefits" onClick={closeMenu}>{t('landing.nav.benefits')}</a>
+            <a href="#compare" onClick={closeMenu}>{t('landing.nav.compare')}</a>
+            <a href="#demo" onClick={closeMenu}>{t('landing.nav.demo')}</a>
             <a href="#waitlist" onClick={closeMenu}>{t('landing.nav.waitlist')}</a>
           </nav>
 
@@ -104,6 +106,9 @@ export default function LandingPage() {
             <li key={pill}>{pill}</li>
           ))}
         </ul>
+        <div className="landing-page__hero-showcase">
+          <EditorShowcaseMockup />
+        </div>
         <div className="landing-page__hero-waitlist">
           <WaitlistForm source="landing_hero" />
         </div>
@@ -116,7 +121,9 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      <AudienceSection />
+      <ValueStrip />
+
+      <HowItWorksTimeline />
 
       <BenefitsSection />
 
@@ -176,7 +183,7 @@ export default function LandingPage() {
 
       <DemoVideo />
 
-      <HowItWorksTimeline />
+      <AudienceSection />
 
       <section id="waitlist" className="landing-page__section landing-page__section--dark">
         <div className="landing-page__container landing-page__waitlist-section">
@@ -220,10 +227,10 @@ export default function LandingPage() {
             <div className="landing-page__footer-center">
               <p className="landing-page__footer-label">{t('landing.nav.waitlist')}</p>
               <ul className="landing-page__footer-links">
-                <li><a href="#compare">{t('landing.nav.compare')}</a></li>
-                <li><a href="#benefits">{t('landing.nav.benefits')}</a></li>
-                <li><a href="#demo">{t('landing.nav.demo')}</a></li>
                 <li><a href="#how">{t('landing.nav.how')}</a></li>
+                <li><a href="#benefits">{t('landing.nav.benefits')}</a></li>
+                <li><a href="#compare">{t('landing.nav.compare')}</a></li>
+                <li><a href="#demo">{t('landing.nav.demo')}</a></li>
                 <li><a href="#waitlist">{t('landing.nav.waitlist')}</a></li>
               </ul>
             </div>

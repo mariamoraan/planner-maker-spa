@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Clock, Sparkles, FileDown, Globe } from 'lucide-react';
+import { Clock, Sparkles, FileDown, Link2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import './benefits-section.scss';
 
@@ -8,7 +8,7 @@ const fadeUp = {
   visible: { opacity: 1, y: 0 },
 };
 
-const icons = [Clock, Sparkles, FileDown, Globe];
+const icons = [Clock, Sparkles, FileDown, Link2];
 
 export function BenefitsSection() {
   const { t } = useTranslation();

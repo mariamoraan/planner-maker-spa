@@ -22,7 +22,7 @@
     "nav": {
       "how": "Cómo funciona",
       "compare": "Comparativa",
-      "benefits": "Beneficios",
+      "benefits": "Qué obtienes",
       "demo": "Demo",
       "waitlist": "Lista de espera",
       "menuOpen": "Abrir menú",
@@ -31,12 +31,12 @@
     "hero": {
       "badge": "Early access · Lista de espera abierta",
       "title": "Tu diseño. 365 páginas fechadas. 15 minutos.",
-      "subtitle": "Para creadoras de planners que pierden horas duplicando spreads en Canva o Photoshop — sube tu layout una vez y obtén un PDF listo para imprimir automáticamente.",
+      "subtitle": "Sube tus layouts sin fechar una vez — Amark genera un PDF fechado completo con hyperlinks de GoodNotes. Sin duplicar spreads en Canva o Photoshop.",
       "cta": "Unirme a la lista de espera",
       "pills": [
-        "Tu propio diseño",
-        "PDF print-ready",
-        "Calendarios EN / ES"
+        "Sube tu diseño",
+        "PDF fechado",
+        "Links GoodNotes"
       ]
     },
     "showcase": {
@@ -50,6 +50,24 @@
       "endDate": "31 dic 2026",
       "a11yLabel": "Vista previa animada del flujo de trabajo del editor Amark"
     },
+    "valueStrip": {
+      "title": "Del artwork al PDF fechado",
+      "subtitle": "Tres movimientos. Un planner completo.",
+      "steps": [
+        {
+          "title": "Tú subes",
+          "text": "Portadas, layouts semanales y diarios — tu artwork existente."
+        },
+        {
+          "title": "Tú marcas zonas de fecha",
+          "text": "Coloca mes, día y año exactamente donde van en el canvas."
+        },
+        {
+          "title": "Amark genera",
+          "text": "Páginas fechadas, PDF listo para imprimir e hyperlinks táctiles de GoodNotes."
+        }
+      ]
+    },
     "compare": {
       "title": "Manual vs Amark",
       "subtitle": "Deja de perder fines de semana en copiar y pegar. Mira exactamente dónde ahorras tiempo.",
@@ -59,7 +77,7 @@
           "Duplicar 52+ spreads a mano",
           "Teclear cada mes, día y día de la semana",
           "Reordenar páginas cuando cambia el calendario",
-          "Exportar página a página y unir"
+          "Añadir links de GoodNotes a mano"
         ],
         "time": "8–15 horas para un planner anual"
       },
@@ -69,19 +87,19 @@
           "Sube tu layout una sola vez",
           "Marca zonas dinámicas en el canvas",
           "Elige un rango de fechas y genera",
-          "Descarga un PDF listo para imprimir"
+          "Descarga un PDF fechado con links GoodNotes"
         ],
         "time": "~15 minutos para el mismo resultado"
       }
     },
     "audience": {
       "title": "Hecho para creadoras de planners",
-      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Amark se encarga de las fechas.",
+      "subtitle": "Vendas en Etsy o diseñes para ti — si ya tienes el artwork, Amark se encarga de las fechas y los links de GoodNotes.",
       "cards": [
         {
           "title": "Vendedoras Etsy y digitales",
           "pain": "Un planner anual son 365 páginas que duplicar y fechar a mano.",
-          "solution": "Genera un PDF fechado completo desde una plantilla y lanza más rápido."
+          "solution": "Genera un PDF fechado completo con hyperlinks de GoodNotes desde una plantilla y lanza más rápido."
         },
         {
           "title": "Diseñadoras en Canva y Photoshop",
@@ -96,8 +114,8 @@
       ]
     },
     "benefits": {
-      "title": "Lo que ganas con Amark",
-      "subtitle": "Todo lo que necesitas para pasar del artwork a un planner terminado.",
+      "title": "Qué obtienes",
+      "subtitle": "De tu artwork a un planner terminado y navegable.",
       "items": [
         {
           "title": "Horas de vuelta en cada lanzamiento",
@@ -108,30 +126,30 @@
           "text": "Sube cualquier layout — portadas, spreads semanales, páginas diarias. Sin rejillas rígidas."
         },
         {
-          "title": "PDF listo para imprimir",
-          "text": "Exporta un único PDF ajustado al tamaño y orientación de cada página."
+          "title": "PDF fechado listo para imprimir",
+          "text": "Un PDF con cada página fechada y ordenada para el rango que elijas."
         },
         {
-          "title": "Calendario inteligente",
-          "text": "Nombres de mes y día en inglés y español, semana empezando en lunes o domingo."
+          "title": "Hyperlinks de GoodNotes",
+          "text": "Toca un día del calendario y salta a esa página daily, weekly o monthly."
         }
       ]
     },
     "demo": {
       "title": "Míralo en acción",
-      "subtitle": "Sube tu diseño, marca zonas dinámicas, elige un rango de fechas y descarga un planner completo.",
+      "subtitle": "Sube tu diseño, marca zonas dinámicas, elige un rango de fechas y descarga un PDF fechado con links de GoodNotes.",
       "videoLabel": "Demo del flujo del editor Amark",
       "posterAlt": "Editor Amark con la portada del planner y la zona del año marcada"
     },
     "how": {
       "title": "Cómo funciona",
-      "subtitle": "Cuatro pasos. Un PDF completo."
+      "subtitle": "Cuatro pasos. Un PDF fechado con links de GoodNotes."
     },
     "screenshots": {
       "upload": "Diálogo para subir un diseño y asignarlo como página de plantilla",
       "zones": "Canvas del editor con zonas dinámicas de mes y día marcadas",
       "range": "Diálogo de exportación con rango de fechas y páginas estimadas",
-      "generate": "PDF generado con páginas semanales del planner listas para imprimir"
+      "generate": "PDF fechado generado con páginas semanales e hyperlinks de GoodNotes"
     },
     "steps": {
       "upload": {
@@ -148,7 +166,7 @@
       },
       "generate": {
         "title": "Genera automáticamente",
-        "text": "Las páginas se duplican, ordenan y rellenan con los datos correctos."
+        "text": "Las páginas se duplican, fechan y ordenan en un PDF — con hyperlinks de GoodNotes desde calendarios a páginas daily, weekly y monthly."
       }
     },
     "waitlist": {
@@ -175,7 +193,7 @@
     "desktopNote": "El editor es solo para escritorio por ahora — usa un portátil o una pantalla más grande.",
     "footer": {
       "brand": "Amark — Planner Builder",
-      "description": "Crea planners totalmente personalizados con tus diseños y lógica de fechas dinámica.",
+      "description": "Convierte tus diseños en PDFs fechados listos para imprimir con hyperlinks de GoodNotes.",
       "status": "Acceso anticipado",
       "statusDetail": "Apúntate a la lista de espera para entrar",
       "legal": "Legal",

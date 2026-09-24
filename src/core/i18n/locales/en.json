@@ -22,7 +22,7 @@
     "nav": {
       "how": "How it works",
       "compare": "Compare",
-      "benefits": "Benefits",
+      "benefits": "What you get",
       "demo": "Demo",
       "waitlist": "Waitlist",
       "menuOpen": "Open menu",
@@ -31,12 +31,12 @@
     "hero": {
       "badge": "Early access · Waitlist open",
       "title": "Your design. 365 dated pages. 15 minutes.",
-      "subtitle": "For planner creators who lose hours duplicating spreads in Canva or Photoshop — upload your layout once and get a print-ready PDF automatically.",
+      "subtitle": "Upload your undated layouts once — Amark generates a full dated PDF with GoodNotes hyperlinks. No more duplicating spreads in Canva or Photoshop.",
       "cta": "Join the waitlist",
       "pills": [
-        "Your own design",
-        "Print-ready PDF",
-        "EN / ES calendars"
+        "Upload your design",
+        "Dated PDF",
+        "GoodNotes links"
       ]
     },
     "showcase": {
@@ -50,6 +50,24 @@
       "endDate": "Dec 31, 2026",
       "a11yLabel": "Animated preview of the Amark editor workflow"
     },
+    "valueStrip": {
+      "title": "From artwork to dated PDF",
+      "subtitle": "Three moves. One complete planner.",
+      "steps": [
+        {
+          "title": "You upload",
+          "text": "Covers, weekly and daily layouts — your existing artwork."
+        },
+        {
+          "title": "You mark date zones",
+          "text": "Place month, day and year fields exactly where they belong on the canvas."
+        },
+        {
+          "title": "Amark generates",
+          "text": "Dated pages, print-ready PDF, and tappable GoodNotes hyperlinks."
+        }
+      ]
+    },
     "compare": {
       "title": "Manual vs Amark",
       "subtitle": "Stop spending weekends on copy-paste. See exactly where you save time.",
@@ -59,7 +77,7 @@
           "Duplicate 52+ spreads by hand",
           "Type every month, day and weekday",
           "Reorder pages when the calendar shifts",
-          "Export page by page, then merge"
+          "Add GoodNotes links by hand"
         ],
         "time": "8–15 hours for a yearly planner"
       },
@@ -69,19 +87,19 @@
           "Upload your layout once",
           "Mark dynamic zones on the canvas",
           "Pick a date range and generate",
-          "Download a print-ready PDF"
+          "Download a dated PDF with GoodNotes links"
         ],
         "time": "~15 minutes for the same result"
       }
     },
     "audience": {
       "title": "Built for planner creators",
-      "subtitle": "Whether you sell on Etsy or design for yourself — if you already have the artwork, Amark handles the dates.",
+      "subtitle": "Whether you sell on Etsy or design for yourself — if you already have the artwork, Amark handles the dates and GoodNotes links.",
       "cards": [
         {
           "title": "Etsy & digital sellers",
           "pain": "A yearly planner means 365 pages to duplicate and date by hand.",
-          "solution": "Generate a full dated PDF from one template and ship faster."
+          "solution": "Generate a full dated PDF with GoodNotes hyperlinks from one template and ship faster."
         },
         {
           "title": "Canva & Photoshop designers",
@@ -96,8 +114,8 @@
       ]
     },
     "benefits": {
-      "title": "What you get with Amark",
-      "subtitle": "Everything you need to go from artwork to a finished planner.",
+      "title": "What you get",
+      "subtitle": "From your artwork to a finished, navigable planner.",
       "items": [
         {
           "title": "Hours back every launch",
@@ -108,30 +126,30 @@
           "text": "Upload any layout — covers, weekly spreads, daily pages. No rigid grids."
         },
         {
-          "title": "Print-ready PDF",
-          "text": "Export a single PDF matched to each page size and orientation."
+          "title": "Dated print-ready PDF",
+          "text": "One PDF with every page dated and ordered for your chosen range."
         },
         {
-          "title": "Smart calendar logic",
-          "text": "English & Spanish month/day names, Monday or Sunday week start."
+          "title": "GoodNotes hyperlinks",
+          "text": "Tap a calendar day and jump to that daily, weekly, or monthly page."
         }
       ]
     },
     "demo": {
       "title": "See it in action",
-      "subtitle": "Upload your design, mark dynamic zones, pick a date range, and download a complete planner.",
+      "subtitle": "Upload your design, mark dynamic zones, pick a date range, and download a dated PDF with GoodNotes links.",
       "videoLabel": "Amark editor workflow demo",
       "posterAlt": "Amark editor with the planner cover and year zone selected"
     },
     "how": {
       "title": "How it works",
-      "subtitle": "Four steps. One complete PDF."
+      "subtitle": "Four steps. One dated PDF with GoodNotes links."
     },
     "screenshots": {
       "upload": "Dialog to upload a design and assign it as a template page",
       "zones": "Editor canvas with dynamic month and day zones marked",
       "range": "Export dialog with date range and estimated page count",
-      "generate": "Generated PDF with weekly planner pages ready to print"
+      "generate": "Generated dated PDF with weekly pages and GoodNotes hyperlinks"
     },
     "steps": {
       "upload": {
@@ -148,7 +166,7 @@
       },
       "generate": {
         "title": "Generate automatically",
-        "text": "Pages are duplicated, ordered and filled with correct data."
+        "text": "Pages are duplicated, dated and ordered into one PDF — with GoodNotes hyperlinks from calendars to daily, weekly and monthly pages."
       }
     },
     "waitlist": {
@@ -175,7 +193,7 @@
     "desktopNote": "The editor is desktop-only for now — use a laptop or larger screen.",
     "footer": {
       "brand": "Amark — Planner Builder",
-      "description": "Build fully custom planners using your own designs and dynamic date logic.",
+      "description": "Turn your designs into dated print-ready PDFs with GoodNotes hyperlinks.",
       "status": "Early access",
       "statusDetail": "Join the waitlist to get in",
       "legal": "Legal",
