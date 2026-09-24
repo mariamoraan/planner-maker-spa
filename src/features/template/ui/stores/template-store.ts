@@ -25,8 +25,7 @@ import { isDataUrl } from '@/core/functions/image-data-url';
 import {
   PlanLimitError,
   formatBytesLimit,
-  resolvePlanLimits,
-  resolveUserPlan,
+  getEffectivePlanLimits,
 } from '@/core/plans';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { getCloudSrcAlt } from '@/features/template/infrastructure/uploadthing/image.adapter';
@@ -38,7 +37,7 @@ import { withRepairedBindingMetadata, repairYearMonthIndicesInImages } from '@/f
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
 function currentPlanLimits() {
-  return resolvePlanLimits(resolveUserPlan());
+  return getEffectivePlanLimits();
 }
 
 /** Approximate decoded size of a data URL (base64 → bytes). */

@@ -1,18 +1,19 @@
 import {
   formatBytesLimit,
-  resolvePlanLimits,
-  resolveUserPlan,
+  getEffectivePlanLimits,
   type PlanLimits,
 } from '@/core/plans';
+import { useDevToolsStore } from '@/core/dev-tools/dev-tools-store';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 
 export function usePlanLimits() {
   const templates = useTemplateStore(state => state.templates);
   const fonts = useFontLibraryStore(state => state.fonts);
+  // Subscribe so UI updates immediately when the dev-tools bypass toggles.
+  useDevToolsStore(state => state.limitsDisabled);
 
-  // Read live constants each render so local limit tweaks apply without a full remount.
-  const limits: PlanLimits = resolvePlanLimits(resolveUserPlan());
+  const limits: PlanLimits = getEffectivePlanLimits();
 
   const plannerCount = templates.length;
   const fontCount = fonts.length;

@@ -3,7 +3,7 @@ import {
   ALLOWED_FONT_EXTENSIONS,
   type AllowedFontExtension,
 } from '../constants/font-limits';
-import { formatBytesLimit, resolvePlanLimits, resolveUserPlan } from '@/core/plans';
+import { formatBytesLimit, getEffectivePlanLimits } from '@/core/plans';
 
 export function detectFontFaceRole(fileName: string): {
   weight: FontFaceWeight;
@@ -29,7 +29,7 @@ export function getFontExtension(fileName: string): AllowedFontExtension | null 
 }
 
 export function isAllowedFontFile(file: File): { ok: true } | { ok: false; reason: string } {
-  const limits = resolvePlanLimits(resolveUserPlan());
+  const limits = getEffectivePlanLimits();
   if (file.size > limits.maxFontBytes) {
     return {
       ok: false,

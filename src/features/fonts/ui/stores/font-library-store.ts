@@ -2,8 +2,7 @@ import { create } from 'zustand';
 import { getInfra } from '@/core/bootstrap/infra';
 import {
   PlanLimitError,
-  resolvePlanLimits,
-  resolveUserPlan,
+  getEffectivePlanLimits,
 } from '@/core/plans';
 import { generateId } from '@/features/template';
 import {
@@ -58,7 +57,7 @@ type FontLibraryState = {
 };
 
 function currentPlanLimits() {
-  return resolvePlanLimits(resolveUserPlan());
+  return getEffectivePlanLimits();
 }
 
 function resolveUid(syncUid: string | null): string {

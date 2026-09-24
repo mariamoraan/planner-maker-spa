@@ -12,6 +12,8 @@ interface ImportMetaEnv {
   readonly VITE_IMAGE_DELETE_URL?: string;
   readonly VITE_IMAGE_URL_API?: string;
   readonly VITE_SUPPORT_EMAIL?: string;
+  /** Local-only: show floating dev tools panel when also in Vite DEV. */
+  readonly VITE_DEV_TOOLS?: string;
 }
 
 interface ImportMeta {

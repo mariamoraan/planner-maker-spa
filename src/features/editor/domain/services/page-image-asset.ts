@@ -8,8 +8,7 @@ import {
 import {
   PlanLimitError,
   formatBytesLimit,
-  resolvePlanLimits,
-  resolveUserPlan,
+  getEffectivePlanLimits,
 } from '@/core/plans';
 import type { ImageRef } from '@/features/template/domain/ports/image-asset.port';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
@@ -30,7 +29,7 @@ export async function persistPageImageAsset(
   imageData: string,
   options?: { templateId?: string },
 ): Promise<string> {
-  const limits = resolvePlanLimits(resolveUserPlan());
+  const limits = getEffectivePlanLimits();
   if (imageData.startsWith('data:')) {
     const comma = imageData.indexOf(',');
     const base64 = comma >= 0 ? imageData.slice(comma + 1) : imageData;
