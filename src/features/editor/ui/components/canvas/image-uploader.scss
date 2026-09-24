@@ -29,18 +29,56 @@
     animation: image-uploader-step-in 180ms ease-out;
   }
 
+  &__dialog-body--confirm {
+    min-height: 0;
+  }
+
+  &__confirm {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 11rem) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
   &__preview {
-    aspect-ratio: 16 / 9;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0.5rem;
     border-radius: var(--radius);
-    overflow: hidden;
-    background: hsl(var(--muted));
+    background: hsl(var(--muted) / 0.55);
     border: 1px solid hsl(var(--border));
+    min-height: 0;
   }
 
   &__preview-image {
+    display: block;
     width: 100%;
-    height: 100%;
+    max-height: min(52vh, 22rem);
+    height: auto;
     object-fit: contain;
+    border-radius: calc(var(--radius) - 2px);
+    box-shadow: var(--shadow-sm);
+    background: hsl(var(--card));
+  }
+
+  &__confirm-types {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+    max-height: min(52vh, 22rem);
+    overflow-y: auto;
+    padding-right: 0.15rem;
+  }
+
+  &__confirm-types-label {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
   }
 
   &__icon {
@@ -78,7 +116,7 @@
 
 /* Portaled DialogContent — not a DOM child of .image-uploader */
 .image-uploader__dialog {
-  max-height: min(92vh, 44rem);
+  max-height: min(90vh, 36rem);
   overflow-y: auto;
 }
 
@@ -90,5 +128,25 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 560px) {
+  .image-uploader__confirm {
+    grid-template-columns: 1fr;
+  }
+
+  .image-uploader__preview {
+    justify-content: center;
+  }
+
+  .image-uploader__preview-image {
+    max-height: 12rem;
+    width: auto;
+    max-width: 8rem;
+  }
+
+  .image-uploader__confirm-types {
+    max-height: none;
   }
 }

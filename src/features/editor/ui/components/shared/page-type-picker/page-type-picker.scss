@@ -99,6 +99,36 @@
     border-radius: 8px;
     animation: page-type-picker-hint-in 180ms ease-out;
   }
+
+  &--compact {
+    gap: 0.75rem;
+    min-height: 0;
+
+    .page-type-picker__group {
+      gap: 0.35rem;
+    }
+
+    .page-type-picker__grid {
+      grid-template-columns: 1fr;
+      gap: 0.35rem;
+    }
+
+    .page-type-picker__option {
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.6rem;
+      border-radius: 8px;
+    }
+
+    .page-type-picker__glyph {
+      width: 1.5rem;
+      height: 1.95rem;
+    }
+
+    .page-type-picker__title {
+      font-size: 0.75rem;
+    }
+  }
 }
 
 .page-type-glyph {

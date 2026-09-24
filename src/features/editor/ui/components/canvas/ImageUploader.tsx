@@ -119,11 +119,6 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     fileInputRef.current?.click();
   }, []);
 
-  const handleBackToTypes = useCallback(() => {
-    setPendingImage(null);
-    setStep('choose-type');
-  }, []);
-
   const handleConfirmUpload = useCallback(() => {
     if (!pendingImage) return;
 
@@ -310,22 +305,43 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
           </DialogHeader>
           <div
             key={step}
-            className="image-uploader__dialog-body image-uploader__dialog-body--animated"
+            className={cn(
+              'image-uploader__dialog-body',
+              'image-uploader__dialog-body--animated',
+              !isChooseStep && 'image-uploader__dialog-body--confirm',
+            )}
           >
             {step === 'confirm' && pendingImage ? (
-              <div className="image-uploader__preview">
-                <img
-                  src={pendingImage.data}
-                  alt=""
-                  className="image-uploader__preview-image"
-                />
+              <div className="image-uploader__confirm">
+                <div className="image-uploader__preview">
+                  <img
+                    src={pendingImage.data}
+                    alt=""
+                    className="image-uploader__preview-image"
+                    style={{
+                      aspectRatio: `${pendingImage.width} / ${pendingImage.height}`,
+                    }}
+                  />
+                </div>
+                <div className="image-uploader__confirm-types">
+                  <p className="image-uploader__confirm-types-label">
+                    {t('editor.addPage.confirmTypeLabel')}
+                  </p>
+                  <PageTypePicker
+                    value={selectedTemplateType}
+                    onChange={setSelectedTemplateType}
+                    showHint={false}
+                    size="compact"
+                  />
+                </div>
               </div>
-            ) : null}
-            <PageTypePicker
-              value={selectedTemplateType}
-              onChange={setSelectedTemplateType}
-              showHint={isChooseStep}
-            />
+            ) : (
+              <PageTypePicker
+                value={selectedTemplateType}
+                onChange={setSelectedTemplateType}
+                showHint
+              />
+            )}
           </div>
           <DialogFooter>
             {isChooseStep ? (
@@ -339,8 +355,8 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               </>
             ) : (
               <>
-                <Button variant="outline" onClick={handleBackToTypes}>
-                  {t('editor.addPage.backToTypes')}
+                <Button variant="outline" onClick={handleContinueToUpload}>
+                  {t('editor.addPage.replaceImage')}
                 </Button>
                 <Button onClick={handleConfirmUpload} disabled={!pendingImage}>
                   {t('editor.addPage.addPage')}

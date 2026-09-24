@@ -19,6 +19,8 @@ interface PageTypePickerProps {
   className?: string;
   /** Show the contextual hint under the selected category. Default true. */
   showHint?: boolean;
+  /** Dense layout for the confirm step beside a preview. */
+  size?: 'default' | 'compact';
 }
 
 const FLAT_ORDER = TEMPLATE_TYPE_PICKER_GROUPS.flatMap(group => group.types);
@@ -40,9 +42,11 @@ export function PageTypePicker({
   onChange,
   className,
   showHint = true,
+  size = 'default',
 }: PageTypePickerProps) {
   const { t } = useTranslation();
   const optionRefs = useRef<Partial<Record<TemplateType, HTMLButtonElement | null>>>({});
+  const compact = size === 'compact';
 
   const focusType = useCallback((type: TemplateType) => {
     optionRefs.current[type]?.focus();
@@ -92,7 +96,13 @@ export function PageTypePicker({
   const selectedCategory = TEMPLATE_TYPE_CONFIG[value].category;
 
   return (
-    <div className={cn('page-type-picker', className)}>
+    <div
+      className={cn(
+        'page-type-picker',
+        compact && 'page-type-picker--compact',
+        className,
+      )}
+    >
       {TEMPLATE_TYPE_PICKER_GROUPS.map(group => (
         <section key={group.category} className="page-type-picker__group">
           <h3 className="page-type-picker__group-label">{t(categoryLabelKey(group.category))}</h3>
@@ -123,9 +133,11 @@ export function PageTypePicker({
                   <PageTypeGlyph type={type} className="page-type-picker__glyph" />
                   <span className="page-type-picker__text">
                     <span className="page-type-picker__title">{t(pageTypeLabelKey(type))}</span>
-                    <span className="page-type-picker__description">
-                      {t(pageTypeDescriptionKey(type))}
-                    </span>
+                    {!compact ? (
+                      <span className="page-type-picker__description">
+                        {t(pageTypeDescriptionKey(type))}
+                      </span>
+                    ) : null}
                   </span>
                 </button>
               );
