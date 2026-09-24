@@ -42,13 +42,15 @@ export function toWeekStartISO(date: Date): string {
   return format(date, 'yyyy-MM-dd');
 }
 
-/** First matching page wins when multiple templates share a destination. */
+/** First matching page wins when multiple templates share a destination. Prefer left faces (emitted first). */
 export function buildDestinationIndex(pages: GeneratedPage[]): PageDestinationIndex {
   const daily = new Map<string, number>();
   const month = new Map<string, number>();
   const week = new Map<string, number>();
 
   for (const page of pages) {
+    if (page.isBlank) continue;
+
     if (
       page.type === 'daily-page' &&
       page.year != null &&
@@ -67,11 +69,13 @@ export function buildDestinationIndex(pages: GeneratedPage[]): PageDestinationIn
 
   // Prefer first monthly-calendar; fall back to first month-cover.
   for (const page of pages) {
+    if (page.isBlank) continue;
     if (page.type !== 'monthly-calendar' || page.year == null || page.month == null) continue;
     const key = monthDestinationKey(page.year, page.month);
     if (!month.has(key)) month.set(key, page.pageNumber);
   }
   for (const page of pages) {
+    if (page.isBlank) continue;
     if (page.type !== 'month-cover' || page.year == null || page.month == null) continue;
     const key = monthDestinationKey(page.year, page.month);
     if (!month.has(key)) month.set(key, page.pageNumber);
@@ -336,6 +340,10 @@ export function attachPdfLinks(
   const index = buildDestinationIndex(pages);
 
   return pages.map(page => {
+    if (page.isBlank || !page.templatePageId) {
+      return { ...page, links: [] };
+    }
+
     const templateImage = findTemplatePage(template, page.templatePageId, page.type);
     if (!templateImage) {
       return { ...page, links: [] };

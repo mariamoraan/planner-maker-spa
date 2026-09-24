@@ -52,6 +52,8 @@ export interface BindingGroup {
   source: BindingSourceKind;
 }
 
+export type SpreadFace = 'left' | 'right';
+
 export interface TemplatePage {
   id: string;
   name: string;
@@ -71,6 +73,10 @@ export interface TemplatePage {
   srcAlt?: string;
   imageRef?: ImageRef;
   missingLocalAsset?: boolean;
+  /** Shared id for a contiguous two-page spread (left + right faces). */
+  spreadId?: string;
+  /** Which face of the spread this page is. Undefined for single pages. */
+  spreadFace?: SpreadFace;
 }
 
 /** @deprecated Use TemplatePage — kept for backward compatibility during migration */

@@ -8,6 +8,7 @@ export type {
   GridGroupSettings,
   BindingGroup,
   BindingSourceKind,
+  SpreadFace,
 } from './domain/entities/template-page';
 export type { Rectangle } from './domain/entities/rectangle';
 export type {
@@ -67,7 +68,25 @@ export {
   imagesOrderChanged,
   normalizeImageOrder,
   reorderWithinType,
+  reorderUnitsWithinType,
 } from './domain/services/template-image-order';
+export {
+  SPREAD_ELIGIBLE_TYPES,
+  clearSpreadFields,
+  findUnitByPageId,
+  findUnitByUnitId,
+  flattenUnits,
+  getSpreadMate,
+  getUnitId,
+  getUnitPrimaryPage,
+  getUnitType,
+  groupImagesAsUnits,
+  groupImagesOfTypeAsUnits,
+  isSpreadEligibleType,
+  isSpreadFace,
+  withSpreadFields,
+} from './domain/services/template-spread';
+export type { PageUnit } from './domain/services/template-spread';
 export {
   migrateLocalTemplatesToFirebase,
   migrateLocalImagesToCloud,

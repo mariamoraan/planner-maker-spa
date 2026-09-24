@@ -4,6 +4,7 @@ import useImage from 'use-image';
 import type Konva from 'konva';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
+import { useTemplatePage } from '@/features/editor/ui/hooks/use-template-page';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { useCanvasViewport } from './use-canvas-viewport';
 import { useCanvasSelection } from './use-canvas-selection';
@@ -46,24 +47,32 @@ interface UseTemplateCanvasControllerParams {
   containerRef: RefObject<HTMLDivElement | null>;
   stageRef: RefObject<Konva.Stage | null>;
   transformerRef: RefObject<Konva.Transformer | null>;
+  /** When set, render this page instead of the editor's current image. */
+  pageId?: string;
+  /** When false, show page content without edit interactions. */
+  interactive?: boolean;
 }
 
 export function useTemplateCanvasController({
   containerRef,
   stageRef,
   transformerRef,
+  pageId,
+  interactive = true,
 }: UseTemplateCanvasControllerParams) {
   const isGridHandleDraggingRef = useRef(false);
 
-  const currentImage = useCurrentImage();
+  const editorCurrentImage = useCurrentImage();
+  const pageOverride = useTemplatePage(pageId);
+  const currentImage = pageId ? pageOverride : editorCurrentImage;
   const template = useCurrentTemplate();
   const displaySrc = useCanvasImageSrc(currentImage?.src, currentImage?.srcAlt);
   const [image] = useImage(displaySrc);
 
   const canvasTool = useEditorStore(state => state.canvasTool);
   const showRectangleGuides = useEditorStore(state => state.showRectangleGuides);
-  const isSelectMode = canvasTool === 'select';
-  const isPanMode = canvasTool === 'pan';
+  const isSelectMode = interactive && canvasTool === 'select';
+  const isPanMode = interactive && canvasTool === 'pan';
 
   const viewport = useCanvasViewport({
     containerRef,
@@ -75,14 +84,14 @@ export function useTemplateCanvasController({
   const selection = useCanvasSelection({
     stageRef,
     transformerRef,
-    currentImage,
+    currentImage: interactive ? currentImage : null,
     isSelectMode,
     isGridHandleDraggingRef,
     pointerToImage: viewport.pointerToImage,
   });
 
   const drag = useCanvasDragSnap({
-    currentImage,
+    currentImage: interactive ? currentImage : null,
     isSelectMode,
     isGridHandleDraggingRef,
     scale: viewport.scale,
@@ -90,11 +99,11 @@ export function useTemplateCanvasController({
   });
 
   const grid = useCanvasGridEdit({
-    currentImage,
-    selectedRectangleIds: selection.selectedRectangleIds,
+    currentImage: interactive ? currentImage : null,
+    selectedRectangleIds: interactive ? selection.selectedRectangleIds : [],
     dragState: drag.dragState,
     dragOverlay: drag.dragOverlay,
-    imageId: currentImage?.id,
+    imageId: interactive ? currentImage?.id : undefined,
     stageRef,
   });
 
@@ -102,7 +111,7 @@ export function useTemplateCanvasController({
 
   useCanvasKeyboard({
     stageRef,
-    currentImage,
+    currentImage: interactive ? currentImage : null,
     scale: viewport.scale,
     offset: viewport.offset,
     isPanMode,
@@ -122,8 +131,11 @@ export function useTemplateCanvasController({
     handleMarqueeUp,
   } = selection;
 
+  const noop = useCallback(() => {}, []);
+
   const handleMouseDown = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!interactive) return;
       const stage = stageRef.current;
       if (!stage) return;
       const pos = stage.getPointerPosition();
@@ -136,10 +148,11 @@ export function useTemplateCanvasController({
 
       handleEmptyMouseDown(e);
     },
-    [stageRef, shouldBeginPan, beginPan, isPanMode, handleEmptyMouseDown],
+    [interactive, stageRef, shouldBeginPan, beginPan, isPanMode, handleEmptyMouseDown],
   );
 
   const handleMouseMove = useCallback(() => {
+    if (!interactive) return;
     const stage = stageRef.current;
     if (!stage) return;
     const pos = stage.getPointerPosition();
@@ -147,18 +160,20 @@ export function useTemplateCanvasController({
 
     if (movePan(pos)) return;
     handleMarqueeMove(pos);
-  }, [stageRef, movePan, handleMarqueeMove]);
+  }, [interactive, stageRef, movePan, handleMarqueeMove]);
 
   const handleMouseUp = useCallback(
     (e?: Konva.KonvaEventObject<MouseEvent>) => {
+      if (!interactive) return;
       if (endPan()) return;
       handleMarqueeUp(e);
     },
-    [endPan, handleMarqueeUp],
+    [interactive, endPan, handleMarqueeUp],
   );
 
   const containerClassName = [
     'template-canva',
+    !interactive && 'template-canva--readonly',
     grid.lockedGridGroup !== null && 'template-canva--grid',
     isPanMode && 'template-canva--pan-tool',
     viewport.isPanning && 'template-canva--panning',
@@ -171,15 +186,16 @@ export function useTemplateCanvasController({
     currentImage,
     template,
     image,
+    interactive,
     isSelectMode,
-    showRectangleGuides,
+    showRectangleGuides: interactive && showRectangleGuides,
     viewport,
     selection,
     drag,
     grid,
     containerClassName,
-    handleMouseDown,
-    handleMouseMove,
-    handleMouseUp,
+    handleMouseDown: interactive ? handleMouseDown : noop,
+    handleMouseMove: interactive ? handleMouseMove : noop,
+    handleMouseUp: interactive ? handleMouseUp : noop,
   };
 }

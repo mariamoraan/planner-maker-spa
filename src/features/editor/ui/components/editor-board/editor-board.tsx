@@ -1,4 +1,4 @@
-import { TemplateCanvas } from "../canvas/TemplateCanvas"
+import { SpreadCanvasLayout } from "../canvas/spread-canvas-layout"
 import { PagesMap } from "../pages-map/pages-map"
 import { Toolbar } from "./toolbar"
 import { EditorPreviewDateBadge } from "./editor-preview-date-badge"
@@ -37,7 +37,7 @@ export const EditorBoard = () => {
                       </div>
                     ) : null}
                 </div>
-                    {currentImage ? <TemplateCanvas /> : <EmptyPlannerSetup />}
+                    {currentImage ? <SpreadCanvasLayout /> : <EmptyPlannerSetup />}
                     <PagesMap />
                 </div>
             </div>

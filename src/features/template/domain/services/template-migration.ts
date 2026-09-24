@@ -72,6 +72,8 @@ function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
     imageRef: buildLocalImageRef(uid, image.id),
     createdAt: image.createdAt,
     updatedAt: image.updatedAt,
+    ...(image.spreadId ? { spreadId: image.spreadId } : {}),
+    ...(image.spreadFace ? { spreadFace: image.spreadFace } : {}),
   };
 }
 

@@ -45,6 +45,8 @@ export interface TemplateRepositoryPort {
     updates: Partial<TemplatePageRecord> & {
       gridGroups?: TemplatePageRecord['gridGroups'] | null;
       bindingGroups?: TemplatePageRecord['bindingGroups'] | null;
+      spreadId?: TemplatePageRecord['spreadId'] | null;
+      spreadFace?: TemplatePageRecord['spreadFace'] | null;
     }
   ): Promise<void>;
   deletePage(uid: string, templateId: string, pageId: string): Promise<void>;

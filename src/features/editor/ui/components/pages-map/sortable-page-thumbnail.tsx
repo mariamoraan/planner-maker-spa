@@ -1,17 +1,20 @@
 import clsx from 'clsx';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { TemplateImage } from '@/features/template';
+import type { PageUnit } from '@/features/template';
+import { getUnitId, getUnitPrimaryPage } from '@/features/template';
 import { PageThumbnail } from './page-thumbnail';
 
 /** Matches `--pages-map-thumbnail-height` in pages-map.scss */
 const PAGES_MAP_THUMBNAIL_HEIGHT = 72;
 
 interface Props {
-  image: TemplateImage;
+  unit: PageUnit;
 }
 
-export const SortablePageThumbnail = ({ image }: Props) => {
+export const SortablePageThumbnail = ({ unit }: Props) => {
+  const unitId = getUnitId(unit);
+  const primary = getUnitPrimaryPage(unit);
   const {
     attributes,
     listeners,
@@ -19,15 +22,18 @@ export const SortablePageThumbnail = ({ image }: Props) => {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: image.id });
+  } = useSortable({ id: unitId });
 
-  const aspectRatio = image.height > 0 ? image.width / image.height : 3 / 4;
+  const aspectRatio = primary.height > 0 ? primary.width / primary.height : 3 / 4;
+  const width =
+    unit.kind === 'spread'
+      ? PAGES_MAP_THUMBNAIL_HEIGHT * aspectRatio * 2 + 2
+      : PAGES_MAP_THUMBNAIL_HEIGHT * aspectRatio;
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    width: PAGES_MAP_THUMBNAIL_HEIGHT * aspectRatio,
-    aspectRatio: `${image.width} / ${image.height}`,
+    width,
   };
 
   return (
@@ -36,11 +42,19 @@ export const SortablePageThumbnail = ({ image }: Props) => {
       style={style}
       className={clsx('pages-map__li', {
         'pages-map__li--dragging': isDragging,
+        'pages-map__li--spread': unit.kind === 'spread',
       })}
       {...attributes}
       {...listeners}
     >
-      <PageThumbnail image={image} />
+      {unit.kind === 'spread' ? (
+        <div className="pages-map__spread-thumbs">
+          <PageThumbnail image={unit.left} />
+          <PageThumbnail image={unit.right} />
+        </div>
+      ) : (
+        <PageThumbnail image={unit.page} />
+      )}
     </li>
   );
 };

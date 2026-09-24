@@ -30,6 +30,15 @@ $toolbar-padding-x-compact: 16px;
     min-width: 600px;
     gap: 24px;
 
+    &__divider {
+        align-self: center;
+        width: 1px;
+        height: 20px;
+        background: grey;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
     &__undo,
     &__redo {
         display: inline-flex;

@@ -91,6 +91,14 @@ function buildPageWriteData(page: TemplatePageRecord): Record<string, unknown> {
     data.imageRef = stripUndefined(page.imageRef);
   }
 
+  if (page.spreadId !== undefined) {
+    data.spreadId = page.spreadId;
+  }
+
+  if (page.spreadFace !== undefined) {
+    data.spreadFace = page.spreadFace;
+  }
+
   return data;
 }
 
@@ -116,6 +124,14 @@ function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord 
     src: '',
   });
 
+  const spreadId = typeof data.spreadId === 'string' && data.spreadId
+    ? data.spreadId
+    : undefined;
+  const spreadFace =
+    data.spreadFace === 'left' || data.spreadFace === 'right'
+      ? data.spreadFace
+      : undefined;
+
   return {
     id,
     name: String(data.name ?? ''),
@@ -128,6 +144,8 @@ function mapPage(id: string, data: Record<string, unknown>): TemplatePageRecord 
     imageRef: normalizeImageRef(data.imageRef),
     createdAt: toDate(data.createdAt),
     updatedAt: toDate(data.updatedAt),
+    ...(spreadId ? { spreadId } : {}),
+    ...(spreadFace ? { spreadFace } : {}),
   };
 }
 
@@ -346,6 +364,8 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
     updates: Partial<TemplatePageRecord> & {
       gridGroups?: TemplatePageRecord['gridGroups'] | null;
       bindingGroups?: TemplatePageRecord['bindingGroups'] | null;
+      spreadId?: TemplatePageRecord['spreadId'] | null;
+      spreadFace?: TemplatePageRecord['spreadFace'] | null;
     }
   ): Promise<void> {
     const payload: Record<string, unknown> = { updatedAt: serverTimestamp() };
@@ -367,6 +387,16 @@ export class FirebaseTemplateRepository implements TemplateRepositoryPort {
       payload.bindingGroups = stripUndefined(updates.bindingGroups);
     }
     if (updates.imageRef !== undefined) payload.imageRef = stripUndefined(updates.imageRef);
+    if (updates.spreadId === null) {
+      payload.spreadId = deleteField();
+    } else if (updates.spreadId !== undefined) {
+      payload.spreadId = updates.spreadId;
+    }
+    if (updates.spreadFace === null) {
+      payload.spreadFace = deleteField();
+    } else if (updates.spreadFace !== undefined) {
+      payload.spreadFace = updates.spreadFace;
+    }
     await updateDoc(pageRef(uid, templateId, pageId), payload);
     await updateDoc(templateRef(uid, templateId), { updatedAt: serverTimestamp() });
   }

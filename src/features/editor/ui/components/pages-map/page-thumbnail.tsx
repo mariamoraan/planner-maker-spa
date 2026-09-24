@@ -111,7 +111,11 @@ export const PageThumbnail = ({image}: Props) => {
                             onClick={handleDelete}
                         >
                             <Trash className="page-thumbnail__context-menu__li__button__icon" />
-                            <p>Eliminar esta página</p>
+                            <p>
+                              {image.spreadId
+                                ? 'Eliminar páginas contiguas'
+                                : 'Eliminar esta página'}
+                            </p>
                         </button>
                     </li>
                 </ul>,

@@ -15,7 +15,15 @@ import { SelectionActionHandles } from './selection-action-handles';
 import { useTemplateCanvasController } from './use-template-canvas-controller';
 import './template-canva.scss';
 
-export const TemplateCanvas: React.FC = () => {
+interface TemplateCanvasProps {
+  pageId?: string;
+  interactive?: boolean;
+}
+
+export const TemplateCanvas: React.FC<TemplateCanvasProps> = ({
+  pageId,
+  interactive = true,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
@@ -27,26 +35,39 @@ export const TemplateCanvas: React.FC = () => {
     containerRef,
     stageRef,
     transformerRef,
+    pageId,
+    interactive,
   });
 
   const { scale, offset } = c.viewport;
 
   const handleRotateCommit = useCallback(
     (payload: { kind: 'rect' | 'grid'; id: string; rotation: number }) => {
+      if (!interactive) return;
       if (payload.kind === 'grid') {
         rotateGridGroup(payload.id, payload.rotation);
       } else {
         updateArea(payload.id, { rotation: payload.rotation });
       }
     },
-    [rotateGridGroup, updateArea],
+    [interactive, rotateGridGroup, updateArea],
+  );
+
+  const emptyIds: string[] = [];
+  const emptyPositions: Record<string, { x: number; y: number }> = {};
+  const emptySizes: Record<string, { width: number; height: number }> = {};
+  const selectedIds = interactive ? c.selection.selectedRectangleIds : emptyIds;
+  const noopRect = useCallback(() => {}, []);
+  const noopRectEvent = useCallback(
+    (_rectId: string, _e?: Konva.KonvaEventObject<MouseEvent | TouchEvent | DragEvent | Event>) => {},
+    [],
   );
 
   return (
     <div
       ref={containerRef}
       className={c.containerClassName}
-      {...blockSelectionZoneProps}
+      {...(interactive ? blockSelectionZoneProps : {})}
     >
       <Stage
         key={c.currentImage?.id}
@@ -57,9 +78,10 @@ export const TemplateCanvas: React.FC = () => {
         onMouseMove={c.handleMouseMove}
         onMouseUp={c.handleMouseUp}
         onMouseLeave={() => c.handleMouseUp()}
+        listening={interactive}
         className="template-canva__stage"
       >
-        <Layer>
+        <Layer listening={interactive}>
           {c.image && c.currentImage && (
             <CanvasPageImage
               image={c.image}
@@ -81,65 +103,78 @@ export const TemplateCanvas: React.FC = () => {
               offset={offset}
               isSelectMode={c.isSelectMode}
               showRectangleGuides={c.showRectangleGuides}
-              selectedRectangleIds={c.selection.selectedRectangleIds}
-              marqueePreviewIds={c.selection.marqueePreviewIds}
-              isGridHandleDragging={c.grid.isGridHandleDragging}
-              dragState={c.drag.dragState}
-              dragOverlay={c.drag.dragOverlay}
-              gridPreviewPositions={c.grid.gridPreviewPositions}
-              gridSettingsPreviewPositions={c.grid.gridSettingsPreviewPositions}
-              gridSettingsPreviewSizes={c.grid.gridSettingsPreviewSizes}
-              rotationPreview={rotationPreview}
-              rotationPreviewTargetIds={c.selection.selectedRectangleIds}
-              onRectClick={c.selection.handleRectClick}
-              onDragStart={c.drag.handleDragStart}
-              onDragMove={c.drag.handleDragMove}
-              onDragEnd={c.drag.handleDragEnd}
-              onTransformEnd={c.drag.handleTransformEnd}
+              selectedRectangleIds={selectedIds}
+              marqueePreviewIds={interactive ? c.selection.marqueePreviewIds : emptyIds}
+              isGridHandleDragging={interactive && c.grid.isGridHandleDragging}
+              dragState={interactive ? c.drag.dragState : null}
+              dragOverlay={interactive ? c.drag.dragOverlay : null}
+              gridPreviewPositions={
+                interactive ? c.grid.gridPreviewPositions : emptyPositions
+              }
+              gridSettingsPreviewPositions={
+                interactive ? c.grid.gridSettingsPreviewPositions : emptyPositions
+              }
+              gridSettingsPreviewSizes={
+                interactive ? c.grid.gridSettingsPreviewSizes : emptySizes
+              }
+              rotationPreview={interactive ? rotationPreview : null}
+              rotationPreviewTargetIds={selectedIds}
+              onRectClick={interactive ? c.selection.handleRectClick : noopRectEvent}
+              onDragStart={interactive ? c.drag.handleDragStart : noopRect}
+              onDragMove={interactive ? c.drag.handleDragMove : noopRectEvent}
+              onDragEnd={interactive ? c.drag.handleDragEnd : noopRect}
+              onTransformEnd={interactive ? c.drag.handleTransformEnd : noopRectEvent}
             />
           )}
 
-          {c.currentImage && (c.showRectangleGuides || c.grid.lockedGridGroup) && (
-            <GridCellGuides
-              gridGroups={c.currentImage.gridGroups}
+          {interactive &&
+            c.currentImage &&
+            (c.showRectangleGuides || c.grid.lockedGridGroup) && (
+              <GridCellGuides
+                gridGroups={c.currentImage.gridGroups}
+                scale={scale}
+                offset={offset}
+                onlyGroupId={c.showRectangleGuides ? null : c.grid.lockedGridGroup?.id}
+                previewGroupId={c.grid.lockedGridGroup?.id}
+                previewBounds={c.grid.activeGridBounds}
+                previewSettings={c.grid.activeGridSettings}
+              />
+            )}
+
+          {interactive ? (
+            <CanvasSelectionOverlays
               scale={scale}
               offset={offset}
-              onlyGroupId={c.showRectangleGuides ? null : c.grid.lockedGridGroup?.id}
-              previewGroupId={c.grid.lockedGridGroup?.id}
-              previewBounds={c.grid.activeGridBounds}
-              previewSettings={c.grid.activeGridSettings}
+              isSelectMode={c.isSelectMode}
+              marquee={c.selection.marquee}
+              groupSelectionBounds={c.selection.groupSelectionBounds}
+              isGridGroupFullySelected={c.selection.isGridGroupFullySelected}
+              snapGuides={c.drag.dragOverlay?.guides ?? []}
+              transformerRef={transformerRef}
             />
-          )}
-
-          <CanvasSelectionOverlays
-            scale={scale}
-            offset={offset}
-            isSelectMode={c.isSelectMode}
-            marquee={c.selection.marquee}
-            groupSelectionBounds={c.selection.groupSelectionBounds}
-            isGridGroupFullySelected={c.selection.isGridGroupFullySelected}
-            snapGuides={c.drag.dragOverlay?.guides ?? []}
-            transformerRef={transformerRef}
-          />
+          ) : null}
         </Layer>
 
-        <CanvasGridEditLayer
-          lockedGridGroup={c.grid.lockedGridGroup}
-          activeGridBounds={c.grid.activeGridBounds}
-          activeGridSettings={c.grid.activeGridSettings}
-          gridEditFocus={c.grid.gridEditFocus}
-          setGridEditFocus={c.grid.setGridEditFocus}
-          gridMinBounds={c.grid.gridMinBounds}
-          scale={scale}
-          offset={offset}
-          onBoundsChange={c.grid.handleGridBoundsPreview}
-          onBoundsCommit={c.grid.handleGridBoundsCommit}
-          onSettingsPreview={c.grid.handleGridSettingsPreview}
-          onSettingsCommit={c.grid.handleGridSettingsCommit}
-        />
+        {interactive ? (
+          <CanvasGridEditLayer
+            lockedGridGroup={c.grid.lockedGridGroup}
+            activeGridBounds={c.grid.activeGridBounds}
+            activeGridSettings={c.grid.activeGridSettings}
+            gridEditFocus={c.grid.gridEditFocus}
+            setGridEditFocus={c.grid.setGridEditFocus}
+            gridMinBounds={c.grid.gridMinBounds}
+            scale={scale}
+            offset={offset}
+            onBoundsChange={c.grid.handleGridBoundsPreview}
+            onBoundsCommit={c.grid.handleGridBoundsCommit}
+            onSettingsPreview={c.grid.handleGridSettingsPreview}
+            onSettingsCommit={c.grid.handleGridSettingsCommit}
+          />
+        ) : null}
       </Stage>
 
-      {c.grid.lockedGridGroup &&
+      {interactive &&
+        c.grid.lockedGridGroup &&
         c.grid.activeGridBounds &&
         c.grid.activeGridSettings &&
         c.grid.gridEditFocus === 'grid' &&
@@ -155,10 +190,10 @@ export const TemplateCanvas: React.FC = () => {
           />
         )}
 
-      {c.currentImage && (
+      {interactive && c.currentImage && (
         <SelectionActionHandles
           currentImage={c.currentImage}
-          selectedRectangleIds={c.selection.selectedRectangleIds}
+          selectedRectangleIds={selectedIds}
           isSelectMode={c.isSelectMode}
           scale={scale}
           offset={offset}
@@ -175,14 +210,16 @@ export const TemplateCanvas: React.FC = () => {
         />
       )}
 
-      <div className="template-canva__controls">
-        <CanvasFloatingControls
-          zoom={c.viewport.zoom}
-          onZoomIn={c.viewport.handleZoomIn}
-          onZoomOut={c.viewport.handleZoomOut}
-          onZoomReset={c.viewport.handleZoomReset}
-        />
-      </div>
+      {interactive ? (
+        <div className="template-canva__controls">
+          <CanvasFloatingControls
+            zoom={c.viewport.zoom}
+            onZoomIn={c.viewport.handleZoomIn}
+            onZoomOut={c.viewport.handleZoomOut}
+            onZoomReset={c.viewport.handleZoomReset}
+          />
+        </div>
+      ) : null}
     </div>
   );
 };

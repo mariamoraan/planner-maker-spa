@@ -1,0 +1,74 @@
+.spread-canvas-layout {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  padding: 8px 8px 0;
+  overflow: hidden;
+}
+
+.spread-canvas-layout__face {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+
+  &--inactive {
+    .template-canva {
+      opacity: 0.78;
+    }
+  }
+
+  .template-canva {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+.spread-canvas-layout__tag {
+  align-self: flex-start;
+  margin: 0 0 6px 2px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1.3;
+  color: hsl(0, 0%, 42%);
+  background: hsl(0, 0%, 94%);
+  pointer-events: none;
+  user-select: none;
+}
+
+.spread-canvas-layout__face--active .spread-canvas-layout__tag {
+  color: hsl(0, 0%, 18%);
+  background: hsl(var(--accent) / 0.14);
+}
+
+.spread-canvas-layout__face--inactive .spread-canvas-layout__tag {
+  opacity: 0.65;
+}
+
+.spread-canvas-layout__hit {
+  position: absolute;
+  inset: 22px 0 0;
+  z-index: 5;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.template-canva--readonly {
+  cursor: pointer;
+}

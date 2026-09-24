@@ -197,15 +197,10 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
       break;
     }
     case 'reorderImages': {
-      const fromIndex = direction === 'undo' ? action.toIndex : action.fromIndex;
-      const toIndex = direction === 'undo' ? action.fromIndex : action.toIndex;
-      const template = store.getTemplate(templateId);
-      if (!template) break;
-
-      const activeId = template.images[fromIndex]?.id;
-      const overId = template.images[toIndex]?.id;
-      if (activeId && overId) {
-        store.reorderImages(templateId, activeId, overId);
+      if (direction === 'undo') {
+        store.reorderImages(templateId, action.overId, action.activeId);
+      } else {
+        store.reorderImages(templateId, action.activeId, action.overId);
       }
       break;
     }

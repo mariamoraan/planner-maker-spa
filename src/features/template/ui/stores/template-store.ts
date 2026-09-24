@@ -13,8 +13,13 @@ import {
   getInsertIndexForType,
   imagesOrderChanged,
   normalizeImageOrder,
-  reorderWithinType,
+  reorderUnitsWithinType,
 } from '@/features/template/domain/services/template-image-order';
+import {
+  getSpreadMate,
+  isSpreadEligibleType,
+  withSpreadFields,
+} from '@/features/template/domain/services/template-spread';
 import { getInfra, buildLocalImageRef, buildLegacyImageKey, buildUploadthingImageRef, isCloudImageStorageEnabled } from '@/core/bootstrap/infra';
 import { isDataUrl } from '@/core/functions/image-data-url';
 import {
@@ -191,6 +196,8 @@ function toPageRecord(uid: string, image: TemplateImage): TemplatePageRecord {
     imageRef,
     createdAt: image.createdAt,
     updatedAt: image.updatedAt,
+    ...(image.spreadId ? { spreadId: image.spreadId } : {}),
+    ...(image.spreadFace ? { spreadFace: image.spreadFace } : {}),
   };
 }
 
@@ -226,8 +233,16 @@ interface TemplateState {
   updateImage: (templateId: string, imageId: string, updates: Partial<TemplateImage> & {
     gridGroups?: TemplateImage['gridGroups'] | null;
     bindingGroups?: TemplateImage['bindingGroups'] | null;
+    spreadId?: TemplateImage['spreadId'] | null;
+    spreadFace?: TemplateImage['spreadFace'] | null;
   }) => void;
   deleteImage: (templateId: string, imageId: string) => Promise<void>;
+  enableSpread: (
+    templateId: string,
+    pageId: string,
+    options: { rightImageData: string }
+  ) => Promise<string>;
+  disableSpread: (templateId: string, pageId: string) => Promise<void>;
   setCurrentImage: (id: string | null) => Promise<void>;
   getCurrentImage: (templateId: string) => TemplateImage | null;
 
@@ -249,7 +264,8 @@ interface TemplateState {
 
   insertImage: (templateId: string, image: TemplateImage, imageData: string, index: number) => Promise<void>;
   normalizeImageOrder: (templateId: string) => void;
-  reorderImages: (templateId: string, activeId: string, overId: string) => boolean;
+  /** Reorder by page unit id (spreadId or single page id). */
+  reorderImages: (templateId: string, activeUnitId: string, overUnitId: string) => boolean;
 }
 
 export const useTemplateStore = create<TemplateState>()((set, get) => {
@@ -670,15 +686,25 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       gridGroups: updates.gridGroups === null ? undefined : updates.gridGroups,
       bindingGroups: updates.bindingGroups === null ? undefined : updates.bindingGroups,
     };
+    if (updates.spreadId === null) {
+      delete localUpdates.spreadId;
+    }
+    if (updates.spreadFace === null) {
+      delete localUpdates.spreadFace;
+    }
 
     set(state => ({
       templates: state.templates.map(t =>
         t.id === templateId
           ? {
               ...t,
-              images: t.images.map(img =>
-                img.id === imageId ? { ...img, ...localUpdates, updatedAt: new Date() } : img
-              ),
+              images: t.images.map(img => {
+                if (img.id !== imageId) return img;
+                const next = { ...img, ...localUpdates, updatedAt: new Date() };
+                if (updates.spreadId === null) delete next.spreadId;
+                if (updates.spreadFace === null) delete next.spreadFace;
+                return next;
+              }),
               updatedAt: new Date(),
             }
           : t
@@ -690,6 +716,8 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
       const pageUpdates: Partial<TemplatePageRecord> & {
         gridGroups?: TemplatePageRecord['gridGroups'] | null;
         bindingGroups?: TemplatePageRecord['bindingGroups'] | null;
+        spreadId?: TemplatePageRecord['spreadId'] | null;
+        spreadFace?: TemplatePageRecord['spreadFace'] | null;
       } = {};
       if (updates.name !== undefined) pageUpdates.name = updates.name;
       if (updates.type !== undefined) pageUpdates.type = updates.type;
@@ -703,6 +731,8 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
         pageUpdates.bindingGroups = updates.bindingGroups;
       }
       if (updates.imageRef !== undefined) pageUpdates.imageRef = updates.imageRef;
+      if (updates.spreadId !== undefined) pageUpdates.spreadId = updates.spreadId;
+      if (updates.spreadFace !== undefined) pageUpdates.spreadFace = updates.spreadFace;
 
       void getInfra().templates.updatePage(uid, templateId, imageId, pageUpdates);
     }
@@ -844,11 +874,11 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     }
   },
 
-  reorderImages: (templateId, activeId, overId) => {
+  reorderImages: (templateId, activeUnitId, overUnitId) => {
     const template = get().templates.find(t => t.id === templateId);
     if (!template) return false;
 
-    const reordered = reorderWithinType(template.images, activeId, overId);
+    const reordered = reorderUnitsWithinType(template.images, activeUnitId, overUnitId);
     if (!reordered) return false;
 
     set(state => ({
@@ -867,6 +897,139 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
     }
 
     return true;
+  },
+
+  enableSpread: async (templateId, pageId, options) => {
+    const uid = get().syncUid;
+    const template = get().templates.find(t => t.id === templateId);
+    const page = template?.images.find(img => img.id === pageId);
+    if (!template || !page) {
+      throw new Error('Page not found');
+    }
+    if (!isSpreadEligibleType(page.type)) {
+      throw new Error('This page type cannot use contiguous pages');
+    }
+    if (page.spreadId) {
+      return getSpreadMate(page, template.images)?.id ?? pageId;
+    }
+
+    const rightImageData = options.rightImageData;
+    if (!rightImageData) {
+      throw new Error('Right page image is required');
+    }
+
+    const limits = currentPlanLimits();
+    if (template.images.length >= limits.maxImagesPerPlanner) {
+      throw new PlanLimitError(
+        'images',
+        `Free plan allows up to ${limits.maxImagesPerPlanner} pages per planner. Delete one to add another.`,
+      );
+    }
+
+    const approxBytes = approximateDataUrlBytes(rightImageData);
+    if (approxBytes > limits.maxImageBytes) {
+      throw new PlanLimitError(
+        'imageSize',
+        `Images must be ${formatBytesLimit(limits.maxImageBytes)} or smaller on the free plan.`,
+      );
+    }
+
+    const spreadId = generateId();
+    const rightId = generateId();
+    const now = new Date();
+    const imageRef = resolveImageRef(uid, rightId);
+    const leftIndex = template.images.findIndex(img => img.id === pageId);
+
+    const rightPage: TemplateImage = {
+      id: rightId,
+      name: `${page.name} (R)`,
+      type: page.type,
+      width: page.width,
+      height: page.height,
+      rectangles: [],
+      createdAt: now,
+      updatedAt: now,
+      src: rightImageData,
+      imageRef,
+      missingLocalAsset: false,
+      spreadId,
+      spreadFace: 'right',
+    };
+
+    set(state => ({
+      templates: state.templates.map(t => {
+        if (t.id !== templateId) return t;
+        const images = t.images.map(img =>
+          img.id === pageId ? withSpreadFields(img, spreadId, 'left') : img
+        );
+        const insertAt = leftIndex >= 0 ? leftIndex + 1 : images.length;
+        images.splice(insertAt, 0, rightPage);
+        return { ...t, images, updatedAt: new Date() };
+      }),
+    }));
+
+    get().updateImage(templateId, pageId, { spreadId, spreadFace: 'left' });
+
+    await getInfra().images.save(imageRef, rightImageData, { templateId });
+    const resolvedSrc = isDataUrl(rightImageData)
+      ? rightImageData
+      : ((await getInfra().images.load(imageRef)) ?? rightImageData);
+
+    set(state => ({
+      templates: state.templates.map(t => {
+        if (t.id !== templateId) return t;
+        return {
+          ...t,
+          images: t.images.map(img =>
+            img.id === rightId
+              ? { ...img, src: resolvedSrc, imageRef, missingLocalAsset: false }
+              : img
+          ),
+          updatedAt: new Date(),
+        };
+      }),
+    }));
+
+    if (uid) {
+      await getInfra().templates.updatePage(uid, templateId, pageId, {
+        spreadId,
+        spreadFace: 'left',
+      });
+      const liveRight =
+        get().templates.find(t => t.id === templateId)?.images.find(img => img.id === rightId) ??
+        rightPage;
+      const insertIndex =
+        get().templates.find(t => t.id === templateId)?.images.findIndex(img => img.id === rightId) ??
+        leftIndex + 1;
+      await getInfra().templates.createPage(
+        uid,
+        templateId,
+        toPageRecord(uid, { ...liveRight, src: resolvedSrc, imageRef }),
+        insertIndex
+      );
+      await persistCloudImageRef(uid, templateId, rightId, imageRef);
+    }
+
+    return rightId;
+  },
+
+  disableSpread: async (templateId, pageId) => {
+    const template = get().templates.find(t => t.id === templateId);
+    const page = template?.images.find(img => img.id === pageId);
+    if (!template || !page?.spreadId) return;
+
+    const mate = getSpreadMate(page, template.images);
+    const left = page.spreadFace === 'left' ? page : mate;
+    const right = page.spreadFace === 'right' ? page : mate;
+
+    if (left?.spreadId) {
+      get().updateImage(templateId, left.id, { spreadId: null, spreadFace: null });
+    }
+    if (right?.spreadId) {
+      get().updateImage(templateId, right.id, { spreadId: null, spreadFace: null });
+    }
+
+    useEditorStore.getState().setCurrentImageId(page.id);
   },
 
   setCurrentImage: async id => {

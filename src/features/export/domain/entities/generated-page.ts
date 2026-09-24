@@ -28,4 +28,7 @@ export interface GeneratedPage {
   weekStartISO?: string;
   day?: number;
   links?: PdfPageLink[];
+  spreadId?: string;
+  spreadFace?: 'left' | 'right';
+  isBlank?: boolean;
 }

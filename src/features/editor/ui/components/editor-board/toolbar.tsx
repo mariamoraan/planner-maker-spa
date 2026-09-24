@@ -27,6 +27,7 @@ import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops'
 import { useBindingGroupOps } from '@/features/editor/ui/hooks/use-binding-group-ops'
 import { useSelectionStyleEditing } from '@/features/editor/ui/hooks/use-selection-style-editing'
 import { GridToolbarControls } from './grid-toolbar-controls'
+import { ContiguousPagesToolbarToggle } from './contiguous-pages-toolbar-toggle'
 import { GridIcon, TrashIcon } from '@/core/icons'
 
 export const Toolbar = () => {
@@ -154,6 +155,7 @@ export const Toolbar = () => {
             <div className='base-toolbar'>
                 <ToolbarHistoryButtons />
                 <EditorPlannerActions variant="toolbar" />
+                <ContiguousPagesToolbarToggle />
             </div>
         );
     }

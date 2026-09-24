@@ -17,7 +17,7 @@ export interface PlanLimits {
 const MB = 1024 * 1024;
 
 export const FREE_TIER_LIMITS: PlanLimits = {
-  maxPlanners: 2,
+  maxPlanners: 3,
   maxImagesPerPlanner: 12,
   maxFontFamilies: 3,
   maxFacesPerFamily: 4,

@@ -13,7 +13,7 @@ const MB = 1024 * 1024;
 
 /** Keep in sync with `server/plan-limits.ts` — client UI/store read THIS copy. */
 export const FREE_TIER_LIMITS: PlanLimits = {
-  maxPlanners: 2,
+  maxPlanners: 3,
   maxImagesPerPlanner: 12,
   maxFontFamilies: 3,
   maxFacesPerFamily: 4,

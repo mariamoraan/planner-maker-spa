@@ -16,6 +16,7 @@ import {
 import { resolveWorldRect } from '@/features/editor/domain/services/block-geometry';
 import { resolveLocale, DEFAULT_WEEK_STARTS_ON } from '@/features/template/domain/services/locale-config';
 import type { WeekStartsOn } from '@/features/template';
+import type { PageUnit } from '@/features/template/domain/services/template-spread';
 import PdfWorker from '@/features/export/infrastructure/workers/pdf.worker?worker';
 import type { WorkerResponse } from '@/features/export/infrastructure/workers/pdf.worker';
 import { assemblePdfFromPages } from '@/features/export/domain/services/assemble-pdf';
@@ -23,6 +24,12 @@ import {
   attachPdfLinks,
   toWeekStartISO,
 } from '@/features/export/domain/services/pdf-page-links';
+import {
+  createBlankGeneratedPage,
+  sumPageCountWithParity,
+  unitFaceCount,
+  unitsForType,
+} from '@/features/export/domain/services/spread-export';
 import { useFontLibraryStore } from '@/features/fonts/ui/stores/font-library-store';
 
 const PAGES_WEIGHT = 0.85;
@@ -51,7 +58,7 @@ export function buildExportKey(
   updatedAt: Date,
   includeInternalLinks = true,
 ): string {
-  return `${templateId}:${startDate.toISOString()}:${endDate.toISOString()}:${updatedAt.getTime()}:links=${includeInternalLinks ? 1 : 0}`;
+  return `${templateId}:${startDate.toISOString()}:${endDate.toISOString()}:${updatedAt.getTime()}:links=${includeInternalLinks ? 1 : 0}:spreads=1`;
 }
 
 export function estimatePageCount(
@@ -59,44 +66,57 @@ export function estimatePageCount(
   startDate: Date,
   endDate: Date
 ): number {
-  let total = 0;
   const months = getMonthsBetween({
     startDate,
     endDate,
     weekStartsOn: resolveTemplateWeekStartsOn(template),
   });
-  const coverImages = template.images.filter(img => img.type === 'cover');
-  const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
-  const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
+  const coverUnits = unitsForType(template.images, 'cover');
+  const weeklyUnits = unitsForType(template.images, 'weekly-calendar');
+  const dailyUnits = unitsForType(template.images, 'daily-page');
+  const faceCounts: number[] = [];
 
-  total += coverImages.length;
+  for (const unit of coverUnits) {
+    faceCounts.push(unitFaceCount(unit));
+  }
 
   for (const month of months) {
-    const monthCovers = template.images.filter(img => img.type === 'month-cover');
-    const monthlyCalendars = template.images.filter(img => img.type === 'monthly-calendar');
+    const monthCoverUnits = unitsForType(template.images, 'month-cover');
+    const monthlyUnits = unitsForType(template.images, 'monthly-calendar');
     const daysInMonth = getDaysOfMonth({ year: month.year, month: month.month });
 
-    total += monthCovers.length;
-    total += monthlyCalendars.length;
+    for (const unit of monthCoverUnits) faceCounts.push(unitFaceCount(unit));
+    for (const unit of monthlyUnits) faceCounts.push(unitFaceCount(unit));
 
-    if (weeklyCalendars.length > 0 && dailyPageTemplates.length > 0) {
+    if (weeklyUnits.length > 0 && dailyUnits.length > 0) {
       for (const week of month.weeks) {
-        total += weeklyCalendars.length;
+        for (const unit of weeklyUnits) faceCounts.push(unitFaceCount(unit));
         const monthDaysInWeek = week.days.filter(d => d.getMonth() === month.month).length;
-        total += dailyPageTemplates.length * monthDaysInWeek;
+        for (let d = 0; d < monthDaysInWeek; d++) {
+          for (const unit of dailyUnits) faceCounts.push(unitFaceCount(unit));
+        }
       }
     } else {
-      if (weeklyCalendars.length > 0) {
-        total += weeklyCalendars.length * month.weeks.length;
+      if (weeklyUnits.length > 0) {
+        for (const unit of weeklyUnits) {
+          for (let w = 0; w < month.weeks.length; w++) {
+            faceCounts.push(unitFaceCount(unit));
+          }
+        }
       }
-      if (dailyPageTemplates.length > 0) {
-        total += dailyPageTemplates.length * daysInMonth.length;
+      if (dailyUnits.length > 0) {
+        for (let d = 0; d < daysInMonth.length; d++) {
+          for (const unit of dailyUnits) faceCounts.push(unitFaceCount(unit));
+        }
       }
     }
   }
 
-  total += template.images.filter(img => img.type === 'extra').length;
-  return total;
+  for (const unit of unitsForType(template.images, 'extra')) {
+    faceCounts.push(unitFaceCount(unit));
+  }
+
+  return sumPageCountWithParity(faceCounts);
 }
 
 async function generatePage(
@@ -178,16 +198,36 @@ export async function generatePlannerPages(
 
   onProgress?.(0, totalPages);
 
-  const coverImages = template.images.filter(img => img.type === 'cover');
-  const weeklyCalendars = template.images.filter(img => img.type === 'weekly-calendar');
-  const dailyPageTemplates = template.images.filter(img => img.type === 'daily-page');
+  const weeklyUnits = unitsForType(template.images, 'weekly-calendar');
+  const dailyUnits = unitsForType(template.images, 'daily-page');
   const exportPaperSize = template.paperSize ?? inferTemplatePaperSize(template);
   const plannerRange = { plannerStart: startDate, plannerEnd: endDate };
+  const blankFallback = paperSizeToPixels(exportPaperSize);
 
-  for (const coverImage of coverImages) {
+  type EmitMeta = {
+    type: GeneratedPage['type'];
+    year?: number;
+    month?: number;
+    weekNumber?: number;
+    weekStartISO?: string;
+    day?: number;
+  };
+
+  const pushBlankIfNeededForSpread = () => {
+    if ((pages.length + 1) % 2 !== 0) {
+      pages.push(createBlankGeneratedPage(pages.length, exportPaperSize, blankFallback));
+      reportProgress();
+    }
+  };
+
+  const pushGeneratedFace = async (
+    templateImage: Template['images'][0],
+    context: FieldValueContext,
+    meta: EmitMeta & { spreadId?: string; spreadFace?: 'left' | 'right' }
+  ) => {
     const page = await generatePage(
-      coverImage,
-      plannerRange,
+      templateImage,
+      context,
       plannerLocale,
       exportPaperSize,
       weekStartsOn,
@@ -195,157 +235,146 @@ export async function generatePlannerPages(
     pages.push({
       ...page,
       pageNumber: pages.length + 1,
-      type: 'cover',
-      templatePageId: coverImage.id,
+      type: meta.type,
+      templatePageId: templateImage.id,
+      year: meta.year,
+      month: meta.month,
+      weekNumber: meta.weekNumber,
+      weekStartISO: meta.weekStartISO,
+      day: meta.day,
+      spreadId: meta.spreadId,
+      spreadFace: meta.spreadFace,
     });
     reportProgress();
+  };
+
+  const emitUnit = async (
+    unit: PageUnit,
+    context: FieldValueContext,
+    meta: EmitMeta
+  ) => {
+    if (unit.kind === 'spread') {
+      pushBlankIfNeededForSpread();
+      await pushGeneratedFace(unit.left, context, {
+        ...meta,
+        spreadId: unit.spreadId,
+        spreadFace: 'left',
+      });
+      await pushGeneratedFace(unit.right, context, {
+        ...meta,
+        spreadId: unit.spreadId,
+        spreadFace: 'right',
+      });
+      return;
+    }
+
+    await pushGeneratedFace(unit.page, context, meta);
+  };
+
+  for (const unit of unitsForType(template.images, 'cover')) {
+    await emitUnit(unit, plannerRange, { type: 'cover' });
   }
 
   for (const month of months) {
-    const monthCovers = template.images.filter(img => img.type === 'month-cover');
-    for (const monthCover of monthCovers) {
-      const page = await generatePage(monthCover, {
-        year: month.year,
-        month: month.month,
-        days: month.days,
-        ...plannerRange,
-      }, plannerLocale, exportPaperSize, weekStartsOn);
-      pages.push({
-        ...page,
-        pageNumber: pages.length + 1,
+    const monthContext = {
+      year: month.year,
+      month: month.month,
+      days: month.days,
+      ...plannerRange,
+    };
+
+    for (const unit of unitsForType(template.images, 'month-cover')) {
+      await emitUnit(unit, monthContext, {
         type: 'month-cover',
-        templatePageId: monthCover.id,
         year: month.year,
         month: month.month,
       });
-      reportProgress();
     }
 
-    const monthlyCalendars = template.images.filter(img => img.type === 'monthly-calendar');
-    for (const monthlyCalendar of monthlyCalendars) {
-      const page = await generatePage(monthlyCalendar, {
-        year: month.year,
-        month: month.month,
-        days: month.days,
-        ...plannerRange,
-      }, plannerLocale, exportPaperSize, weekStartsOn);
-      pages.push({
-        ...page,
-        pageNumber: pages.length + 1,
+    for (const unit of unitsForType(template.images, 'monthly-calendar')) {
+      await emitUnit(unit, monthContext, {
         type: 'monthly-calendar',
-        templatePageId: monthlyCalendar.id,
         year: month.year,
         month: month.month,
       });
-      reportProgress();
     }
 
     const daysInMonth = getDaysOfMonth({ year: month.year, month: month.month });
 
-    const pushDailyPage = async (
-      dailyTemplate: Template['images'][0],
-      date: Date
-    ) => {
-      const page = await generatePage(dailyTemplate, {
-        year: date.getFullYear(),
-        month: date.getMonth(),
-        date,
-        ...plannerRange,
-      }, plannerLocale, exportPaperSize, weekStartsOn);
-      pages.push({
-        ...page,
-        pageNumber: pages.length + 1,
-        type: 'daily-page',
-        templatePageId: dailyTemplate.id,
-        year: date.getFullYear(),
-        month: date.getMonth(),
-        day: date.getDate(),
-      });
-      reportProgress();
+    const emitDaily = async (unit: PageUnit, date: Date) => {
+      await emitUnit(
+        unit,
+        {
+          year: date.getFullYear(),
+          month: date.getMonth(),
+          date,
+          ...plannerRange,
+        },
+        {
+          type: 'daily-page',
+          year: date.getFullYear(),
+          month: date.getMonth(),
+          day: date.getDate(),
+        }
+      );
     };
 
-    if (weeklyCalendars.length > 0 && dailyPageTemplates.length > 0) {
+    if (weeklyUnits.length > 0 && dailyUnits.length > 0) {
       let weekIndex = 0;
       for (const week of month.weeks) {
         const weekStartISO = week.days[0] ? toWeekStartISO(week.days[0]) : undefined;
-        for (const weeklyCalendar of weeklyCalendars) {
-          const page = await generatePage(weeklyCalendar, {
-            year: month.year,
-            month: month.month,
-            week,
-            ...plannerRange,
-          }, plannerLocale, exportPaperSize, weekStartsOn);
-          pages.push({
-            ...page,
-            pageNumber: pages.length + 1,
-            type: 'weekly-calendar',
-            templatePageId: weeklyCalendar.id,
-            month: month.month,
-            year: month.year,
-            weekNumber: weekIndex,
-            weekStartISO,
-          });
-          reportProgress();
+        for (const unit of weeklyUnits) {
+          await emitUnit(
+            unit,
+            { year: month.year, month: month.month, week, ...plannerRange },
+            {
+              type: 'weekly-calendar',
+              month: month.month,
+              year: month.year,
+              weekNumber: weekIndex,
+              weekStartISO,
+            }
+          );
         }
 
         const monthDaysInWeek = week.days.filter(d => d.getMonth() === month.month);
         for (const date of monthDaysInWeek) {
-          for (const dailyTemplate of dailyPageTemplates) {
-            await pushDailyPage(dailyTemplate, date);
+          for (const unit of dailyUnits) {
+            await emitDaily(unit, date);
           }
         }
 
         weekIndex++;
       }
     } else {
-      for (const weeklyCalendar of weeklyCalendars) {
+      for (const unit of weeklyUnits) {
         let i = 0;
         for (const week of month.weeks) {
-          const page = await generatePage(weeklyCalendar, {
-            year: month.year,
-            month: month.month,
-            week,
-            ...plannerRange,
-          }, plannerLocale, exportPaperSize, weekStartsOn);
-          pages.push({
-            ...page,
-            pageNumber: pages.length + 1,
-            type: 'weekly-calendar',
-            templatePageId: weeklyCalendar.id,
-            month: month.month,
-            year: month.year,
-            weekNumber: i,
-            weekStartISO: week.days[0] ? toWeekStartISO(week.days[0]) : undefined,
-          });
+          await emitUnit(
+            unit,
+            { year: month.year, month: month.month, week, ...plannerRange },
+            {
+              type: 'weekly-calendar',
+              month: month.month,
+              year: month.year,
+              weekNumber: i,
+              weekStartISO: week.days[0] ? toWeekStartISO(week.days[0]) : undefined,
+            }
+          );
           i++;
-          reportProgress();
         }
       }
 
       for (const date of daysInMonth) {
-        for (const dailyTemplate of dailyPageTemplates) {
-          await pushDailyPage(dailyTemplate, date);
+        for (const unit of dailyUnits) {
+          await emitDaily(unit, date);
         }
       }
     }
   }
 
-  const extraPages = template.images.filter(img => img.type === 'extra');
-  for (const extra of extraPages) {
-    const page = await generatePage(
-      extra,
-      plannerRange,
-      plannerLocale,
-      exportPaperSize,
-      weekStartsOn,
-    );
-    pages.push({
-      ...page,
-      pageNumber: pages.length + 1,
-      type: 'extra',
-      templatePageId: extra.id,
-    });
-    reportProgress();
+  for (const unit of unitsForType(template.images, 'extra')) {
+    await emitUnit(unit, plannerRange, { type: 'extra' });
   }
 
   return pages;
