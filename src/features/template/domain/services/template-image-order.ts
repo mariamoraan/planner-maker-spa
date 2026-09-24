@@ -9,6 +9,7 @@ import {
 
 export const TEMPLATE_TYPE_ORDER: TemplateType[] = [
   'cover',
+  'yearly-calendar',
   'month-cover',
   'monthly-calendar',
   'weekly-calendar',

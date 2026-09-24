@@ -32,19 +32,21 @@ import {
   getGridGroupMemberIds,
   removeGridGroup,
   setGridGroupRotation,
-  translateGridGroupState,
+  translateGridGroupsState,
   upsertGridGroup,
 } from '@/features/editor/domain/services/grid-group';
 import {
   createBindingGroup,
-  defaultBindingSourceForPage,
+  defaultGridBindingSource,
   removeBindingGroup,
   upsertBindingGroup,
+  withYearMonthIndexForPage,
 } from '@/features/editor/domain/services/binding-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
 import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
+import { getSpreadMate } from '@/features/template/domain/services/template-spread';
 import {
   getDefaultFormatVariant,
   resolveFieldStyle,
@@ -192,7 +194,15 @@ export function useGridGroupOps() {
       }));
       const rectIds = rectsWithIds.map(rect => rect.id);
       const nextRects = [...currentImage.rectangles, ...rectsWithIds];
-      const binding = createBindingGroup(defaultBindingSourceForPage(currentImage.type));
+      const binding = withYearMonthIndexForPage(
+        createBindingGroup(defaultGridBindingSource(currentImage.type, fieldType)),
+        currentImage.type,
+        currentImage.bindingGroups,
+        {
+          siblingBindingGroups: getSpreadMate(currentImage, template?.images ?? [])
+            ?.bindingGroups,
+        },
+      );
       const group = {
         ...buildGridGroup(rectIds, bounds, settings),
         bindingGroupId: binding.id,
@@ -208,7 +218,7 @@ export function useGridGroupOps() {
         setSelectedRectangleIds,
       );
     },
-    [currentImage, plannerFontId, updatePageGridState, setSelectedRectangleIds],
+    [currentImage, template?.images, plannerFontId, updatePageGridState, setSelectedRectangleIds],
   );
 
   const createDefaultGrid = useCallback(
@@ -298,7 +308,16 @@ export function useGridGroupOps() {
       };
 
       const layoutRects = applyGridLayout(currentImage.rectangles, rectIds, bounds, settings);
-      const binding = createBindingGroup(defaultBindingSourceForPage(currentImage.type));
+      const fieldType = selectedRects[0]?.fieldType;
+      const binding = withYearMonthIndexForPage(
+        createBindingGroup(defaultGridBindingSource(currentImage.type, fieldType)),
+        currentImage.type,
+        currentImage.bindingGroups,
+        {
+          siblingBindingGroups: getSpreadMate(currentImage, template?.images ?? [])
+            ?.bindingGroups,
+        },
+      );
       const group = {
         ...buildGridGroup(rectIds, bounds, settings),
         bindingGroupId: binding.id,
@@ -312,7 +331,7 @@ export function useGridGroupOps() {
         setSelectedRectangleIds,
       );
     },
-    [currentImage, updatePageGridState, setSelectedRectangleIds],
+    [currentImage, template?.images, updatePageGridState, setSelectedRectangleIds],
   );
 
   const ungroupGridGroup = useCallback(
@@ -459,25 +478,42 @@ export function useGridGroupOps() {
     [currentImage, updatePageGridState, setSelectedRectangleIds],
   );
 
-  const translateGridGroup = useCallback(
-    (groupId: string, dx: number, dy: number) => {
-      if (!currentImage) return;
+  const translateGridGroups = useCallback(
+    (groupIds: string[], dx: number, dy: number, selectIds?: string[]) => {
+      if (!currentImage || groupIds.length === 0) return;
 
-      const result = translateGridGroupState(
+      const result = translateGridGroupsState(
         currentImage.rectangles,
         currentImage.gridGroups,
-        groupId,
+        groupIds,
         dx,
         dy,
       );
       if (!result) return;
 
       updatePageGridState(result);
-      setSelectedRectangleIds(
-        currentImage.gridGroups?.[groupId]?.rectIds ?? [],
-      );
+
+      if (selectIds) {
+        setSelectedRectangleIds(selectIds);
+        return;
+      }
+
+      const selected: string[] = [];
+      for (const groupId of new Set(groupIds)) {
+        selected.push(
+          ...getGridGroupMemberIds(groupId, result.rectangles, result.gridGroups),
+        );
+      }
+      setSelectedRectangleIds(selected);
     },
     [currentImage, updatePageGridState, setSelectedRectangleIds],
+  );
+
+  const translateGridGroup = useCallback(
+    (groupId: string, dx: number, dy: number) => {
+      translateGridGroups([groupId], dx, dy);
+    },
+    [translateGridGroups],
   );
 
   const rotateGridGroup = useCallback(
@@ -591,6 +627,7 @@ export function useGridGroupOps() {
     updateGroupSettings,
     updateGroupBounds,
     translateGridGroup,
+    translateGridGroups,
     rotateGridGroup,
     updateGroupFieldType,
     updateGroupStyle,

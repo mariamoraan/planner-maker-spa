@@ -3,6 +3,7 @@ import type { TemplateType } from '../value-objects/planner-locale';
 
 export const TEMPLATE_FIELD_TYPES: Record<TemplateType, FieldType[]> = {
   cover: ['startDay', 'endDay', 'weekNumber', 'composite'],
+  'yearly-calendar': ['year', 'month', 'day', 'startDay', 'endDay', 'composite'],
   'month-cover': ['year', 'month', 'startDay', 'endDay', 'composite'],
   'monthly-calendar': ['year', 'month', 'day', 'startDay', 'endDay', 'composite'],
   'weekly-calendar': ['year', 'month', 'day', 'startDay', 'endDay', 'weekNumber', 'composite'],

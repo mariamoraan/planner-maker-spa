@@ -27,6 +27,7 @@ function page(
 describe('template-spread', () => {
   it('marks eligible types', () => {
     expect(isSpreadEligibleType('monthly-calendar')).toBe(true);
+    expect(isSpreadEligibleType('yearly-calendar')).toBe(true);
     expect(isSpreadEligibleType('cover')).toBe(false);
   });
 

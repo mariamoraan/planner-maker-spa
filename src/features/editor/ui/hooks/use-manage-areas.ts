@@ -8,6 +8,7 @@ import {
   applyLayerOperation,
   type LayerOperation,
 } from '@/features/editor/domain/services/layer-order';
+import { computeTransferAreas } from '@/features/editor/domain/services/transfer-areas';
 import { useCallback } from 'react';
 import { useTemplateId } from './use-template-id';
 
@@ -19,6 +20,7 @@ export const useManageAreas = () => {
       updateRectangle,
       deleteRectangle,
       getCurrentImage,
+      getTemplate,
       updateRectangles,
       updateImage,
       reorderRectangles,
@@ -335,6 +337,105 @@ export const useManageAreas = () => {
       [templateId, currentImageId, getCurrentImage, pushHistory, reorderRectangles],
     );
 
+    const transferAreas = useCallback(
+      (args: {
+        fromImageId: string;
+        toImageId: string;
+        rectangleIds: string[];
+        positions: Record<string, { x: number; y: number }>;
+      }) => {
+        if (!templateId) return null;
+        if (args.fromImageId === args.toImageId) return null;
+
+        const template = getTemplate(templateId);
+        const fromPage = template?.images.find(img => img.id === args.fromImageId);
+        const toPage = template?.images.find(img => img.id === args.toImageId);
+        if (!fromPage || !toPage) return null;
+        if (!fromPage.spreadId || fromPage.spreadId !== toPage.spreadId) return null;
+
+        const result = computeTransferAreas({
+          from: {
+            rectangles: fromPage.rectangles,
+            gridGroups: fromPage.gridGroups,
+            bindingGroups: fromPage.bindingGroups,
+            width: fromPage.width,
+            height: fromPage.height,
+            type: fromPage.type,
+          },
+          to: {
+            rectangles: toPage.rectangles,
+            gridGroups: toPage.gridGroups,
+            bindingGroups: toPage.bindingGroups,
+            width: toPage.width,
+            height: toPage.height,
+            type: toPage.type,
+          },
+          rectangleIds: args.rectangleIds,
+          positions: args.positions,
+        });
+        if (!result) return null;
+
+        const fromBefore = {
+          rectangles: structuredClone(fromPage.rectangles),
+          gridGroups: fromPage.gridGroups ? structuredClone(fromPage.gridGroups) : null,
+          bindingGroups: fromPage.bindingGroups
+            ? structuredClone(fromPage.bindingGroups)
+            : null,
+        };
+        const toBefore = {
+          rectangles: structuredClone(toPage.rectangles),
+          gridGroups: toPage.gridGroups ? structuredClone(toPage.gridGroups) : null,
+          bindingGroups: toPage.bindingGroups
+            ? structuredClone(toPage.bindingGroups)
+            : null,
+        };
+
+        pushHistory(templateId, {
+          type: 'transferAreas',
+          fromImageId: args.fromImageId,
+          toImageId: args.toImageId,
+          fromBefore,
+          fromAfter: {
+            rectangles: structuredClone(result.fromAfter.rectangles),
+            gridGroups: result.fromAfter.gridGroups
+              ? structuredClone(result.fromAfter.gridGroups)
+              : null,
+            bindingGroups: result.fromAfter.bindingGroups
+              ? structuredClone(result.fromAfter.bindingGroups)
+              : null,
+          },
+          toBefore,
+          toAfter: {
+            rectangles: structuredClone(result.toAfter.rectangles),
+            gridGroups: result.toAfter.gridGroups
+              ? structuredClone(result.toAfter.gridGroups)
+              : null,
+            bindingGroups: result.toAfter.bindingGroups
+              ? structuredClone(result.toAfter.bindingGroups)
+              : null,
+          },
+          selectedIdsAfter: result.pastedIds,
+        });
+
+        updateImage(templateId, args.fromImageId, {
+          rectangles: result.fromAfter.rectangles,
+          gridGroups: result.fromAfter.gridGroups ?? null,
+          bindingGroups: result.fromAfter.bindingGroups ?? null,
+        });
+        updateImage(templateId, args.toImageId, {
+          rectangles: result.toAfter.rectangles,
+          gridGroups: result.toAfter.gridGroups ?? null,
+          bindingGroups: result.toAfter.bindingGroups ?? null,
+        });
+
+        setSelectedRectangleIds(result.pastedIds);
+        void useTemplateStore.getState().setCurrentImage(args.toImageId);
+
+        return result.pastedIds;
+      },
+      [templateId, getTemplate, pushHistory, updateImage, setSelectedRectangleIds],
+    );
+
     return {
       addArea,
       addAreas,
@@ -345,6 +446,7 @@ export const useManageAreas = () => {
       updateAreaType,
       updatePageGridState,
       reorderLayers,
+      transferAreas,
     }
  
 }

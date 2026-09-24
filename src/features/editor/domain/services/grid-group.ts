@@ -106,6 +106,29 @@ export function expandSelectionToGridGroups(
   return [...expanded];
 }
 
+/**
+ * Resolve which rectangle ids should move when dragging `leaderId`.
+ * Multi-select (including several grids) keeps the full selection;
+ * otherwise a grid leader expands to its whole group.
+ */
+export function resolveDragMovingIds(
+  leaderId: string,
+  selectedIds: string[],
+  rectangles: Rectangle[],
+  gridGroups?: Record<string, GridGroup>,
+): string[] {
+  if (selectedIds.includes(leaderId) && selectedIds.length > 1) {
+    return expandSelectionToGridGroups(selectedIds, rectangles, gridGroups);
+  }
+
+  const groupId = resolveGridGroupId(leaderId, rectangles, gridGroups);
+  if (groupId) {
+    return getGridGroupMemberIds(groupId, rectangles, gridGroups);
+  }
+
+  return [leaderId];
+}
+
 export function repairGridGroupSettings(
   gridGroups: Record<string, GridGroup> | undefined,
 ): Record<string, GridGroup> | undefined {
@@ -329,6 +352,32 @@ export function translateGridGroupState(
   const nextGridGroups = upsertGridGroup(gridGroups, nextGroup);
 
   return { rectangles: assigned, gridGroups: nextGridGroups };
+}
+
+/** Translate several grid groups in one pass so later groups don't overwrite earlier ones. */
+export function translateGridGroupsState(
+  rectangles: Rectangle[],
+  gridGroups: Record<string, GridGroup> | undefined,
+  groupIds: string[],
+  dx: number,
+  dy: number,
+): { rectangles: Rectangle[]; gridGroups: Record<string, GridGroup> } | null {
+  if ((dx === 0 && dy === 0) || groupIds.length === 0) return null;
+
+  let nextRects = rectangles;
+  let nextGroups = gridGroups;
+  let changed = false;
+
+  for (const groupId of new Set(groupIds)) {
+    const result = translateGridGroupState(nextRects, nextGroups, groupId, dx, dy);
+    if (!result) continue;
+    nextRects = result.rectangles;
+    nextGroups = result.gridGroups;
+    changed = true;
+  }
+
+  if (!changed || !nextGroups) return null;
+  return { rectangles: nextRects, gridGroups: nextGroups };
 }
 
 export function setGridGroupRotation(

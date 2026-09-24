@@ -66,6 +66,10 @@ export const TEMPLATE_TYPE_CONFIG: Record<
     label: 'Cover',
     description: 'Main planner cover page',
   },
+  'yearly-calendar': {
+    label: 'Yearly Calendar',
+    description: 'Year overview with months',
+  },
   'month-cover': {
     label: 'Month Cover',
     description: 'Monthly section divider',

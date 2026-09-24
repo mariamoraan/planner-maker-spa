@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { RefObject } from 'react';
 import type Konva from 'konva';
-import type { Rectangle, TemplateImage } from '@/features/template';
+import type { TemplateImage } from '@/features/template';
+import { preparePastedSelection } from '@/features/editor/domain/services/clone-for-paste';
 import { getGridGroupForSelection } from '@/features/editor/domain/services/grid-group';
+import { getSpreadMate } from '@/features/template/domain/services/template-spread';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 import { useGridGroupOps } from '@/features/editor/ui/hooks/use-grid-group-ops';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { isEditableTarget } from './canvas-interaction-types';
 
 interface UseCanvasKeyboardParams {
@@ -16,6 +19,8 @@ interface UseCanvasKeyboardParams {
   isPanMode: boolean;
   isGridHandleDragging: boolean;
   onCancelGridPreview: () => void;
+  /** When false, no window keydown listener (inactive spread face). */
+  enabled?: boolean;
 }
 
 export function useCanvasKeyboard({
@@ -26,14 +31,15 @@ export function useCanvasKeyboard({
   isPanMode,
   isGridHandleDragging,
   onCancelGridPreview,
+  enabled = true,
 }: UseCanvasKeyboardParams) {
-  const [copiedRects, setCopiedRects] = useState<Rectangle[]>([]);
-
+  const template = useCurrentTemplate();
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const setSelectedRectangleIds = useEditorStore(state => state.setSelectedRectangleIds);
   const clearSelection = useEditorStore(state => state.clearSelection);
   const setCanvasTool = useEditorStore(state => state.setCanvasTool);
-  const { addAreas, deleteAreas } = useManageAreas();
+  const setBlockClipboard = useEditorStore(state => state.setBlockClipboard);
+  const { addAreas, deleteAreas, updatePageGridState } = useManageAreas();
   const { deleteGridGroup } = useGridGroupOps();
 
   const selectedRectangleIdsRef = useRef(selectedRectangleIds);
@@ -42,8 +48,18 @@ export function useCanvasKeyboard({
   rectanglesRef.current = currentImage?.rectangles;
   const gridGroupsRef = useRef(currentImage?.gridGroups);
   gridGroupsRef.current = currentImage?.gridGroups;
-  const copiedRectsRef = useRef(copiedRects);
-  copiedRectsRef.current = copiedRects;
+  const bindingGroupsRef = useRef(currentImage?.bindingGroups);
+  bindingGroupsRef.current = currentImage?.bindingGroups;
+  const siblingBindingGroupsRef = useRef(
+    currentImage ? getSpreadMate(currentImage, template?.images ?? [])?.bindingGroups : undefined,
+  );
+  siblingBindingGroupsRef.current = currentImage
+    ? getSpreadMate(currentImage, template?.images ?? [])?.bindingGroups
+    : undefined;
+  const pageTypeRef = useRef(currentImage?.type);
+  pageTypeRef.current = currentImage?.type;
+  const imageIdRef = useRef(currentImage?.id);
+  imageIdRef.current = currentImage?.id;
   const scaleRef = useRef(scale);
   scaleRef.current = scale;
   const offsetRef = useRef(offset);
@@ -58,8 +74,10 @@ export function useCanvasKeyboard({
   deleteGridGroupRef.current = deleteGridGroup;
 
   useEffect(() => {
+    if (!enabled) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!stageRef.current) return;
+      if (!stageRef.current || !imageIdRef.current) return;
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
       const ctrlKey = isMac ? e.metaKey : e.ctrlKey;
       if (isEditableTarget(e.target)) return;
@@ -100,18 +118,61 @@ export function useCanvasKeyboard({
 
       if (ctrlKey && (e.key === 'c' || e.key === 'C') && selectedIds.length > 0) {
         const rects = rectangles?.filter(r => selectedIds.includes(r.id)) ?? [];
-        if (rects.length > 0) setCopiedRects(rects.map(r => ({ ...r })));
+        if (rects.length === 0 || !imageIdRef.current) return;
+
+        const usedGridIds = new Set(
+          rects.map(r => r.gridGroupId).filter((id): id is string => Boolean(id)),
+        );
+        const usedBindingIds = new Set(
+          rects.map(r => r.bindingGroupId).filter((id): id is string => Boolean(id)),
+        );
+        for (const gridId of usedGridIds) {
+          const bindingId = gridGroupsRef.current?.[gridId]?.bindingGroupId;
+          if (bindingId) usedBindingIds.add(bindingId);
+        }
+
+        const gridGroups = gridGroupsRef.current;
+        const bindingGroups = bindingGroupsRef.current;
+        setBlockClipboard({
+          sourceImageId: imageIdRef.current,
+          rectangles: rects.map(r => ({ ...r })),
+          ...(usedGridIds.size > 0 && gridGroups
+            ? {
+                gridGroups: Object.fromEntries(
+                  [...usedGridIds]
+                    .map(id => [id, gridGroups[id]] as const)
+                    .filter((entry): entry is [string, NonNullable<typeof entry[1]>] =>
+                      Boolean(entry[1]),
+                    ),
+                ),
+              }
+            : {}),
+          ...(usedBindingIds.size > 0 && bindingGroups
+            ? {
+                bindingGroups: Object.fromEntries(
+                  [...usedBindingIds]
+                    .map(id => [id, bindingGroups[id]] as const)
+                    .filter((entry): entry is [string, NonNullable<typeof entry[1]>] =>
+                      Boolean(entry[1]),
+                    ),
+                ),
+              }
+            : {}),
+        });
         return;
       }
 
-      const copied = copiedRectsRef.current;
-      if (ctrlKey && (e.key === 'v' || e.key === 'V') && copied.length > 0) {
+      const clipboard = useEditorStore.getState().blockClipboard;
+      if (ctrlKey && (e.key === 'v' || e.key === 'V') && clipboard && clipboard.rectangles.length > 0) {
         e.preventDefault();
         const stage = stageRef.current;
         const pos = stage.getPointerPosition();
         const currentScale = scaleRef.current;
         const currentOffset = offsetRef.current;
+        const pageType = pageTypeRef.current;
+        if (!pageType) return;
 
+        const copied = clipboard.rectangles;
         const minX = Math.min(...copied.map(r => r.x));
         const minY = Math.min(...copied.map(r => r.y));
 
@@ -120,29 +181,62 @@ export function useCanvasKeyboard({
         const offsetX = pasteOriginX - minX;
         const offsetY = pasteOriginY - minY;
 
-        const newRects = copied.map((rect, index) => {
-          const { id: _ignored, ...rectData } = rect;
-          return {
-            ...rectData,
-            x: Math.round(rect.x + offsetX),
-            y: Math.round(rect.y + offsetY),
-            order: (rectangles?.length ?? 0) + index,
-          };
+        const needsGroupClone = copied.some(
+          r => r.gridGroupId != null || r.bindingGroupId != null,
+        );
+
+        if (!needsGroupClone) {
+          const newRects = copied.map((rect, index) => {
+            const { id: _ignored, ...rectData } = rect;
+            return {
+              ...rectData,
+              x: Math.round(rect.x + offsetX),
+              y: Math.round(rect.y + offsetY),
+              order: (rectangles?.length ?? 0) + index,
+            };
+          });
+          addAreas(newRects);
+          return;
+        }
+
+        const pasted = preparePastedSelection({
+          copiedRects: copied,
+          offsetX,
+          offsetY,
+          existingRectCount: rectangles?.length ?? 0,
+          sourceGridGroups: clipboard.gridGroups,
+          sourceBindingGroups: clipboard.bindingGroups,
+          existingBindingGroups: bindingGroupsRef.current,
+          siblingBindingGroups: siblingBindingGroupsRef.current,
+          pageType,
         });
 
-        addAreas(newRects);
+        updatePageGridState({
+          rectangles: [...(rectangles ?? []), ...pasted.rectangles],
+          gridGroups: {
+            ...(gridGroupsRef.current ?? {}),
+            ...pasted.gridGroups,
+          },
+          bindingGroups: {
+            ...(bindingGroupsRef.current ?? {}),
+            ...pasted.bindingGroups,
+          },
+        });
+        setSelectedRectangleIds(pasted.rectangles.map(r => r.id));
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    enabled,
     stageRef,
     setCanvasTool,
     clearSelection,
     setSelectedRectangleIds,
+    setBlockClipboard,
     deleteAreas,
     addAreas,
+    updatePageGridState,
   ]);
 }
-

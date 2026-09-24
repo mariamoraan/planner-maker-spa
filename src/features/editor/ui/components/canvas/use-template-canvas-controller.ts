@@ -117,6 +117,7 @@ export function useTemplateCanvasController({
     isPanMode,
     isGridHandleDragging: grid.isGridHandleDragging,
     onCancelGridPreview: grid.cancelGridPreview,
+    enabled: interactive,
   });
 
   const {

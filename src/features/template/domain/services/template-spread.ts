@@ -3,6 +3,7 @@ import type { TemplateType } from '@/features/template/domain/value-objects/plan
 import type { SpreadFace } from '@/features/template/domain/entities/template-page';
 
 export const SPREAD_ELIGIBLE_TYPES: readonly TemplateType[] = [
+  'yearly-calendar',
   'month-cover',
   'monthly-calendar',
   'weekly-calendar',

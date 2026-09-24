@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { BindingGroup, BindingSourceKind, Rectangle } from '@/features/template';
+import type { BindingSourceKind, Rectangle } from '@/features/template';
 import {
   assignRectsToBindingGroup,
   createBindingGroup,
@@ -7,14 +7,18 @@ import {
   getBindingGroupMembers,
   removeBindingGroup,
   upsertBindingGroup,
+  withYearMonthIndexForPage,
 } from '@/features/editor/domain/services/binding-group';
 import { useCurrentImage } from '@/features/editor/ui/hooks/use-current-image';
+import { useCurrentTemplate } from '@/features/editor/ui/hooks/use-current-template';
 import { useManageAreas } from '@/features/editor/ui/hooks/use-manage-areas';
 import { useTemplateStore } from '@/features/template/ui/stores/template-store';
 import { useTemplateId } from '@/features/editor/ui/hooks/use-template-id';
+import { getSpreadMate } from '@/features/template/domain/services/template-spread';
 
 export function useBindingGroupOps() {
   const currentImage = useCurrentImage();
+  const template = useCurrentTemplate();
   const templateId = useTemplateId();
   const { updatePageGridState } = useManageAreas();
 
@@ -22,6 +26,16 @@ export function useBindingGroupOps() {
     if (!templateId) return currentImage;
     return useTemplateStore.getState().getCurrentImage(templateId) ?? currentImage;
   }, [templateId, currentImage]);
+
+  const siblingBindingGroups = useCallback(() => {
+    const image = getFreshImage();
+    if (!image) return undefined;
+    const images =
+      (templateId
+        ? useTemplateStore.getState().templates.find(t => t.id === templateId)?.images
+        : template?.images) ?? [];
+    return getSpreadMate(image, images)?.bindingGroups;
+  }, [getFreshImage, template?.images, templateId]);
 
   const setRectangleBindingSource = useCallback(
     (rectangleId: string, source: BindingSourceKind) => {
@@ -53,7 +67,7 @@ export function useBindingGroupOps() {
             return;
           }
 
-          if (source === 'monthDays' || source === 'weekDays') {
+          if (source === 'monthDays' || source === 'weekDays' || source === 'yearMonths') {
             const looseId = findLooseSequenceBindingId(image, source);
             if (looseId && looseId !== existingGroup.id) {
               const membersOfLoose = getBindingGroupMembers(looseId, image.rectangles);
@@ -74,7 +88,12 @@ export function useBindingGroupOps() {
             }
           }
 
-          const nextGroup: BindingGroup = { ...existingGroup, source };
+          const nextGroup = withYearMonthIndexForPage(
+            { ...existingGroup, source },
+            image.type,
+            image.bindingGroups,
+            { siblingBindingGroups: siblingBindingGroups() },
+          );
           updatePageGridState({
             rectangles: image.rectangles,
             gridGroups: image.gridGroups,
@@ -141,7 +160,12 @@ export function useBindingGroupOps() {
         return;
       }
 
-      const binding = createBindingGroup(source);
+      const binding = withYearMonthIndexForPage(
+        createBindingGroup(source),
+        image.type,
+        image.bindingGroups,
+        { siblingBindingGroups: siblingBindingGroups() },
+      );
       const nextRects = assignRectsToBindingGroup(
         image.rectangles,
         binding.id,
@@ -176,7 +200,12 @@ export function useBindingGroupOps() {
       if (!image) return;
       const group = image.bindingGroups?.[bindingGroupId];
       if (!group) return;
-      const nextGroup: BindingGroup = { ...group, source };
+      const nextGroup = withYearMonthIndexForPage(
+        { ...group, source },
+        image.type,
+        image.bindingGroups,
+        { siblingBindingGroups: siblingBindingGroups() },
+      );
       updatePageGridState({
         rectangles: image.rectangles,
         gridGroups: image.gridGroups,
@@ -197,7 +226,12 @@ export function useBindingGroupOps() {
       const existing = existingId ? image.bindingGroups?.[existingId] : undefined;
 
       if (existing) {
-        const nextGroup: BindingGroup = { ...existing, source };
+        const nextGroup = withYearMonthIndexForPage(
+          { ...existing, source },
+          image.type,
+          image.bindingGroups,
+          { siblingBindingGroups: siblingBindingGroups() },
+        );
         updatePageGridState({
           rectangles: image.rectangles,
           gridGroups: image.gridGroups,
@@ -206,7 +240,12 @@ export function useBindingGroupOps() {
         return;
       }
 
-      const binding = createBindingGroup(source);
+      const binding = withYearMonthIndexForPage(
+        createBindingGroup(source),
+        image.type,
+        image.bindingGroups,
+        { siblingBindingGroups: siblingBindingGroups() },
+      );
       const nextRects = assignRectsToBindingGroup(
         image.rectangles,
         binding.id,
@@ -230,7 +269,12 @@ export function useBindingGroupOps() {
       const image = getFreshImage();
       if (!image || selectedIds.length < 1) return;
 
-      const binding = createBindingGroup(source);
+      const binding = withYearMonthIndexForPage(
+        createBindingGroup(source),
+        image.type,
+        image.bindingGroups,
+        { siblingBindingGroups: siblingBindingGroups() },
+      );
       const nextRects = assignRectsToBindingGroup(
         image.rectangles,
         binding.id,

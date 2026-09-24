@@ -61,6 +61,32 @@ export type HistoryAction =
       imageId: string;
       beforeImageData: string;
       afterImageData: string;
+    }
+  | {
+      type: 'transferAreas';
+      fromImageId: string;
+      toImageId: string;
+      fromBefore: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+        bindingGroups?: Record<string, BindingGroup> | null;
+      };
+      fromAfter: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+        bindingGroups?: Record<string, BindingGroup> | null;
+      };
+      toBefore: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+        bindingGroups?: Record<string, BindingGroup> | null;
+      };
+      toAfter: {
+        rectangles: Rectangle[];
+        gridGroups?: Record<string, GridGroup> | null;
+        bindingGroups?: Record<string, BindingGroup> | null;
+      };
+      selectedIdsAfter: string[];
     };
 
 type TemplateHistory = {
@@ -217,6 +243,24 @@ const applyAction = async (templateId: string, action: HistoryAction, direction:
     case 'replacePageImage': {
       const imageData = direction === 'undo' ? action.beforeImageData : action.afterImageData;
       await applyPageImageData(templateId, action.imageId, imageData);
+      break;
+    }
+    case 'transferAreas': {
+      const fromSnap = direction === 'undo' ? action.fromBefore : action.fromAfter;
+      const toSnap = direction === 'undo' ? action.toBefore : action.toAfter;
+      store.updateImage(templateId, action.fromImageId, fromSnap);
+      store.updateImage(templateId, action.toImageId, toSnap);
+      if (direction === 'redo') {
+        useEditorStore.getState().setSelectedRectangleIds(action.selectedIdsAfter);
+        useEditorStore.getState().setCurrentImageId(action.toImageId);
+      } else {
+        useEditorStore.getState().setSelectedRectangleIds(
+          action.fromBefore.rectangles
+            .filter(r => !action.fromAfter.rectangles.some(k => k.id === r.id))
+            .map(r => r.id),
+        );
+        useEditorStore.getState().setCurrentImageId(action.fromImageId);
+      }
       break;
     }
   }

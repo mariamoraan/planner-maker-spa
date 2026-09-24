@@ -9,6 +9,13 @@
   width: 100%;
   padding: 8px 8px 0;
   overflow: hidden;
+  position: relative;
+
+  &--dragging {
+    .spread-canvas-layout__hit {
+      pointer-events: none;
+    }
+  }
 }
 
 .spread-canvas-layout__face {
@@ -67,6 +74,16 @@
   border: none;
   background: transparent;
   cursor: pointer;
+}
+
+.spread-canvas-layout__ghost {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border: 1.5px dashed hsl(var(--accent));
+  background: hsl(var(--accent) / 0.12);
+  border-radius: 2px;
+  box-sizing: border-box;
 }
 
 .template-canva--readonly {

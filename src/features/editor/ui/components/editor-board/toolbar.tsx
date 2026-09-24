@@ -113,6 +113,7 @@ export const Toolbar = () => {
                             : null;
                         })()}
                         suggested={suggestedCalendarRoleForPage(currentImage.type)}
+                        pageType={currentImage.type}
                         onSelect={source =>
                           groupSelectionBinding([...selectedRectangleIds], source)
                         }

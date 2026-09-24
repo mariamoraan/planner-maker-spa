@@ -44,7 +44,7 @@ import {
 import { degToRad } from '@/features/editor/domain/services/block-geometry';
 import {
   getSequenceIndex,
-  resolveEffectiveBindingSource,
+  resolveBindingGroup,
 } from '@/features/editor/domain/services/binding-group';
 import type { BindingSourceKind } from '@/features/template';
 
@@ -203,6 +203,18 @@ export function getMonthsBetween({
   return months;
 }
 
+/** Unique calendar years touched by [startDate, endDate], inclusive. */
+export function getYearsBetween(startDate: Date, endDate: Date): number[] {
+  const startYear = startDate.getFullYear();
+  const endYear = endDate.getFullYear();
+  if (endYear < startYear) return [];
+  const years: number[] = [];
+  for (let year = startYear; year <= endYear; year++) {
+    years.push(year);
+  }
+  return years;
+}
+
 /**
  * Pick a nearby month whose day 1 falls on the planner's first weekday.
  * Keeps editor preview grids aligned: cell 0 = day 1 (no leading padding).
@@ -321,6 +333,14 @@ export function getEditorPreviewContext(
         date: rangeStart,
       };
     }
+    case 'yearly-calendar': {
+      const year = hasOverride ? previewAnchor.getFullYear() : today.getFullYear();
+      return {
+        year,
+        plannerStart,
+        plannerEnd,
+      };
+    }
     default:
       return { year, month, date: firstOfMonth, plannerStart, plannerEnd };
   }
@@ -396,6 +416,16 @@ export function getEditorPreviewDateInfo(
         detail: rangeOverride ? 'previewPlannerRangeCustom' : 'previewPlannerRange',
         anchor: start,
         isCustom: rangeOverride != null,
+      };
+    }
+    case 'yearly-calendar': {
+      const year = context.year ?? new Date().getFullYear();
+      const anchor = new Date(year, 0, 1);
+      return {
+        label: String(year),
+        detail: isCustom ? 'previewYearCustom' : 'previewYear',
+        anchor,
+        isCustom,
       };
     }
     case 'daily-page': {
@@ -495,6 +525,12 @@ export function resolveRangeEndpointDate(
         ? new Date(context.year, context.month, 1)
         : new Date(context.year, context.month + 1, 0);
     }
+    case 'yearly-calendar': {
+      if (context.year === undefined) return null;
+      return which === 'start'
+        ? new Date(context.year, 0, 1)
+        : new Date(context.year, 11, 31);
+    }
     case 'cover':
     case 'extra':
       return which === 'start'
@@ -518,6 +554,9 @@ export function resolveCompositeAnchorDate(
     case 'month-cover':
       if (context.year === undefined || context.month === undefined) return null;
       return new Date(context.year, context.month, 1);
+    case 'yearly-calendar':
+      if (context.year === undefined) return null;
+      return new Date(context.year, 0, 1);
     case 'cover':
     case 'extra':
       return context.plannerStart ?? null;
@@ -553,7 +592,24 @@ export interface ResolvedBindingDate {
 function resolveMonthDayList(
   context: FieldValueContext,
   weekStartsOn: WeekStartsOn,
+  yearMonthIndex?: number,
 ): { dates: Date[]; referenceMonth: number } | null {
+  if (
+    yearMonthIndex != null &&
+    yearMonthIndex >= 0 &&
+    yearMonthIndex <= 11 &&
+    context.year !== undefined
+  ) {
+    return {
+      dates: getMonthDatesForGrid({
+        year: context.year,
+        month: yearMonthIndex,
+        weekStartsOn,
+      }),
+      referenceMonth: yearMonthIndex,
+    };
+  }
+
   if (context.days?.length) {
     const referenceMonth =
       context.month ??
@@ -576,6 +632,28 @@ function resolveMonthDayList(
     dates: getMonthDatesForGrid({ year, month, weekStartsOn }),
     referenceMonth: month,
   };
+}
+
+function resolveYearMonthList(
+  context: FieldValueContext,
+): { dates: Date[]; referenceMonth: number | undefined } | null {
+  if (context.year === undefined) return null;
+  const dates = Array.from({ length: 12 }, (_, month) => new Date(context.year!, month, 1));
+  return { dates, referenceMonth: undefined };
+}
+
+/** True when the calendar month of `date` intersects [plannerStart, plannerEnd]. */
+export function isMonthInPlannerRange(
+  date: Date,
+  plannerStart?: Date,
+  plannerEnd?: Date,
+): boolean {
+  if (!plannerStart && !plannerEnd) return true;
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  const monthEnd = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59, 999);
+  if (plannerStart && monthEnd < plannerStart) return false;
+  if (plannerEnd && monthStart > plannerEnd) return false;
+  return true;
 }
 
 function resolveWeekDayList(
@@ -623,7 +701,8 @@ export function resolveBindingDate({
   weekStartsOn?: WeekStartsOn;
   endpoint?: 'start' | 'end';
 }): ResolvedBindingDate {
-  const source = resolveEffectiveBindingSource(rectangle, templateImage);
+  const binding = resolveBindingGroup(rectangle, templateImage);
+  const source = binding?.source ?? 'page';
   const sequenceIndex = getSequenceIndex(rectangle, templateImage.rectangles);
 
   if (source === 'page') {
@@ -644,9 +723,11 @@ export function resolveBindingDate({
   }
 
   const list =
-    source === 'monthDays'
-      ? resolveMonthDayList(context, weekStartsOn)
-      : resolveWeekDayList(context, weekStartsOn);
+    source === 'yearMonths'
+      ? resolveYearMonthList(context)
+      : source === 'monthDays'
+        ? resolveMonthDayList(context, weekStartsOn, binding?.yearMonthIndex)
+        : resolveWeekDayList(context, weekStartsOn);
 
   if (!list) {
     return {
@@ -812,10 +893,32 @@ export function getFieldValue({
     return result('', userColor);
   }
 
-  const isSequence = resolved.source === 'monthDays' || resolved.source === 'weekDays';
+  // Year-month cells (and mini calendars anchored to a month) outside the
+  // planner range render empty.
+  if (
+    resolved.source === 'yearMonths' ||
+    (resolved.source === 'monthDays' && templateImage.type === 'yearly-calendar')
+  ) {
+    const monthAnchor =
+      resolved.source === 'yearMonths'
+        ? date
+        : context.year !== undefined && resolved.referenceMonth !== undefined
+          ? new Date(context.year, resolved.referenceMonth, 1)
+          : date;
+    if (!isMonthInPlannerRange(monthAnchor, context.plannerStart, context.plannerEnd)) {
+      return result('', userColor);
+    }
+  }
+
+  const isSequence =
+    resolved.source === 'monthDays' ||
+    resolved.source === 'weekDays' ||
+    resolved.source === 'yearMonths';
   const referenceMonth = resolved.referenceMonth;
   const isInCurrentMonth =
-    referenceMonth === undefined || date.getMonth() === referenceMonth;
+    resolved.source === 'yearMonths'
+      ? true
+      : referenceMonth === undefined || date.getMonth() === referenceMonth;
   const shouldMuteOutOfMonth = isSequence && !isInCurrentMonth;
 
   const allowOutOfMonth =
@@ -835,8 +938,11 @@ export function getFieldValue({
 
   // Month/year titles use the planner month being built (day 1), not the
   // sequence cell — which is often a leading/trailing day of another month.
+  // Exception: yearMonths sequences intentionally use each cell's month.
   const contextMonthDate =
-    context.year !== undefined && context.month !== undefined
+    resolved.source !== 'yearMonths' &&
+    context.year !== undefined &&
+    context.month !== undefined
       ? new Date(context.year, context.month, 1)
       : null;
 

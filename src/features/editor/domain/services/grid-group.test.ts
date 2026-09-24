@@ -15,8 +15,10 @@ import {
   removeGridGroup,
   removeGridGroupsFullyCoveredBy,
   repairGridMetadata,
+  resolveDragMovingIds,
   resolveGridGroupId,
   translateGridGroupState,
+  translateGridGroupsState,
   upsertGridGroup,
 } from './grid-group';
 
@@ -73,6 +75,54 @@ describe('expandSelectionToGridGroups', () => {
     const stripped = rectangles.map(({ gridGroupId: _g, gridCellIndex: _c, ...rect }) => rect);
     const groups = { 'grid-1': sampleGroup };
     expect(expandSelectionToGridGroups(['b'], stripped, groups)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('resolveDragMovingIds', () => {
+  const grid2: GridGroup = {
+    id: 'grid-2',
+    rectIds: ['e', 'f'],
+    cols: 2,
+    rows: 1,
+    bounds: { x: 0, y: 200, width: 200, height: 100 },
+    settings: {
+      cols: 2,
+      rows: 1,
+      alignH: 'left',
+      alignV: 'top',
+      rectWidth: 48,
+      rectHeight: 36,
+      gap: { x: 52, y: 0 },
+    },
+  };
+
+  const multiGridRects: Rectangle[] = [
+    ...rectangles,
+    { id: 'e', x: 0, y: 200, width: 48, height: 36, fieldType: 'day', order: 4, gridGroupId: 'grid-2', gridCellIndex: 0 },
+    { id: 'f', x: 100, y: 200, width: 48, height: 36, fieldType: 'day', order: 5, gridGroupId: 'grid-2', gridCellIndex: 1 },
+  ];
+  const groups = { 'grid-1': sampleGroup, 'grid-2': grid2 };
+
+  it('moves all selected ids when multiple grids are selected', () => {
+    const selected = ['a', 'b', 'c', 'e', 'f'];
+    expect(resolveDragMovingIds('a', selected, multiGridRects, groups)).toEqual(selected);
+  });
+
+  it('expands a lone grid leader to its full group', () => {
+    expect(resolveDragMovingIds('b', ['b'], multiGridRects, groups)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('keeps multi-select of free rects', () => {
+    expect(resolveDragMovingIds('d', ['d', 'a'], multiGridRects, groups)).toEqual([
+      'd',
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+
+  it('moves a single ungrouped rect alone', () => {
+    expect(resolveDragMovingIds('d', ['d'], multiGridRects, groups)).toEqual(['d']);
   });
 });
 
@@ -242,5 +292,68 @@ describe('translateGridGroupState', () => {
 
   it('returns null for zero delta', () => {
     expect(translateGridGroupState(rectangles, { 'grid-1': sampleGroup }, 'grid-1', 0, 0)).toBeNull();
+  });
+});
+
+describe('translateGridGroupsState', () => {
+  const grid2: GridGroup = {
+    id: 'grid-2',
+    rectIds: ['e', 'f'],
+    cols: 2,
+    rows: 1,
+    bounds: { x: 0, y: 200, width: 200, height: 100 },
+    settings: {
+      cols: 2,
+      rows: 1,
+      alignH: 'left',
+      alignV: 'top',
+      rectWidth: 48,
+      rectHeight: 36,
+      gap: { x: 52, y: 0 },
+    },
+  };
+
+  const multiGridRects: Rectangle[] = [
+    ...rectangles,
+    {
+      id: 'e',
+      x: 0,
+      y: 200,
+      width: 48,
+      height: 36,
+      fieldType: 'day',
+      order: 4,
+      gridGroupId: 'grid-2',
+      gridCellIndex: 0,
+    },
+    {
+      id: 'f',
+      x: 100,
+      y: 200,
+      width: 48,
+      height: 36,
+      fieldType: 'day',
+      order: 5,
+      gridGroupId: 'grid-2',
+      gridCellIndex: 1,
+    },
+  ];
+
+  it('translates every group without overwriting prior moves', () => {
+    const groups = { 'grid-1': sampleGroup, 'grid-2': grid2 };
+    const result = translateGridGroupsState(
+      multiGridRects,
+      groups,
+      ['grid-1', 'grid-2'],
+      10,
+      20,
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.gridGroups['grid-1'].bounds).toMatchObject({ x: 10, y: 20 });
+    expect(result!.gridGroups['grid-2'].bounds).toMatchObject({ x: 10, y: 220 });
+    expect(result!.rectangles.find(rect => rect.id === 'a')).toMatchObject({ x: 10, y: 20 });
+    expect(result!.rectangles.find(rect => rect.id === 'e')).toMatchObject({ x: 10, y: 220 });
+    expect(result!.rectangles.find(rect => rect.id === 'd')).toMatchObject({ x: 0, y: 100 });
   });
 });

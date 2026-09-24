@@ -16,6 +16,12 @@ export interface GridToolPreset {
 const PAGE_PRESETS: Partial<
   Record<TemplateType, Omit<GridToolPreset, 'fieldType' | 'rectSize'> & { fieldType?: FieldType }>
 > = {
+  'yearly-calendar': {
+    cols: 4,
+    rows: 3,
+    fieldType: 'month',
+    align: 'top-left',
+  },
   'monthly-calendar': {
     cols: 7,
     rows: 5,

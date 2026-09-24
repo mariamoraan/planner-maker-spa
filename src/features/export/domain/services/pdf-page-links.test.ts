@@ -346,6 +346,98 @@ describe('collectLinksForTemplatePage', () => {
     expect(links).toHaveLength(1);
     expect(links[0].destPageNumber).toBe(4);
   });
+
+  it('links month cells on yearly-calendar to monthly destinations', () => {
+    const yearly: TemplateImage = {
+      id: 'yearly-1',
+      name: 'Yearly',
+      type: 'yearly-calendar',
+      width: 200,
+      height: 200,
+      src: '',
+      rectangles: [
+        {
+          id: 'apr',
+          x: 10,
+          y: 10,
+          width: 40,
+          height: 20,
+          fieldType: 'month',
+          order: 0,
+          bindingGroupId: 'bind-year',
+          sequenceIndex: 3,
+        },
+      ],
+      bindingGroups: {
+        'bind-year': { id: 'bind-year', source: 'yearMonths' },
+      },
+    };
+
+    const index = buildDestinationIndex([
+      page({ pageNumber: 8, type: 'monthly-calendar', year: 2026, month: 3 }),
+    ]);
+
+    const links = collectLinksForTemplatePage({
+      templateImage: yearly,
+      context: {
+        year: 2026,
+        plannerStart: new Date(2026, 0, 1),
+        plannerEnd: new Date(2026, 11, 31),
+      },
+      outputSize: { width: 200, height: 200 },
+      index,
+    });
+
+    expect(links).toHaveLength(1);
+    expect(links[0].destPageNumber).toBe(8);
+  });
+
+  it('links day cells on yearly mini calendars to daily destinations', () => {
+    const yearly: TemplateImage = {
+      id: 'yearly-days',
+      name: 'Yearly',
+      type: 'yearly-calendar',
+      width: 200,
+      height: 200,
+      src: '',
+      rectangles: [
+        {
+          id: 'd0',
+          x: 10,
+          y: 10,
+          width: 20,
+          height: 20,
+          fieldType: 'day',
+          order: 0,
+          bindingGroupId: 'bind-jan',
+          // Monday-start grid for Jan 2026: Dec 29,30,31, Jan1 → index 3 = Jan 1
+          sequenceIndex: 3,
+        },
+      ],
+      bindingGroups: {
+        'bind-jan': { id: 'bind-jan', source: 'monthDays', yearMonthIndex: 0 },
+      },
+    };
+
+    const index = buildDestinationIndex([
+      page({ pageNumber: 12, type: 'daily-page', year: 2026, month: 0, day: 1 }),
+    ]);
+
+    const links = collectLinksForTemplatePage({
+      templateImage: yearly,
+      context: {
+        year: 2026,
+        plannerStart: new Date(2026, 0, 1),
+        plannerEnd: new Date(2026, 11, 31),
+      },
+      weekStartsOn: 'monday',
+      outputSize: { width: 200, height: 200 },
+      index,
+    });
+
+    expect(links).toHaveLength(1);
+    expect(links[0].destPageNumber).toBe(12);
+  });
 });
 
 describe('attachPdfLinks', () => {

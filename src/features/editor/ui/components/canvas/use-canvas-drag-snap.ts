@@ -17,7 +17,7 @@ import {
   type DragAxisLock,
 } from '@/features/editor/domain/services/drag-axis-lock';
 import {
-  getGridGroupMemberIds,
+  resolveDragMovingIds,
   resolveGridGroupId,
 } from '@/features/editor/domain/services/grid-group';
 import {
@@ -57,8 +57,9 @@ export function useCanvasDragSnap({
 
   const selectedRectangleIds = useEditorStore(state => state.selectedRectangleIds);
   const setSelectedRectangleIds = useEditorStore(state => state.setSelectedRectangleIds);
-  const { updateArea, moveAreas } = useManageAreas();
-  const { translateGridGroup } = useGridGroupOps();
+  const setActiveBlockDrag = useEditorStore(state => state.setActiveBlockDrag);
+  const { updateArea, moveAreas, transferAreas } = useManageAreas();
+  const { translateGridGroups } = useGridGroupOps();
 
   useEffect(() => {
     return () => {
@@ -94,19 +95,16 @@ export function useCanvasDragSnap({
       if (!isSelectMode || isGridHandleDraggingRef.current) return;
       const rects = currentImage?.rectangles ?? [];
       const gridGroups = currentImage?.gridGroups;
-      const groupId = resolveGridGroupId(rectId, rects, gridGroups);
-      let movingIds: string[];
+      const movingIds = resolveDragMovingIds(rectId, selectedRectangleIds, rects, gridGroups);
 
-      if (groupId) {
-        movingIds = getGridGroupMemberIds(groupId, rects, gridGroups);
-        if (!movingIds.every(id => selectedRectangleIds.includes(id))) {
-          setSelectedRectangleIds(movingIds);
-        }
-      } else {
-        movingIds =
-          selectedRectangleIds.includes(rectId) && selectedRectangleIds.length > 1
-            ? selectedRectangleIds
-            : [rectId];
+      // Sync selection when drag expands a single grid cell to its full group,
+      // or fills in missing members of a multi-select.
+      const selectedSet = new Set(selectedRectangleIds);
+      if (
+        movingIds.length !== selectedRectangleIds.length ||
+        movingIds.some(id => !selectedSet.has(id))
+      ) {
+        setSelectedRectangleIds(movingIds);
       }
 
       dragGroupStartRef.current = movingIds.map(id => {
@@ -129,6 +127,22 @@ export function useCanvasDragSnap({
       dragDeltaRef.current = { dx: 0, dy: 0 };
       dragAxisLockRef.current = null;
       setDragState({ leaderId: rectId, movingIds });
+      if (currentImage?.id) {
+        setActiveBlockDrag({
+          sourceImageId: currentImage.id,
+          movingIds,
+          startPositions: movingIds.map(id => {
+            const rect = rects.find(r => r.id === id)!;
+            return {
+              id,
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height,
+            };
+          }),
+        });
+      }
       setDragOverlay({
         guides: [],
         previewPositions: Object.fromEntries(
@@ -143,10 +157,12 @@ export function useCanvasDragSnap({
     [
       isSelectMode,
       isGridHandleDraggingRef,
+      currentImage?.id,
       currentImage?.rectangles,
       currentImage?.gridGroups,
       selectedRectangleIds,
       setSelectedRectangleIds,
+      setActiveBlockDrag,
     ],
   );
 
@@ -330,19 +346,62 @@ export function useCanvasDragSnap({
     (_rectId: string) => {
       const startEntries = dragGroupStartRef.current;
       const delta = dragDeltaRef.current;
-      if (!startEntries || !delta) return;
+
+      const pendingDrop = useEditorStore.getState().pendingCrossFaceDrop;
+      const activeDrag = useEditorStore.getState().activeBlockDrag;
+
+      if (
+        pendingDrop &&
+        activeDrag &&
+        pendingDrop.targetImageId !== activeDrag.sourceImageId
+      ) {
+        transferAreas({
+          fromImageId: activeDrag.sourceImageId,
+          toImageId: pendingDrop.targetImageId,
+          rectangleIds: activeDrag.movingIds,
+          positions: pendingDrop.positions,
+        });
+        useEditorStore.getState().setPendingCrossFaceDrop(null);
+        useEditorStore.getState().setActiveBlockDrag(null);
+        dragGroupStartRef.current = null;
+        dragGroupBoundsRef.current = null;
+        dragDeltaRef.current = null;
+        dragAxisLockRef.current = null;
+        setDragState(null);
+        clearDragOverlay();
+        return;
+      }
+
+      useEditorStore.getState().setPendingCrossFaceDrop(null);
+      useEditorStore.getState().setActiveBlockDrag(null);
+
+      if (!startEntries || !delta) {
+        setDragState(null);
+        clearDragOverlay();
+        return;
+      }
 
       if (delta.dx !== 0 || delta.dy !== 0) {
         const rects = currentImage?.rectangles ?? [];
         const gridGroups = currentImage?.gridGroups;
-        const translatedGroups = new Set<string>();
+        const groupIds: string[] = [];
+        const seenGroups = new Set<string>();
 
         for (const entry of startEntries) {
           const groupId = resolveGridGroupId(entry.id, rects, gridGroups);
-          if (groupId && !translatedGroups.has(groupId)) {
-            translatedGroups.add(groupId);
-            translateGridGroup(groupId, delta.dx, delta.dy);
+          if (groupId && !seenGroups.has(groupId)) {
+            seenGroups.add(groupId);
+            groupIds.push(groupId);
           }
+        }
+
+        if (groupIds.length > 0) {
+          translateGridGroups(
+            groupIds,
+            delta.dx,
+            delta.dy,
+            startEntries.map(entry => entry.id),
+          );
         }
 
         const nonGridMoves = startEntries
@@ -365,7 +424,14 @@ export function useCanvasDragSnap({
       setDragState(null);
       clearDragOverlay();
     },
-    [currentImage?.rectangles, currentImage?.gridGroups, moveAreas, translateGridGroup, clearDragOverlay],
+    [
+      currentImage?.rectangles,
+      currentImage?.gridGroups,
+      moveAreas,
+      transferAreas,
+      translateGridGroups,
+      clearDragOverlay,
+    ],
   );
 
   const handleTransformEnd = useCallback(

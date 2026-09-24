@@ -34,7 +34,7 @@ import { isDisplaySrcFresh } from '@/features/template/infrastructure/uploadthin
 import type { TemplatePageRecord } from '@/features/template/domain/ports/template.port';
 import { sanitizeRectangleGeometry } from '@/features/editor/domain/services/canvas-snap';
 import { repairGridMetadata, repairGridGroupSettings } from '@/features/editor/domain/services/grid-group';
-import { withRepairedBindingMetadata } from '@/features/editor/domain/services/binding-group';
+import { withRepairedBindingMetadata, repairYearMonthIndicesInImages } from '@/features/editor/domain/services/binding-group';
 import { useEditorStore } from '@/features/editor/ui/stores/editor-store';
 
 function currentPlanLimits() {
@@ -383,15 +383,17 @@ export const useTemplateStore = create<TemplateState>()((set, get) => {
 
         localTemplate?.images.forEach(localImg => {
           if (!remoteImageIds.has(localImg.id)) {
-            merged.push({
-              ...localImg,
-              src: srcByPageId.get(localImg.id) ?? localImg.src ?? '',
-              missingLocalAsset: false,
-            });
+            merged.push(
+              withRepairedGridMetadata({
+                ...localImg,
+                src: srcByPageId.get(localImg.id) ?? localImg.src ?? '',
+                missingLocalAsset: false,
+              }),
+            );
           }
         });
 
-        return merged;
+        return repairYearMonthIndicesInImages(merged);
       };
 
       const templates = [

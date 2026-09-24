@@ -4,6 +4,7 @@ export type WeekStartsOn = 'monday' | 'sunday';
 
 export type TemplateType =
   | 'cover'
+  | 'yearly-calendar'
   | 'month-cover'
   | 'monthly-calendar'
   | 'weekly-calendar'

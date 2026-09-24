@@ -15,6 +15,8 @@ export function createBindingGroupId(): string {
 
 export function defaultBindingSourceForPage(pageType: TemplateType): BindingSourceKind {
   switch (pageType) {
+    case 'yearly-calendar':
+      return 'yearMonths';
     case 'monthly-calendar':
       return 'monthDays';
     case 'weekly-calendar':
@@ -26,6 +28,18 @@ export function defaultBindingSourceForPage(pageType: TemplateType): BindingSour
   }
 }
 
+/** Default binding for a new grid, considering the cells' field type. */
+export function defaultGridBindingSource(
+  pageType: TemplateType,
+  fieldType?: FieldType,
+): BindingSourceKind {
+  if (pageType === 'yearly-calendar') {
+    if (fieldType === 'day') return 'monthDays';
+    return 'yearMonths';
+  }
+  return defaultBindingSourceForPage(pageType);
+}
+
 /** Field types that should bind to the day sequence on calendar pages. */
 function usesDaySequenceBinding(fieldType: FieldType): boolean {
   return fieldType === 'day';
@@ -34,11 +48,18 @@ function usesDaySequenceBinding(fieldType: FieldType): boolean {
 /**
  * Default for a newly created loose (non-grid) block.
  * Day cells join the month/week sequence; titles and range fields stay on page.
+ * On yearly pages, month blocks join the yearMonths sequence.
  */
 export function defaultLooseBlockBindingSource(
   pageType: TemplateType,
   fieldType?: FieldType,
 ): BindingSourceKind {
+  if (pageType === 'yearly-calendar') {
+    if (fieldType === 'month') return 'yearMonths';
+    if (fieldType === 'day') return 'monthDays';
+    return 'page';
+  }
+
   if (fieldType !== undefined && !usesDaySequenceBinding(fieldType)) {
     return 'page';
   }
@@ -55,12 +76,13 @@ export function defaultLooseBlockBindingSource(
   }
 }
 
-/** Pages where the user can pick page / month / week date roles. */
+/** Pages where the user can pick page / month / week / year date roles. */
 export function pageAllowsDateRoleChoice(pageType: TemplateType): boolean {
   return (
     pageType === 'daily-page' ||
     pageType === 'monthly-calendar' ||
-    pageType === 'weekly-calendar'
+    pageType === 'weekly-calendar' ||
+    pageType === 'yearly-calendar'
   );
 }
 
@@ -69,7 +91,19 @@ export function suggestedCalendarRoleForPage(pageType: TemplateType): BindingSou
   return defaultBindingSourceForPage(pageType);
 }
 
-export const CALENDAR_ROLE_OPTIONS: BindingSourceKind[] = ['page', 'monthDays', 'weekDays'];
+export const CALENDAR_ROLE_OPTIONS: BindingSourceKind[] = [
+  'page',
+  'monthDays',
+  'weekDays',
+  'yearMonths',
+];
+
+export function calendarRoleOptionsForPage(pageType: TemplateType): BindingSourceKind[] {
+  if (pageType === 'yearly-calendar') {
+    return ['page', 'yearMonths', 'monthDays'];
+  }
+  return ['page', 'monthDays', 'weekDays'];
+}
 
 export function calendarRoleLabelKey(source: BindingSourceKind): string {
   switch (source) {
@@ -79,6 +113,8 @@ export function calendarRoleLabelKey(source: BindingSourceKind): string {
       return 'editor.calendarRoleMonth';
     case 'weekDays':
       return 'editor.calendarRoleWeek';
+    case 'yearMonths':
+      return 'editor.calendarRoleYear';
   }
 }
 
@@ -90,7 +126,148 @@ export function calendarRoleShortKey(source: BindingSourceKind): string {
       return 'editor.calendarRoleMonthShort';
     case 'weekDays':
       return 'editor.calendarRoleWeekShort';
+    case 'yearMonths':
+      return 'editor.calendarRoleYearShort';
   }
+}
+
+/** Collect yearMonthIndex values already taken by monthDays bindings. */
+export function usedYearMonthIndices(
+  ...groupMaps: Array<Record<string, BindingGroup> | undefined>
+): Set<number> {
+  const used = new Set<number>();
+  for (const map of groupMaps) {
+    for (const group of Object.values(map ?? {})) {
+      if (group.source === 'monthDays' && group.yearMonthIndex != null) {
+        used.add(group.yearMonthIndex);
+      }
+    }
+  }
+  return used;
+}
+
+export function nextFreeYearMonthIndexFromUsed(used: Set<number>): number {
+  for (let i = 0; i < 12; i++) {
+    if (!used.has(i)) return i;
+  }
+  return 0;
+}
+
+/** Lowest free 0–11 month slot among monthDays groups that already have an index. */
+export function nextFreeYearMonthIndex(
+  ...groupMaps: Array<Record<string, BindingGroup> | undefined>
+): number {
+  return nextFreeYearMonthIndexFromUsed(usedYearMonthIndices(...groupMaps));
+}
+
+export type YearMonthIndexOptions = {
+  /** Binding groups on the other face of a contiguous yearly spread. */
+  siblingBindingGroups?: Record<string, BindingGroup>;
+  /** Prefer this slot when free (paste/transfer of an existing month grid). */
+  preferredYearMonthIndex?: number;
+};
+
+/** Attach yearMonthIndex when creating/switching to monthDays on a yearly page. */
+export function withYearMonthIndexForPage(
+  group: BindingGroup,
+  pageType: TemplateType,
+  bindingGroups: Record<string, BindingGroup> | undefined,
+  options?: YearMonthIndexOptions,
+): BindingGroup {
+  if (pageType !== 'yearly-calendar' || group.source !== 'monthDays') {
+    if (group.yearMonthIndex == null) return group;
+    const { yearMonthIndex: _i, ...rest } = group;
+    return rest;
+  }
+  if (group.yearMonthIndex != null) return group;
+
+  const used = usedYearMonthIndices(bindingGroups, options?.siblingBindingGroups);
+  const preferred = options?.preferredYearMonthIndex;
+  const yearMonthIndex =
+    preferred != null && preferred >= 0 && preferred <= 11 && !used.has(preferred)
+      ? preferred
+      : nextFreeYearMonthIndexFromUsed(used);
+
+  return {
+    ...group,
+    yearMonthIndex,
+  };
+}
+
+/**
+ * Keep left-face month slots; reassign right-face monthDays that collide
+ * (common after pasting/moving half a yearly layout onto the other spread face).
+ */
+export function rebalanceYearMonthIndicesAcrossSpread(
+  left: TemplateImage,
+  right: TemplateImage,
+): { left: TemplateImage; right: TemplateImage; changed: boolean } {
+  if (left.type !== 'yearly-calendar' || right.type !== 'yearly-calendar') {
+    return { left, right, changed: false };
+  }
+  if (!right.bindingGroups) return { left, right, changed: false };
+
+  const rightMonthGroups = Object.values(right.bindingGroups)
+    .filter(group => group.source === 'monthDays')
+    .sort((a, b) => {
+      const indexA = a.yearMonthIndex ?? 999;
+      const indexB = b.yearMonthIndex ?? 999;
+      if (indexA !== indexB) return indexA - indexB;
+      return a.id.localeCompare(b.id);
+    });
+
+  if (rightMonthGroups.length === 0) return { left, right, changed: false };
+
+  const used = usedYearMonthIndices(left.bindingGroups);
+  let nextBindings = right.bindingGroups;
+  let changed = false;
+
+  for (const group of rightMonthGroups) {
+    const current = group.yearMonthIndex;
+    if (current != null && !used.has(current)) {
+      used.add(current);
+      continue;
+    }
+    const nextIndex = nextFreeYearMonthIndexFromUsed(used);
+    used.add(nextIndex);
+    if (nextBindings === right.bindingGroups) {
+      nextBindings = { ...right.bindingGroups };
+    }
+    nextBindings[group.id] = { ...group, yearMonthIndex: nextIndex };
+    changed = true;
+  }
+
+  if (!changed) return { left, right, changed: false };
+  return {
+    left,
+    right: { ...right, bindingGroups: nextBindings },
+    changed: true,
+  };
+}
+
+/** Rebalance monthDays indices on every yearly contiguous spread in the template. */
+export function repairYearMonthIndicesInImages(images: TemplateImage[]): TemplateImage[] {
+  const byId = new Map(images.map(image => [image.id, image]));
+  let changed = false;
+
+  for (const image of images) {
+    if (!image.spreadId || image.spreadFace !== 'left') continue;
+    const mate = images.find(
+      other => other.spreadId === image.spreadId && other.id !== image.id,
+    );
+    if (!mate || mate.spreadFace !== 'right') continue;
+
+    const left = byId.get(image.id) ?? image;
+    const right = byId.get(mate.id) ?? mate;
+    const result = rebalanceYearMonthIndicesAcrossSpread(left, right);
+    if (!result.changed) continue;
+    changed = true;
+    byId.set(result.left.id, result.left);
+    byId.set(result.right.id, result.right);
+  }
+
+  if (!changed) return images;
+  return images.map(image => byId.get(image.id) ?? image);
 }
 
 /** Non-grid binding group with the given sequence source, if any. */
@@ -113,13 +290,14 @@ export function findLooseSequenceBindingId(
 
 export function createBindingGroup(
   source: BindingSourceKind,
-  options?: { id?: string; name?: string },
+  options?: { id?: string; name?: string; yearMonthIndex?: number },
 ): BindingGroup {
   const group: BindingGroup = {
     id: options?.id ?? createBindingGroupId(),
     source,
   };
   if (options?.name) group.name = options.name;
+  if (options?.yearMonthIndex != null) group.yearMonthIndex = options.yearMonthIndex;
   return group;
 }
 
@@ -258,10 +436,14 @@ export function repairBindingMetadata(templateImage: TemplateImage): {
       }
 
       const source = defaultBindingSourceForPage(templateImage.type);
-      const binding = createBindingGroup(source, {
-        id: `bind-${group.id}`,
-        name: templateImage.type === 'daily-page' ? 'Calendar' : undefined,
-      });
+      const binding = withYearMonthIndexForPage(
+        createBindingGroup(source, {
+          id: `bind-${group.id}`,
+          name: templateImage.type === 'daily-page' ? 'Calendar' : undefined,
+        }),
+        templateImage.type,
+        ensureGroupsMap(),
+      );
       ensureGroupsMap()[binding.id] = binding;
       nextGridGroups = {
         ...nextGridGroups,
@@ -281,13 +463,23 @@ export function repairBindingMetadata(templateImage: TemplateImage): {
 
   if (
     unboundDays.length > 0 &&
-    (templateImage.type === 'monthly-calendar' || templateImage.type === 'weekly-calendar')
+    (templateImage.type === 'monthly-calendar' ||
+      templateImage.type === 'weekly-calendar' ||
+      templateImage.type === 'yearly-calendar')
   ) {
     const source: BindingSourceKind =
-      templateImage.type === 'weekly-calendar' ? 'weekDays' : 'monthDays';
-    const binding = createBindingGroup(source, {
-      id: `bind-legacy-days-${templateImage.id}`,
-    });
+      templateImage.type === 'weekly-calendar'
+        ? 'weekDays'
+        : templateImage.type === 'yearly-calendar'
+          ? 'monthDays'
+          : 'monthDays';
+    const binding = withYearMonthIndexForPage(
+      createBindingGroup(source, {
+        id: `bind-legacy-days-${templateImage.id}`,
+      }),
+      templateImage.type,
+      ensureGroupsMap(),
+    );
     ensureGroupsMap()[binding.id] = binding;
     const orderedIds = [...unboundDays]
       .sort((a, b) => a.order - b.order)

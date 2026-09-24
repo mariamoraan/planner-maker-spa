@@ -125,7 +125,11 @@ function shouldLinkDayCell(
   rectangle: Rectangle,
 ): boolean {
   if (rectangle.fieldType !== 'day') return false;
-  return pageType === 'monthly-calendar' || pageType === 'weekly-calendar';
+  return (
+    pageType === 'monthly-calendar' ||
+    pageType === 'weekly-calendar' ||
+    pageType === 'yearly-calendar'
+  );
 }
 
 function shouldLinkMonthBlock(
@@ -138,7 +142,8 @@ function shouldLinkMonthBlock(
     pageType === 'month-cover' ||
     pageType === 'monthly-calendar' ||
     pageType === 'weekly-calendar' ||
-    pageType === 'daily-page'
+    pageType === 'daily-page' ||
+    pageType === 'yearly-calendar'
   );
 }
 
@@ -271,6 +276,13 @@ function buildContextForPage(
 
   if (page.type === 'cover' || page.type === 'extra') {
     return plannerRange;
+  }
+
+  if (page.type === 'yearly-calendar' && page.year != null) {
+    return {
+      year: page.year,
+      ...plannerRange,
+    };
   }
 
   if (page.year == null || page.month == null) {

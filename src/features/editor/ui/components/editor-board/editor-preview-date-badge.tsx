@@ -25,6 +25,8 @@ const DETAIL_KEYS: Record<string, string> = {
   previewWeekCustom: 'editor.previewDateWeekCustomHint',
   previewDayAligned: 'editor.previewDateDayHint',
   previewDayCustom: 'editor.previewDateDayCustomHint',
+  previewYear: 'editor.previewDateYearHint',
+  previewYearCustom: 'editor.previewDateYearCustomHint',
   previewPlannerRange: 'editor.previewDatePlannerHint',
   previewPlannerRangeCustom: 'editor.previewDatePlannerCustomHint',
 };
@@ -35,6 +37,7 @@ function pickerModeForPage(type: TemplateImage['type']): PickerMode {
   switch (type) {
     case 'monthly-calendar':
     case 'month-cover':
+    case 'yearly-calendar':
       return 'month';
     case 'weekly-calendar':
     case 'daily-page':

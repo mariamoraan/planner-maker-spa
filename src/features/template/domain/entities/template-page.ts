@@ -39,7 +39,7 @@ export interface GridGroup {
 }
 
 /** How a binding group resolves dates from the page context. */
-export type BindingSourceKind = 'page' | 'monthDays' | 'weekDays';
+export type BindingSourceKind = 'page' | 'monthDays' | 'weekDays' | 'yearMonths';
 
 /**
  * First-class date binding shared by one or more blocks.
@@ -50,6 +50,11 @@ export interface BindingGroup {
   id: string;
   name?: string;
   source: BindingSourceKind;
+  /**
+   * On yearly-calendar pages, which month (0–11) a `monthDays` group
+   * anchors to when rendering a mini day calendar.
+   */
+  yearMonthIndex?: number;
 }
 
 export type SpreadFace = 'left' | 'right';

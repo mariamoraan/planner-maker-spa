@@ -3,20 +3,23 @@ import './calendar-role-picker.scss';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Calendar, CalendarDays, CalendarRange, ChevronDown, FileText } from 'lucide-react';
+import { Calendar, CalendarDays, CalendarRange, ChevronDown, FileText, LayoutGrid } from 'lucide-react';
 import type { BindingSourceKind } from '@/features/template';
 import {
   CALENDAR_ROLE_OPTIONS,
   calendarRoleLabelKey,
+  calendarRoleOptionsForPage,
   calendarRoleShortKey,
 } from '@/features/editor/domain/services/binding-group';
 import { blockSelectionZoneProps } from '@/features/editor/domain/services/block-selection';
 import clsx from 'clsx';
+import type { TemplateType } from '@/features/template';
 
 const ROLE_ICONS: Record<BindingSourceKind, typeof FileText> = {
   page: FileText,
   monthDays: CalendarDays,
   weekDays: CalendarRange,
+  yearMonths: LayoutGrid,
 };
 
 interface CalendarRolePickerProps {
@@ -33,6 +36,8 @@ interface CalendarRolePickerProps {
   variant?: 'icon' | 'button';
   /** Override trigger aria/title (defaults to “Fechas” / current role). */
   triggerTitle?: string;
+  /** When set, filters role options for the page type (e.g. yearly omits week). */
+  pageType?: TemplateType;
 }
 
 export function CalendarRolePicker({
@@ -42,6 +47,7 @@ export function CalendarRolePicker({
   className,
   variant = 'icon',
   triggerTitle,
+  pageType,
 }: CalendarRolePickerProps) {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
@@ -51,6 +57,9 @@ export function CalendarRolePicker({
 
   const active = value ?? suggested ?? 'page';
   const ActiveIcon = ROLE_ICONS[active];
+  const roleOptions = pageType
+    ? calendarRoleOptionsForPage(pageType)
+    : CALENDAR_ROLE_OPTIONS;
 
   const close = () => {
     setIsOpen(false);
@@ -142,7 +151,7 @@ export function CalendarRolePicker({
               {t('editor.calendarUseAsCalendarTitle')}
             </p>
             <div className="calendar-role-picker__options">
-              {CALENDAR_ROLE_OPTIONS.map(option => {
+              {roleOptions.map(option => {
                 const Icon = ROLE_ICONS[option];
                 const isActive = option === active;
                 return (

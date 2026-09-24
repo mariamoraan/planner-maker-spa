@@ -10,6 +10,7 @@ import {
   loadImage,
   getMonthsBetween,
   getDaysOfMonth,
+  getYearsBetween,
   renderFieldOnCanvas,
   type FieldValueContext,
 } from '@/features/editor/domain/services/planner-utils';
@@ -78,6 +79,14 @@ export function estimatePageCount(
 
   for (const unit of coverUnits) {
     faceCounts.push(unitFaceCount(unit));
+  }
+
+  const years = getYearsBetween(startDate, endDate);
+  const yearlyUnits = unitsForType(template.images, 'yearly-calendar');
+  for (const _year of years) {
+    for (const unit of yearlyUnits) {
+      faceCounts.push(unitFaceCount(unit));
+    }
   }
 
   for (const month of months) {
@@ -273,6 +282,19 @@ export async function generatePlannerPages(
 
   for (const unit of unitsForType(template.images, 'cover')) {
     await emitUnit(unit, plannerRange, { type: 'cover' });
+  }
+
+  for (const year of getYearsBetween(startDate, endDate)) {
+    const yearContext = {
+      year,
+      ...plannerRange,
+    };
+    for (const unit of unitsForType(template.images, 'yearly-calendar')) {
+      await emitUnit(unit, yearContext, {
+        type: 'yearly-calendar',
+        year,
+      });
+    }
   }
 
   for (const month of months) {

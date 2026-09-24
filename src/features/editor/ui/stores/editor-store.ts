@@ -1,5 +1,10 @@
 import { create } from 'zustand';
 import type { FieldType } from '@/features/template';
+import type {
+  ActiveBlockDrag,
+  BlockClipboard,
+  CrossFaceDrop,
+} from '@/features/editor/domain/entities/block-clipboard';
 
 export type CanvasTool = 'select' | 'pan';
 
@@ -21,6 +26,12 @@ interface EditorState {
   previewAnchorDate: Date | null;
   /** Optional planner range override for cover/extra preview (session-only). */
   previewPlannerRange: PreviewPlannerRange | null;
+  /** Session clipboard for copy/paste across spread faces. */
+  blockClipboard: BlockClipboard | null;
+  /** In-progress Konva drag of blocks (for cross-face transfer). */
+  activeBlockDrag: ActiveBlockDrag | null;
+  /** Set by spread layout when a drag ends over the mate face. */
+  pendingCrossFaceDrop: CrossFaceDrop | null;
 
   setCurrentImageId: (id: string | null) => void;
   setSelectedFieldType: (selectedFieldType?: FieldType) => void;
@@ -33,6 +44,9 @@ interface EditorState {
   setGridEditFocus: (gridEditFocus: GridEditFocus) => void;
   setPreviewAnchorDate: (previewAnchorDate: Date | null) => void;
   setPreviewPlannerRange: (previewPlannerRange: PreviewPlannerRange | null) => void;
+  setBlockClipboard: (blockClipboard: BlockClipboard | null) => void;
+  setActiveBlockDrag: (activeBlockDrag: ActiveBlockDrag | null) => void;
+  setPendingCrossFaceDrop: (pendingCrossFaceDrop: CrossFaceDrop | null) => void;
   resetEditorSession: () => void;
 }
 
@@ -45,6 +59,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   gridEditFocus: 'grid',
   previewAnchorDate: null,
   previewPlannerRange: null,
+  blockClipboard: null,
+  activeBlockDrag: null,
+  pendingCrossFaceDrop: null,
 
   setCurrentImageId: (currentImageId) => set({ currentImageId }),
   setSelectedFieldType: (selectedFieldType) => set({ selectedFieldType }),
@@ -70,6 +87,9 @@ export const useEditorStore = create<EditorState>((set) => ({
   setGridEditFocus: (gridEditFocus) => set({ gridEditFocus }),
   setPreviewAnchorDate: (previewAnchorDate) => set({ previewAnchorDate }),
   setPreviewPlannerRange: (previewPlannerRange) => set({ previewPlannerRange }),
+  setBlockClipboard: (blockClipboard) => set({ blockClipboard }),
+  setActiveBlockDrag: (activeBlockDrag) => set({ activeBlockDrag }),
+  setPendingCrossFaceDrop: (pendingCrossFaceDrop) => set({ pendingCrossFaceDrop }),
 
   resetEditorSession: () =>
     set({
@@ -81,5 +101,8 @@ export const useEditorStore = create<EditorState>((set) => ({
       gridEditFocus: 'grid',
       previewAnchorDate: null,
       previewPlannerRange: null,
+      blockClipboard: null,
+      activeBlockDrag: null,
+      pendingCrossFaceDrop: null,
     }),
 }));

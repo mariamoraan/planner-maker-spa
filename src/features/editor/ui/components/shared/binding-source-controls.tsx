@@ -71,6 +71,7 @@ export function BindingSourceControls({
         value={source}
         onSelect={handleSourceChange}
         variant="button"
+        pageType={currentImage.type}
         triggerTitle={t(
           isGridVariant ? 'editor.calendarRoleGridShows' : 'editor.calendarRoleShows',
         )}
